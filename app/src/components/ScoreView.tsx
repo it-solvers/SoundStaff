@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
+import { t } from '../text/ko'
 
 const PREVIEW_INK = '#e2e8f0'
 const ZOOMS = [0.6, 0.8, 1, 1.25, 1.5, 2]
@@ -42,6 +43,7 @@ export default function ScoreView({ xml }: { xml: string }) {
       })
       .catch((e: unknown) => {
         if (cancelled) return
+        console.error(e)
         setError(e instanceof Error ? e.message : String(e))
         setStatus('error')
       })
@@ -74,7 +76,7 @@ export default function ScoreView({ xml }: { xml: string }) {
           disabled={zoomIdx === 0}
           onClick={() => setZoomIdx((i) => i - 1)}
           className="rounded border border-slate-700 px-2.5 py-1 disabled:opacity-40"
-          aria-label="축소"
+          aria-label={t.panel.zoomOut}
           data-testid="zoom-out"
         >
           −
@@ -87,16 +89,16 @@ export default function ScoreView({ xml }: { xml: string }) {
           disabled={zoomIdx === ZOOMS.length - 1}
           onClick={() => setZoomIdx((i) => i + 1)}
           className="rounded border border-slate-700 px-2.5 py-1 disabled:opacity-40"
-          aria-label="확대"
+          aria-label={t.panel.zoomIn}
           data-testid="zoom-in"
         >
           +
         </button>
-        {status === 'loading' && <span className="text-slate-400">악보를 그리는 중…</span>}
+        {status === 'loading' && <span className="text-slate-400">{t.panel.drawing}</span>}
       </div>
       {status === 'error' && (
         <p className="rounded-lg bg-rose-950/60 px-3 py-2 text-sm text-rose-200" role="alert" data-testid="view-error">
-          악보를 화면에 그리지 못했습니다: {error}
+          {t.errors.viewFailed(error)}
         </p>
       )}
       <div className="overflow-auto rounded-lg border border-slate-800 bg-slate-900 p-2" style={{ maxHeight: '75vh' }}>

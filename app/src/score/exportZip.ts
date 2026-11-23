@@ -1,6 +1,6 @@
 import { strToU8, zipSync } from 'fflate'
 import { uniqueName } from '../utils/fileName'
-import type { PdfSettings } from './exportPdf'
+import type { PdfSettings } from './pdfSettings'
 import { buildPianoMidi } from './exportPianoMidi'
 import type { MidiFileInfo } from '../midi/types'
 import type { BuildResult, ScoreSettings } from './types'
