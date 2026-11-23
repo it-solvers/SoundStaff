@@ -49,13 +49,18 @@ function allowedAt(d: number, p: number, beat: number): boolean {
   }
 }
 
-/** 길이를 박 정렬을 지키며 표기 가능한 길이들로 나눈다. (예: 4/4에서 2번째 박에서 시작하는 3박 → 4 + 8 이 아니라 4 + 4 + 4) */
+/**
+ * 길이를 박 정렬을 지키며 표기 가능한 길이들로 나눈다.
+ * 음이 이어져야 하면(나눈 뒤에도 남는 길이가 있으면) 박 위치에서 끝나는 조각을 우선한다.
+ * 예) 4/4의 둘째 박에서 시작하는 2분음표는 점4분+8분이 아니라 4분+4분으로 나눈다.
+ */
 export function decompose(pos: number, len: number, beat: number): number[] {
   const out: number[] = []
   let p = pos
   let left = len
   while (left > 0) {
-    const d = DURATIONS.find((c) => c <= left && allowedAt(c, p, beat)) ?? 1
+    const fits = DURATIONS.filter((c) => c <= left && allowedAt(c, p, beat))
+    const d = fits.find((c) => c === left || (p + c) % beat === 0) ?? fits[0] ?? 1
     out.push(d)
     p += d
     left -= d
@@ -139,9 +144,12 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[]): Piece[][] {
   const total = grid[grid.length - 1].startStep + grid[grid.length - 1].length
   let cursor = 0
   for (const e of events) {
+    // 마디 격자 밖으로 나간 음은 격자 끝에서 자른다 (격자는 보통 마지막 음까지 만들지만, 어긋나도 멈추지 않게 한다)
+    if (e.start >= total) continue
+    const end = Math.min(e.end, total)
     if (e.start > cursor) segs.push({ start: cursor, end: e.start, midis: [] })
-    segs.push({ start: e.start, end: e.end, midis: e.midis })
-    cursor = e.end
+    segs.push({ start: e.start, end, midis: e.midis })
+    cursor = end
   }
   if (cursor < total) segs.push({ start: cursor, end: total, midis: [] })
 
@@ -190,7 +198,11 @@ export function layoutTrack(notes: QNote[], grid: MeasureSpec[]): TrackLayout {
   const measures: VoiceMeasure[][] = grid.map((m, mi) => {
     const out: VoiceMeasure[] = []
     if (!voiceMeasures.length) {
-      out.push({ voice: 1, pieces: [{ duration: m.length, midis: [], tieStart: false, tieStop: false }], wholeRest: true })
+      out.push({
+        voice: 1,
+        pieces: [{ duration: m.length, midis: [], tieStart: false, tieStop: false }],
+        wholeRest: true,
+      })
       return out
     }
     voiceMeasures.forEach((vm, vi) => {
