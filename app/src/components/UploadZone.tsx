@@ -40,7 +40,7 @@ export default function UploadZone({ disabled, phone, onFiles }: Props) {
         setDragging(false)
         if (!disabled) pick(e.dataTransfer.files)
       }}
-      className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
+      className={`flex h-full flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
         dragging ? 'border-sky-400 bg-sky-950' : 'border-slate-700 bg-slate-900'
       }`}
     >

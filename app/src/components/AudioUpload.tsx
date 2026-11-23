@@ -25,14 +25,15 @@ export default function AudioUpload({ phone, disabled, onFiles }: Props) {
   }
 
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-5" data-testid="audio-upload">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold">
-            {t.audio.heading} <span className="text-sm font-normal text-slate-400">({t.audio.pcOnly})</span>
-          </h2>
-          <p className="mt-1 text-xs text-slate-400">{t.audio.hint}</p>
-        </div>
+    <section
+      className="flex h-full flex-col rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-5"
+      data-testid="audio-upload"
+    >
+      <h2 className="text-base font-semibold">
+        {t.audio.heading} <span className="text-sm font-normal text-slate-400">({t.audio.pcOnly})</span>
+      </h2>
+      <p className="mt-1 text-xs text-slate-400">{t.audio.hint}</p>
+      <div className="mt-4">
         <button
           type="button"
           disabled={disabled}
@@ -55,9 +56,11 @@ export default function AudioUpload({ phone, disabled, onFiles }: Props) {
           }}
         />
       </div>
-      <p className="mt-3 rounded-lg bg-amber-900/40 px-3 py-2 text-sm text-amber-200" data-testid="audio-warning">
-        {t.audio.warning} {t.audio.warningMore}
-      </p>
+      <div className="mt-auto pt-4">
+        <p className="rounded-lg bg-amber-900/40 px-3 py-2 text-sm text-amber-200" data-testid="audio-warning">
+          {t.audio.warning} {t.audio.warningMore}
+        </p>
+      </div>
     </section>
   )
 }

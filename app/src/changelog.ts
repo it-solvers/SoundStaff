@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.2.1',
+    date: '2026-11-24',
+    changes: ['화면: MIDI 첨부 카드와 음원 분석 카드를 PC에서는 좌우로 나란히 배치 (폰·태블릿은 위아래)'],
+  },
+  {
     version: '1.2.0',
     date: '2026-11-24',
     changes: [
