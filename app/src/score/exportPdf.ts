@@ -3,7 +3,8 @@ import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
 import { svg2pdf } from 'svg2pdf.js'
 import { t } from '../text/ko'
 import { UserError } from '../utils/errors'
-import { parseOutlineFont, textToPathData, type OutlineFont, type TextAnchor } from './outlineText'
+import { wrapTitle } from './wrapTitle'
+import { parseOutlineFont, textToPathData, textWidth, type OutlineFont, type TextAnchor } from './outlineText'
 import { DEFAULT_PDF_SETTINGS, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
 
 const FONT_FILE = 'SoundStaffKR-Regular.ttf'
@@ -104,6 +105,8 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
 
     for (let i = 0; i < pages.length; i++) {
       const svg = pages[i]
+      // 긴 곡 제목은 쪽 폭에 맞춰 여러 줄로 나눈다 (한글이 있으면 실제로 그릴 윤곽선 글꼴로 폭을 잰다)
+      wrapTitle(svg, (text, px) => (NEEDS_CJK.test(text) ? textWidth(font, text, px) : undefined))
       for (const t of Array.from(svg.querySelectorAll<SVGTextElement>('text'))) {
         normalizeText(t)
         if (NEEDS_CJK.test(t.textContent ?? '')) textToOutline(t, font)

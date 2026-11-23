@@ -48,13 +48,22 @@ export const ko = {
   },
 
   /** 음원(mp3, wav 등) 분석 — 기획서 8.5장 */
+  colab: {
+    question: '더 정확한 반주 제거 분석이 필요하신가요?',
+    open: '고품질 변환(Colab) 열기',
+    pending: '준비 중',
+    howTo:
+      '내 구글 계정의 무료 GPU에서 반주를 제거하고(Demucs) 음표를 찾은(Basic Pitch) 뒤, 받은 MIDI 파일을 이 앱에 첨부하세요. 파일은 이 앱으로 전송되지 않습니다.',
+  },
+
   audio: {
     heading: '음원 파일 분석',
     pcOnly: 'PC 전용',
     button: '음원 파일 선택',
     hint: '.mp3, .wav, .m4a, .ogg, .flac · 최대 50MB, 10분 · MIDI가 없을 때 쓰세요',
     warning: '음원에서 주 멜로디만 악보로 만들었습니다. 화음과 반주는 작곡가가 편곡으로 채워 주세요.',
-    warningMore: '자동 분석 결과는 오류가 있을 수 있습니다. 가능하면 MIDI를 사용하세요.',
+    warningMore:
+      '자동 분석 결과는 오류가 있을 수 있습니다. 더 정확한 변환이 필요하면 고품질 변환(Colab)으로 반주를 제거한 뒤 MIDI를 첨부하세요.',
     vocalHint: '보컬만 분리된 파일(보컬 스템)을 올리면 주 멜로디를 훨씬 정확하게 찾습니다.',
     phone: '음원 분석은 PC에서 이용해 주세요.',
     separateNote:
@@ -207,13 +216,13 @@ export const ko = {
   errors: {
     unreadable: '파일을 읽을 수 없습니다. 다른 파일로 시도해 주세요.',
     unsupportedFormat: '지원하는 형식: mid, midi, mp3, wav, m4a, ogg, flac',
-    analysisFailed: '음원 분석에 실패했습니다. 더 짧은 파일로 시도하거나 PC에서 이용해 주세요.',
+    analysisFailed: '음원 분석에 실패했습니다. 더 짧은 파일로 시도하거나 고품질 변환(Colab)을 이용해 주세요.',
     audioTooBig: (mb: string, maxMb: number) => `음원 파일이 너무 큽니다 (${mb}MB). 최대 ${maxMb}MB까지 지원합니다.`,
     audioTooLong: (maxMin: number) => `음원이 너무 깁니다. 최대 ${maxMin}분까지 지원합니다.`,
-    noMemory: '브라우저 메모리가 부족할 수 있습니다. 더 짧은 파일로 시도하거나 PC에서 이용해 주세요.',
+    noMemory: '브라우저 메모리가 부족할 수 있습니다. 더 짧은 파일로 시도하거나 고품질 변환(Colab)을 이용해 주세요.',
     phoneAudio: '음원 분석은 PC에서 이용해 주세요.',
     silent: '음원이 무음이거나 소리가 너무 작아 분석할 수 없습니다.',
-    noDetected: '주 멜로디를 찾지 못했습니다. 보컬 파일이나 MIDI로 시도해 주세요.',
+    noDetected: '주 멜로디를 찾지 못했습니다. 고품질 변환(Colab)으로 반주를 제거하거나 MIDI로 시도해 주세요.',
     empty: '빈 파일입니다.',
     tooBig: (mb: string, maxMb: number) => `파일이 너무 큽니다 (${mb}MB). 최대 ${maxMb}MB까지 지원합니다.`,
     noNotes: '음표가 없는 파일입니다.',

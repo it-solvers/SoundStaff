@@ -1,20 +1,21 @@
 import type { AudioNote } from '../midi/types'
 
 /**
- * 주 멜로디 선택 (기획서 8.5장 4번).
+ * 주 멜로디 선택 (기획서 8.5장 4번, 4단계 필터링).
  * 음원 분석은 곡의 주 멜로디 한 줄만 악보로 만든다. 화음·반주는 작곡가가 편곡으로 채운다.
  *
- * 1차 규칙(시험곡으로 조정하는 값):
- *  - 각 시점에서 가장 높은 음을 따라간다.
- *  - 사람 목소리 음역(대략 C3~C6) 안의 음만 후보로 삼는다.
- *  - 너무 짧은 조각은 이웃에 합친다.
- *  - 음이 갑자기 한두 옥타브 튀었다가 돌아오는 짧은 음은 앞뒤 음과 이어지도록 옥타브를 맞춘다.
- *    (Basic Pitch가 배음 때문에 옥타브를 잘못 고르는 일이 흔하다)
- *  - 결과는 항상 한 번에 한 음만 있는 한 줄 선율이다 (겹치는 음 없음).
+ *  1단계(음역 필터): 사람 목소리·주선율 음역 C3~G5(MIDI 48~79) 밖의 음(심벌즈·효과음, 베이스·킥)은 제외한다.
+ *  2단계(신뢰도·길이 우선): 같은 시간에 여러 음이 있으면 `신뢰도 × 음 지속시간` 점수가 가장 높은 음을 고른다.
+ *  3단계(옥타브 점프 보정): 직전 음보다 1옥타브(12반음) 이상 튄 짧은 음은 배음 오인식으로 보고 직전 음 가까운 옥타브로 맞춘다.
+ *  4단계(레가토 병합): 같은 높이가 50ms 이내의 짧은 틈으로 이어지면 하나의 긴 음표로 합친다.
+ * 그 밖에 너무 짧은 조각은 이웃에 합치고, 결과는 항상 한 번에 한 음만 있는 한 줄 선율이다 (겹치는 음 없음).
+ * 기준값은 시험곡으로 조정한다.
  */
 export const MELODY_LOW = 48 // C3
-export const MELODY_HIGH = 84 // C6
+export const MELODY_HIGH = 79 // G5
 export const MIN_SEGMENT_SECONDS = 0.08
+/** 4단계: 같은 높이를 이어 붙이는 최대 틈 (50ms) */
+export const LEGATO_GAP_SECONDS = 0.05
 /** 이보다 짧은 음만 "튄 음"으로 보고 옥타브를 맞춘다 (긴 음은 진짜 멜로디로 본다) */
 export const OUTLIER_MAX_SECONDS = 0.8
 /** 앞뒤 음과 이 반음 수 이상 떨어져 있으면 "튄 음" 후보 */
@@ -29,8 +30,10 @@ interface Segment {
   velocity: number
 }
 
-/** 활성 음 중 음역 안에서 가장 높은 음을 시간 구간마다 고른다 */
-function followHighest(notes: AudioNote[]): Segment[] {
+const score = (n: AudioNote) => n.velocity * n.durationSec
+
+/** 활성 음 중 `신뢰도 × 음 지속시간` 점수가 가장 높은 음을 시간 구간마다 고른다 (음역 필터는 먼저 적용) */
+function followBest(notes: AudioNote[]): Segment[] {
   const candidates = notes.filter((n) => n.midi >= MELODY_LOW && n.midi <= MELODY_HIGH)
   if (!candidates.length) return []
   const times = [...new Set(candidates.flatMap((n) => [n.startSec, n.startSec + n.durationSec]))].sort((a, b) => a - b)
@@ -42,7 +45,7 @@ function followHighest(notes: AudioNote[]): Segment[] {
     const mid = (a + b) / 2
     let top: AudioNote | null = null
     for (const n of candidates) {
-      if (n.startSec <= mid && mid < n.startSec + n.durationSec && (!top || n.midi > top.midi)) top = n
+      if (n.startSec <= mid && mid < n.startSec + n.durationSec && (!top || score(n) > score(top))) top = n
     }
     if (!top) continue
     const last = segs[segs.length - 1]
@@ -55,7 +58,7 @@ function followHighest(notes: AudioNote[]): Segment[] {
 }
 
 /** 같은 높이가 틈 없이(또는 아주 작은 틈으로) 이어지면 하나로 합친다 */
-function mergeSame(segs: Segment[], gap = 0.05): Segment[] {
+function mergeSame(segs: Segment[], gap = LEGATO_GAP_SECONDS): Segment[] {
   const out: Segment[] = []
   for (const s of segs) {
     const last = out[out.length - 1]
@@ -102,13 +105,32 @@ function smoothOutliers(segs: Segment[]): Segment[] {
 }
 
 /**
+ * 3단계: 직전 음보다 1옥타브 이상 튄 짧은 음을 직전 음 가까운 옥타브로 맞춘다.
+ * 튄 뒤에도 그 높이에 머무는 진짜 도약은 건드리지 않는다 (다음 음이 튄 음을 따라가면 도약으로 본다).
+ * 비교는 보정 전 값으로 해서, 보정이 뒤 음들로 번지지 않게 한다.
+ */
+function foldOctaveJumps(segs: Segment[]): Segment[] {
+  const out = segs.map((s) => ({ ...s }))
+  for (let i = 1; i < segs.length; i++) {
+    const prev = segs[i - 1]
+    const cur = segs[i]
+    const next = segs[i + 1]
+    if (cur.end - cur.start >= OUTLIER_MAX_SECONDS || Math.abs(cur.midi - prev.midi) < 12) continue
+    if (next && Math.abs(next.midi - cur.midi) <= NEIGHBOR_CLOSE) continue
+    const folded = cur.midi - 12 * Math.round((cur.midi - prev.midi) / 12)
+    if (folded >= MELODY_LOW && folded <= MELODY_HIGH) out[i].midi = folded
+  }
+  return out
+}
+
+/**
  * 여러 음이 섞인 분석 결과에서 주 멜로디 한 줄을 뽑는다.
  * 돌려주는 음표는 시작 순서이며 서로 겹치지 않는다.
  */
 export function selectMelody(notes: AudioNote[]): AudioNote[] {
-  let segs = followHighest(notes)
+  let segs = followBest(notes)
   segs = dropTiny(mergeSame(segs))
-  segs = smoothOutliers(segs)
+  segs = foldOctaveJumps(smoothOutliers(segs))
   segs = dropTiny(mergeSame(segs))
   return segs.map((s) => ({ startSec: s.start, durationSec: s.end - s.start, midi: s.midi, velocity: s.velocity }))
 }

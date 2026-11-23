@@ -1,6 +1,7 @@
 import { formatBytes, formatDuration, formatPitch, summarize } from '../midi/format'
 import type { MidiFileInfo, TrackInfo } from '../midi/types'
 import { t } from '../text/ko'
+import ColabLink from './ColabLink'
 
 function FromFileBadge({ fromFile, audio }: { fromFile: boolean; audio: boolean }) {
   // 음원 분석 결과의 템포·박자·조성은 모두 추정값이다
@@ -56,6 +57,7 @@ export default function TrackList({ info }: { info: MidiFileInfo }) {
             )}
           </p>
           <p data-testid="audio-vocal-hint">{t.audio.vocalHint}</p>
+          <ColabLink />
           <p>{t.audio.guessed}</p>
         </div>
       )}

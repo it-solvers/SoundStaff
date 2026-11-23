@@ -3,7 +3,7 @@ import { AnalysisCancelled, analyzeAudioFile } from './audio/analyze'
 import { isPhoneOrTablet, readDeviceEnv } from './audio/device'
 import { kindOfFile } from './audio/format'
 import AnalysisProgress, { type AnalysisState } from './components/AnalysisProgress'
-import AudioUpload from './components/AudioUpload'
+import AudioUpload, { AudioNotes } from './components/AudioUpload'
 import ChangeLog from './components/ChangeLog'
 import Notices from './components/Notices'
 import StepBar from './components/StepBar'
@@ -70,6 +70,19 @@ export default function App() {
   const [phone, setPhone] = useState(() => isPhoneOrTablet(readDeviceEnv()))
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const [headerVisible, setHeaderVisible] = useState(true)
+
+  // 맨 위 큰 제목이 (고정 막대에 가려질 만큼) 스크롤되어 사라졌는지 지켜본다
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => setHeaderVisible(e.isIntersecting), {
+      rootMargin: '-110px 0px 0px 0px',
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   // 화면 크기가 바뀌면 폰·태블릿 판별을 다시 한다 (기획서 6.1장)
   useEffect(() => {
@@ -208,7 +221,7 @@ export default function App() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
-      <header>
+      <header ref={headerRef}>
         <h1 className="text-4xl font-semibold tracking-tight">
           {t.appName}{' '}
           <span className="text-[27px] font-normal text-slate-400" data-testid="app-version">
@@ -225,7 +238,7 @@ export default function App() {
         )}
       </header>
 
-      {!unsupported && <StepBar current={step} />}
+      {!unsupported && <StepBar current={step} showTitle={!headerVisible} />}
 
       <Notices />
 
@@ -245,6 +258,7 @@ export default function App() {
             <UploadZone disabled={loading} phone={phone} onFiles={handleFiles} />
             <AudioUpload phone={phone} disabled={loading} onFiles={handleFiles} />
           </div>
+          <AudioNotes phone={phone} />
           {analysis && <AnalysisProgress state={analysis} onCancel={() => abortRef.current?.abort()} />}
           {loading && <p className="text-sm text-slate-300">{t.upload.reading}</p>}
 

@@ -38,20 +38,20 @@ describe('주 멜로디 선택 (selectMelody, 기획서 8.5장 4번)', () => {
     expectMonophonic(out)
   })
 
-  it('아래쪽 반주(베이스·화음)가 섞여 있어도 위쪽 선율만 남긴다', () => {
+  it('신뢰도가 낮은 반주(베이스·화음)가 섞여 있어도 선율만 남긴다', () => {
     const melody = tune.map((p, i) => n(i * 0.5, 0.5, p))
     const accompaniment = [
-      ...[36, 43, 41, 36].map((p, i) => n(i * 1, 1, p)), // 베이스
-      ...[0, 2, 4, 6].flatMap((b) => [n(b * 0.5, 1, 52), n(b * 0.5, 1, 55)]), // 선율 아래 화음
+      ...[36, 43, 41, 36].map((p, i) => n(i * 1, 1, p, 0.3)), // 베이스 (음역 밖)
+      ...[0, 2, 4, 6].flatMap((b) => [n(b * 0.5, 1, 52, 0.3), n(b * 0.5, 1, 55, 0.3)]), // 선율 아래 화음
     ]
     const out = selectMelody([...accompaniment, ...melody])
     expect(pitches(out)).toEqual(tune)
     expectMonophonic(out)
   })
 
-  it('사람 목소리 음역(C3~C6) 밖의 음은 후보에서 뺀다 (너무 높은 배음, 너무 낮은 음)', () => {
+  it('주선율 음역(C3~G5) 밖의 음은 후보에서 뺀다 (너무 높은 배음, 너무 낮은 음)', () => {
     const melody = tune.map((p, i) => n(i * 0.5, 0.5, p))
-    const noise = [n(0, 4, 96), n(1, 1, 100), n(0, 4, 30)] // C6보다 높은 배음, C3보다 낮은 음
+    const noise = [n(0, 4, 96), n(1, 1, 100), n(0, 4, 30)] // G5보다 높은 배음, C3보다 낮은 음
     const out = selectMelody([...noise, ...melody])
     expect(pitches(out)).toEqual(tune)
     for (const x of out) {
@@ -99,10 +99,34 @@ describe('주 멜로디 선택 (selectMelody, 기획서 8.5장 4번)', () => {
     expect(out[0].startSec + out[0].durationSec).toBeLessThan(out[1].startSec)
   })
 
-  it('한계: 선율 위쪽에 화음이 있으면 더 높은 음을 따라간다 (가장 높은 음을 따르는 1차 규칙)', () => {
+  it('같은 신뢰도·길이의 음이 겹치면 먼저 시작한 선율을 따른다 (위쪽 화음이 있어도 높은 음을 따라가지 않는다)', () => {
     const melody = tune.map((p, i) => n(i * 0.5, 0.5, p))
     const above = melody.map((x) => n(x.startSec, x.durationSec, x.midi + 7)) // 5도 위의 화음 음
-    expect(pitches(selectMelody([...melody, ...above]))).toEqual(tune.map((p) => p + 7))
+    expect(pitches(selectMelody([...melody, ...above]))).toEqual(tune)
+  })
+
+  it('2단계: 신뢰도×길이 점수가 높은 음이 이긴다 (짧은 반주 잔음은 걸러진다)', () => {
+    const long = n(0, 2, 60, 0.7) // 점수 1.4
+    const shortLoud = n(0.5, 0.3, 72, 0.9) // 점수 0.27: 더 높고 신뢰도도 높지만 짧다
+    expect(pitches(selectMelody([long, shortLoud]))).toEqual([60])
+  })
+
+  it('한계: 선율보다 길고 확실한 반주 음이 있으면 그 음을 따라간다', () => {
+    const melody = tune.map((p, i) => n(i * 0.5, 0.5, p, 0.5))
+    const pad = [n(0, 4, 55, 0.9)] // 4초 동안 이어지는 확실한 반주(패드) 음
+    expect(selectMelody([...melody, ...pad]).every((x) => x.midi === 55)).toBe(true)
+  })
+
+  it('3단계: 직전 음보다 1옥타브 튄 짧은 음은 옥타브를 맞추고, 뒤 음들로 번지지 않는다', () => {
+    const out = selectMelody([n(0, 0.5, 60), n(0.5, 0.5, 72), n(1, 0.5, 62), n(1.5, 0.5, 64)])
+    expect(pitches(out)).toEqual([60, 62, 64]) // 72는 60과 같은 높이로 맞춰져 앞 음에 합쳐진다
+  })
+
+  it('4단계: 같은 높이가 50ms 이내 틈으로 이어지면 하나로 합친다 (더 벌어지면 둘로 둔다)', () => {
+    const near = selectMelody([n(0, 0.5, 60), n(0.54, 0.5, 60), n(1.2, 0.5, 62), n(1.7, 0.5, 64)])
+    expect(near[0].durationSec).toBeCloseTo(1.04, 5)
+    const far = selectMelody([n(0, 0.5, 60), n(0.6, 0.5, 60), n(1.2, 0.5, 62), n(1.7, 0.5, 64)])
+    expect(pitches(far).slice(0, 2)).toEqual([60, 60])
   })
 
   it('무작위로 섞인 여러 음에서도 항상 겹치는 음 없는 한 줄이고 음역 안이다', () => {
