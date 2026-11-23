@@ -36,20 +36,34 @@ npm run build    # dist/ 정적 파일 생성 (타입 검사 포함)
 npm run lint
 ```
 
-## 사용 라이브러리 (라이선스)
+## 라이선스
 
-| 라이브러리                            | 버전   | 라이선스                                                 |
-| ------------------------------------- | ------ | -------------------------------------------------------- |
-| react, react-dom                      | 19.x   | MIT                                                      |
-| vite                                  | 8.x    | MIT                                                      |
-| tailwindcss, @tailwindcss/vite        | 4.x    | MIT                                                      |
-| @tonejs/midi                          | 2.0.28 | MIT                                                      |
-| opensheetmusicdisplay                 | 3.0.0  | BSD-3-Clause                                             |
-| jspdf                                 | 4.2.1  | MIT                                                      |
-| svg2pdf.js                            | 2.9.0  | MIT                                                      |
-| NanumGothic 부분 글꼴(`public/fonts`) | -      | OFL 1.1 (이름을 SoundStaffKR로 변경, 라이선스 파일 동봉) |
+이 앱의 소스 코드는 **MIT 라이선스**(저작권 표기: 아이티해결단)이며 저장소 최상위의 `LICENSE` 파일에 있다.
 
-이후 단계에서 추가하는 라이브러리는 추가 시점에 확인해 기록한다.
+### 사용 라이브러리 (배포 결과물에 들어가는 것)
+
+| 라이브러리                                                       | 버전   | 라이선스                     |
+| ---------------------------------------------------------------- | ------ | ---------------------------- |
+| react, react-dom                                                 | 19.x   | MIT                          |
+| @tonejs/midi                                                     | 2.0.28 | MIT                          |
+| opensheetmusicdisplay                                            | 3.0.0  | BSD-3-Clause                 |
+| jspdf                                                            | 4.2.1  | MIT                          |
+| svg2pdf.js                                                       | 2.9.0  | MIT                          |
+| fflate                                                           | 0.8.3  | MIT                          |
+| NanumGothic 부분 글꼴 (`public/fonts`, SoundStaffKR로 이름 변경) | -      | OFL 1.1 (라이선스 파일 동봉) |
+
+개발·빌드 도구(배포 결과물에 들어가지 않음): vite, tailwindcss, typescript, vitest, prettier, oxlint, @xmldom/xmldom 모두 MIT.
+
+간접 의존 중 일반적인 허용형(MIT, ISC, BSD, Apache-2.0)이 아닌 것과 판단:
+
+| 패키지                         | 라이선스                | 판단                                                               |
+| ------------------------------ | ----------------------- | ------------------------------------------------------------------ |
+| lightningcss (Tailwind가 사용) | MPL-2.0                 | 빌드 때만 쓰이고 결과물에 포함되지 않는다. 수정하지 않고 사용한다. |
+| dompurify (jspdf가 사용)       | MPL-2.0 또는 Apache-2.0 | Apache-2.0을 선택해 사용한다.                                      |
+| jszip (OSMD가 사용)            | MIT 또는 GPL-3.0        | MIT를 선택해 사용한다.                                             |
+| pako (jszip이 사용)            | MIT AND Zlib            | 허용형.                                                            |
+
+라이브러리를 추가·갱신할 때마다 이 표를 다시 확인한다. 이 표는 법률 자문이 아니므로 공개 전에 원문을 직접 확인한다.
 
 ## M2 구조
 
