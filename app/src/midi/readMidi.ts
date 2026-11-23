@@ -65,7 +65,12 @@ export async function readMidiFile(file: File): Promise<ReadResult> {
       kind: classifyTrack({ channelIndex: t.channel, percussion: t.instrument.percussion, noteCount }),
       lowestMidi: noteCount ? Math.min(...pitches) : undefined,
       highestMidi: noteCount ? Math.max(...pitches) : undefined,
-      notes: t.notes.map((n) => ({ ticks: n.ticks, durationTicks: n.durationTicks, midi: n.midi, velocity: n.velocity })),
+      notes: t.notes.map((n) => ({
+        ticks: n.ticks,
+        durationTicks: n.durationTicks,
+        midi: n.midi,
+        velocity: n.velocity,
+      })),
     }
   })
 
@@ -87,7 +92,9 @@ export async function readMidiFile(file: File): Promise<ReadResult> {
       const idx = MAJOR_BY_FIFTHS.indexOf(k.key)
       if (idx < 0) return []
       const scale = k.scale === 'minor' ? ('minor' as const) : ('major' as const)
-      return [{ ticks: k.ticks, fifths: idx - 7, scale, tonic: (scale === 'minor' ? MINOR_BY_FIFTHS : MAJOR_BY_FIFTHS)[idx] }]
+      return [
+        { ticks: k.ticks, fifths: idx - 7, scale, tonic: (scale === 'minor' ? MINOR_BY_FIFTHS : MAJOR_BY_FIFTHS)[idx] },
+      ]
     }),
     tracks,
   }

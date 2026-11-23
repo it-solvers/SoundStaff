@@ -2,12 +2,32 @@ import type { Piece } from '../midi/measures'
 import type { PartModel, ScoreModel } from './types'
 
 const SHARP_NAMES: [string, number][] = [
-  ['C', 0], ['C', 1], ['D', 0], ['D', 1], ['E', 0], ['F', 0],
-  ['F', 1], ['G', 0], ['G', 1], ['A', 0], ['A', 1], ['B', 0],
+  ['C', 0],
+  ['C', 1],
+  ['D', 0],
+  ['D', 1],
+  ['E', 0],
+  ['F', 0],
+  ['F', 1],
+  ['G', 0],
+  ['G', 1],
+  ['A', 0],
+  ['A', 1],
+  ['B', 0],
 ]
 const FLAT_NAMES: [string, number][] = [
-  ['C', 0], ['D', -1], ['D', 0], ['E', -1], ['E', 0], ['F', 0],
-  ['G', -1], ['G', 0], ['A', -1], ['A', 0], ['B', -1], ['B', 0],
+  ['C', 0],
+  ['D', -1],
+  ['D', 0],
+  ['E', -1],
+  ['E', 0],
+  ['F', 0],
+  ['G', -1],
+  ['G', 0],
+  ['A', -1],
+  ['A', 0],
+  ['B', -1],
+  ['B', 0],
 ]
 
 /** 길이(step) → MusicXML type, 점음표 여부 */
@@ -41,7 +61,14 @@ export function escapeXml(s: string): string {
   return s.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]!)
 }
 
-function noteXml(p: Piece, voice: number, fifths: number, stem: string, hiddenRest: boolean, staff: number | null): string {
+function noteXml(
+  p: Piece,
+  voice: number,
+  fifths: number,
+  stem: string,
+  hiddenRest: boolean,
+  staff: number | null,
+): string {
   const [type, dot] = TYPE_OF[p.duration]
   const typeXml = `<type>${type}</type>${dot ? '<dot/>' : ''}`
   const staffXml = staff ? `<staff>${staff}</staff>` : ''
@@ -78,7 +105,10 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
     let attrs = ''
     if (mi === 0) {
       const clefs = part.staves
-        .map((st, si) => `<clef${multi ? ` number="${si + 1}"` : ''}><sign>${st.clef}</sign><line>${st.clef === 'G' ? 2 : 4}</line></clef>`)
+        .map(
+          (st, si) =>
+            `<clef${multi ? ` number="${si + 1}"` : ''}><sign>${st.clef}</sign><line>${st.clef === 'G' ? 2 : 4}</line></clef>`,
+        )
         .join('')
       attrs =
         `<attributes><divisions>4</divisions>` +

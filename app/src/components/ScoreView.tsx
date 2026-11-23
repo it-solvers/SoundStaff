@@ -69,11 +69,27 @@ export default function ScoreView({ xml }: { xml: string }) {
   return (
     <div>
       <div className="mb-2 flex items-center gap-2 text-sm">
-        <button type="button" disabled={zoomIdx === 0} onClick={() => setZoomIdx((i) => i - 1)} className="rounded border border-slate-700 px-2.5 py-1 disabled:opacity-40" aria-label="축소" data-testid="zoom-out">
+        <button
+          type="button"
+          disabled={zoomIdx === 0}
+          onClick={() => setZoomIdx((i) => i - 1)}
+          className="rounded border border-slate-700 px-2.5 py-1 disabled:opacity-40"
+          aria-label="축소"
+          data-testid="zoom-out"
+        >
           −
         </button>
-        <span className="w-14 text-center tabular-nums" data-testid="zoom-label">{Math.round(ZOOMS[zoomIdx] * 100)}%</span>
-        <button type="button" disabled={zoomIdx === ZOOMS.length - 1} onClick={() => setZoomIdx((i) => i + 1)} className="rounded border border-slate-700 px-2.5 py-1 disabled:opacity-40" aria-label="확대" data-testid="zoom-in">
+        <span className="w-14 text-center tabular-nums" data-testid="zoom-label">
+          {Math.round(ZOOMS[zoomIdx] * 100)}%
+        </span>
+        <button
+          type="button"
+          disabled={zoomIdx === ZOOMS.length - 1}
+          onClick={() => setZoomIdx((i) => i + 1)}
+          className="rounded border border-slate-700 px-2.5 py-1 disabled:opacity-40"
+          aria-label="확대"
+          data-testid="zoom-in"
+        >
           +
         </button>
         {status === 'loading' && <span className="text-slate-400">악보를 그리는 중…</span>}

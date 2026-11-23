@@ -1,7 +1,13 @@
 import type { QNote } from '../midi/quantize'
 import { assignHands } from './handSplit'
 import { enforcePlayable } from './playable'
-import { DEFAULT_REDUCE_OPTIONS, type ReduceOptions, type ReduceResult, type SourceNote, type TrackInput } from './types'
+import {
+  DEFAULT_REDUCE_OPTIONS,
+  type ReduceOptions,
+  type ReduceResult,
+  type SourceNote,
+  type TrackInput,
+} from './types'
 
 /**
  * 여러 트랙을 피아노 한 대(오른손·왼손)로 합친다. (기획서 8.2)
@@ -30,7 +36,9 @@ export function reduceToPiano(tracks: TrackInput[], options: ReduceOptions = DEF
   const { hands, pinned } = assignHands(unique, tracks, options.splitMidi)
   const right: QNote[] = []
   const left: QNote[] = []
-  unique.forEach((n, i) => (hands[i] === 'R' ? right : left).push({ start: n.start, end: n.end, midi: n.midi, velocity: n.velocity }))
+  unique.forEach((n, i) =>
+    (hands[i] === 'R' ? right : left).push({ start: n.start, end: n.end, midi: n.midi, velocity: n.velocity }),
+  )
 
   const r = enforcePlayable(right, 'R', options.maxNotesPerHand, options.maxSpan)
   const l = enforcePlayable(left, 'L', options.maxNotesPerHand, options.maxSpan)

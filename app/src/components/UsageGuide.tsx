@@ -27,13 +27,21 @@ export default function UsageGuide({ current }: { current: 1 | 2 | 4 }) {
               data-testid="usage-step"
               data-state={done ? 'done' : active ? 'active' : 'todo'}
               className={`rounded-lg border p-3 text-sm ${
-                active ? 'border-sky-500 bg-sky-950' : done ? 'border-emerald-900 bg-emerald-950/60' : 'border-slate-800 bg-slate-800/60'
+                active
+                  ? 'border-sky-500 bg-sky-950'
+                  : done
+                    ? 'border-emerald-900 bg-emerald-950/60'
+                    : 'border-slate-800 bg-slate-800/60'
               }`}
             >
               <div className="flex items-center gap-2">
                 <span
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                    done ? 'bg-emerald-700 text-white' : active ? 'bg-sky-600 text-white' : 'bg-slate-700 text-slate-300'
+                    done
+                      ? 'bg-emerald-700 text-white'
+                      : active
+                        ? 'bg-sky-600 text-white'
+                        : 'bg-slate-700 text-slate-300'
                   }`}
                   aria-hidden="true"
                 >
@@ -47,7 +55,8 @@ export default function UsageGuide({ current }: { current: 1 | 2 | 4 }) {
         })}
       </ol>
       <p className="mt-3 text-xs text-slate-400">
-        MIDI가 없을 때 쓰는 음원(mp3, wav) 분석은 준비 중입니다. 폰·태블릿에서도 1~4단계를 쓸 수 있고, Finale는 PC에서만 열 수 있어 파일을 PC로 옮겨야 합니다.
+        MIDI가 없을 때 쓰는 음원(mp3, wav) 분석은 준비 중입니다. 폰·태블릿에서도 1~4단계를 쓸 수 있고, Finale는 PC에서만
+        열 수 있어 파일을 PC로 옮겨야 합니다.
       </p>
     </details>
   )

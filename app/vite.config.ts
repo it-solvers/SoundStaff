@@ -10,7 +10,9 @@ const pkg = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url
 const changelogSrc = fs.readFileSync(new URL('./src/changelog.ts', import.meta.url), 'utf8')
 const latest = /version:\s*'(\d+\.\d+\.\d+)'/.exec(changelogSrc)?.[1]
 if (latest !== pkg.version) {
-  throw new Error(`버전 불일치: package.json은 ${pkg.version}, src/changelog.ts 맨 위 항목은 ${latest ?? '없음'}입니다. 두 곳을 같은 값으로 맞춰 주세요.`)
+  throw new Error(
+    `버전 불일치: package.json은 ${pkg.version}, src/changelog.ts 맨 위 항목은 ${latest ?? '없음'}입니다. 두 곳을 같은 값으로 맞춰 주세요.`,
+  )
 }
 
 /** index.html의 __APP_VERSION__을 버전으로 바꾼다 (브라우저 탭 제목용) */

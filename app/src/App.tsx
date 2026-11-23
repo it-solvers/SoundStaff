@@ -73,7 +73,10 @@ export default function App() {
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">
-          음원 → 피아노 악보 변환 <span className="text-lg font-normal text-slate-400" data-testid="app-version">({APP_VERSION})</span>
+          음원 → 피아노 악보 변환{' '}
+          <span className="text-lg font-normal text-slate-400" data-testid="app-version">
+            ({APP_VERSION})
+          </span>
         </h1>
         <p className="mt-1 text-sm text-slate-300">
           음원의 MIDI(미디, 음 높이·길이를 숫자로 기록한 연주 정보 파일)를 악보로 바꿉니다.
@@ -105,7 +108,11 @@ export default function App() {
           <section className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold">읽은 정보 ({files.length}개 파일)</h2>
-              <button type="button" onClick={clearAll} className="text-sm text-slate-400 underline hover:text-slate-100">
+              <button
+                type="button"
+                onClick={clearAll}
+                className="text-sm text-slate-400 underline hover:text-slate-100"
+              >
                 모두 지우기
               </button>
             </div>

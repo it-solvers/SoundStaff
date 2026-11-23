@@ -9,8 +9,10 @@ function FromFileBadge({ fromFile }: { fromFile: boolean }) {
 }
 
 function kindLabel(t: TrackInfo) {
-  if (t.kind === 'drum') return <span className="rounded bg-rose-900/50 px-1.5 py-0.5 text-xs text-rose-200">드럼 · 악보 제외</span>
-  if (t.kind === 'empty') return <span className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-slate-300">음표 없음</span>
+  if (t.kind === 'drum')
+    return <span className="rounded bg-rose-900/50 px-1.5 py-0.5 text-xs text-rose-200">드럼 · 악보 제외</span>
+  if (t.kind === 'empty')
+    return <span className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-slate-300">음표 없음</span>
   return <span className="rounded bg-emerald-900/50 px-1.5 py-0.5 text-xs text-emerald-200">음높이 악기</span>
 }
 
@@ -92,7 +94,8 @@ export default function TrackList({ info, onBuild, children }: Props) {
 
       {drumCount > 0 && (
         <p className="mt-3 rounded-lg bg-rose-950/60 px-3 py-2 text-sm text-rose-200" data-testid="drum-notice">
-          드럼 트랙 {drumCount}개는 악보에서 제외됩니다. (드럼은 음높이가 없는 타악기 소리라 일반 악보로 옮기지 않습니다)
+          드럼 트랙 {drumCount}개는 악보에서 제외됩니다. (드럼은 음높이가 없는 타악기 소리라 일반 악보로 옮기지
+          않습니다)
         </p>
       )}
 

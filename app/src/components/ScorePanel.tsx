@@ -12,7 +12,15 @@ export interface PanelItem {
 }
 
 /** 첨부 영역 하단: 악보 미리보기 + PDF·MusicXML 다운로드 (파일이 여럿이면 탭) */
-export default function ScorePanel({ items, selectedId, onSelect }: { items: PanelItem[]; selectedId: string; onSelect: (id: string) => void }) {
+export default function ScorePanel({
+  items,
+  selectedId,
+  onSelect,
+}: {
+  items: PanelItem[]
+  selectedId: string
+  onSelect: (id: string) => void
+}) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const item = items.find((i) => i.id === selectedId) ?? items[0]
@@ -58,21 +66,37 @@ export default function ScorePanel({ items, selectedId, onSelect }: { items: Pan
         <ScoreView key={item.id} xml={item.result.xml} />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button type="button" onClick={pdf} disabled={busy} className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600 disabled:opacity-50" data-testid="download-pdf">
+        <button
+          type="button"
+          onClick={pdf}
+          disabled={busy}
+          className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600 disabled:opacity-50"
+          data-testid="download-pdf"
+        >
           {busy ? 'PDF 만드는 중…' : 'PDF 다운로드'}
         </button>
-        <button type="button" onClick={musicXml} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600" data-testid="download-musicxml">
+        <button
+          type="button"
+          onClick={musicXml}
+          className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+          data-testid="download-musicxml"
+        >
           MusicXML 다운로드
         </button>
       </div>
       {error && (
-        <p className="mt-3 rounded-lg bg-rose-950/60 px-3 py-2 text-sm text-rose-200" role="alert" data-testid="pdf-error">
+        <p
+          className="mt-3 rounded-lg bg-rose-950/60 px-3 py-2 text-sm text-rose-200"
+          role="alert"
+          data-testid="pdf-error"
+        >
           PDF를 만들지 못했습니다: {error}
         </p>
       )}
       <p className="mt-3 text-xs text-slate-400">
-        MusicXML(뮤직엑스엠엘, 악보 교환용 표준 파일 형식)은 Finale(피날레, 악보 제작 프로그램)에서 파일 → 열기(또는 가져오기)로 불러옵니다.
-        Finale는 PC에서만 쓸 수 있으므로 폰에서 받았다면 PC로 옮겨서 여세요. 자동 변환 결과이므로 Finale에서 확인하고 고쳐 주세요.
+        MusicXML(뮤직엑스엠엘, 악보 교환용 표준 파일 형식)은 Finale(피날레, 악보 제작 프로그램)에서 파일 → 열기(또는
+        가져오기)로 불러옵니다. Finale는 PC에서만 쓸 수 있으므로 폰에서 받았다면 PC로 옮겨서 여세요. 자동 변환
+        결과이므로 Finale에서 확인하고 고쳐 주세요.
       </p>
     </section>
   )

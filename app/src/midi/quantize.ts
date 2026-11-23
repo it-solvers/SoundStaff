@@ -92,6 +92,7 @@ export function buildMeasureGrid(timeSigs: TimeSignatureChange[], ppq: number, t
     measures.push({ startStep: step, length: len, numerator, denominator })
     step += len
   }
-  if (unsupported) warnings.push('지원하지 않는 박자표(분모가 1·2·4·8·16이 아님)가 있어 해당 구간을 4/4로 처리했습니다.')
+  if (unsupported)
+    warnings.push('지원하지 않는 박자표(분모가 1·2·4·8·16이 아님)가 있어 해당 구간을 4/4로 처리했습니다.')
   return { measures, warnings }
 }

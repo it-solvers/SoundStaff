@@ -23,7 +23,8 @@ export function validateModel(model: ScoreModel): Validation {
           if (!vm.wholeRest) {
             for (const p of vm.pieces) {
               const key = p.midis.join(',')
-              if (p.tieStop && open.get(vm.voice) !== key) errors.push(`${where}: ${mi + 1}마디 ${vm.voice}성부 붙임줄 시작 없이 끝남`)
+              if (p.tieStop && open.get(vm.voice) !== key)
+                errors.push(`${where}: ${mi + 1}마디 ${vm.voice}성부 붙임줄 시작 없이 끝남`)
               if (p.tieStop) open.delete(vm.voice)
               if (p.tieStart) open.set(vm.voice, key)
             }

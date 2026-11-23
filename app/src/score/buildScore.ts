@@ -111,11 +111,21 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
       program: track.instrumentNumber,
       staves: [{ clef: pickClef(notes), layout: layout.measures }],
     })
-    partReports.push({ name: trackName(track), noteCount: track.noteCount, maxVoices: Math.max(1, ...layout.measures.map((vs) => vs.length)) })
+    partReports.push({
+      name: trackName(track),
+      noteCount: track.noteCount,
+      maxVoices: Math.max(1, ...layout.measures.map((vs) => vs.length)),
+    })
   })
   if (p.excludedDrums.length) warnings.push(`드럼 트랙 ${p.excludedDrums.length}개는 악보에서 제외했습니다.`)
 
-  const model: ScoreModel = { title: baseName(info.fileName), key: settings.key, grid: p.grid.measures, tempoByMeasure: p.tempoByMeasure, parts }
+  const model: ScoreModel = {
+    title: baseName(info.fileName),
+    key: settings.key,
+    grid: p.grid.measures,
+    tempoByMeasure: p.tempoByMeasure,
+    parts,
+  }
   return finish(model, { mode: 'instrument', parts: partReports, excludedDrums: p.excludedDrums, warnings })
 }
 
@@ -141,11 +151,23 @@ export function buildPianoScore(info: MidiFileInfo, settings: ScoreSettings): Bu
       { clef: 'F', layout: left.measures },
     ],
   }
-  const model: ScoreModel = { title: baseName(info.fileName), key: settings.key, grid: p.grid.measures, tempoByMeasure: p.tempoByMeasure, parts: [part] }
+  const model: ScoreModel = {
+    title: baseName(info.fileName),
+    key: settings.key,
+    grid: p.grid.measures,
+    tempoByMeasure: p.tempoByMeasure,
+    parts: [part],
+  }
   return finish(model, {
     mode: 'piano',
     reduction: reduced.report,
-    parts: [{ name: 'Piano', noteCount: reduced.report.right + reduced.report.left, maxVoices: Math.max(1, ...right.measures.map((v) => v.length), ...left.measures.map((v) => v.length)) }],
+    parts: [
+      {
+        name: 'Piano',
+        noteCount: reduced.report.right + reduced.report.left,
+        maxVoices: Math.max(1, ...right.measures.map((v) => v.length), ...left.measures.map((v) => v.length)),
+      },
+    ],
     excludedDrums: p.excludedDrums,
     warnings,
   })
