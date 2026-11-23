@@ -1,13 +1,11 @@
 import { Midi } from '@tonejs/midi'
+import { t } from '../text/ko'
 import { classifyTrack } from './classify'
+import { MAJOR_BY_FIFTHS, MINOR_BY_FIFTHS } from './keys'
 import type { MidiFileInfo, ReadResult, TrackInfo } from './types'
 
 /** 기획서 6장: 파일 크기 상한은 우선 MIDI 5MB (성능 시험 후 조정) */
 export const MAX_MIDI_BYTES = 5 * 1024 * 1024
-
-// @tonejs/midi는 조표 수(sf)를 장조 이름표(sf=-7..7)로만 돌려준다. 단조는 같은 조표 수의 나란한 단조 이름으로 바꿔 쓴다.
-const MAJOR_BY_FIFTHS = ['Cb', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F', 'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#']
-const MINOR_BY_FIFTHS = ['Ab', 'Eb', 'Bb', 'F', 'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'A#']
 
 const MIDI_EXTENSION = /\.(mid|midi)$/i
 
@@ -39,17 +37,17 @@ export function decodeMidiText(text: string): string {
 export async function readMidiFile(file: File): Promise<ReadResult> {
   const fail = (error: string): ReadResult => ({ ok: false, fileName: file.name, error })
 
-  if (!MIDI_EXTENSION.test(file.name)) return fail('MIDI 파일(.mid, .midi)이 아닙니다.')
-  if (file.size === 0) return fail('빈 파일입니다.')
+  if (!MIDI_EXTENSION.test(file.name)) return fail(t.errors.unsupportedFormat)
+  if (file.size === 0) return fail(t.errors.empty)
   if (file.size > MAX_MIDI_BYTES) {
-    return fail(`파일이 너무 큽니다 (${(file.size / 1024 / 1024).toFixed(1)}MB). 최대 5MB까지 지원합니다.`)
+    return fail(t.errors.tooBig((file.size / 1024 / 1024).toFixed(1), MAX_MIDI_BYTES / 1024 / 1024))
   }
 
   let midi: Midi
   try {
     midi = new Midi(await file.arrayBuffer())
   } catch {
-    return fail('MIDI 파일을 읽을 수 없습니다. 손상되었거나 지원하지 않는 형식일 수 있습니다.')
+    return fail(t.errors.unreadable)
   }
 
   const tracks: TrackInfo[] = midi.tracks.map((t, index) => {

@@ -10,7 +10,7 @@ export function track(
   index: number,
   name: string,
   notes: [number, number, number, number?][],
-  opts: { channel?: number; kind?: 'pitched' | 'drum'; program?: number } = {},
+  opts: { channel?: number; kind?: 'pitched' | 'drum' | 'empty'; program?: number } = {},
 ): TrackInfo {
   const events: NoteEvent[] = notes.map(([s, d, p, v]) => ({
     ticks: s * G,

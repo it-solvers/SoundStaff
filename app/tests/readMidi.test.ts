@@ -72,7 +72,7 @@ describe('MIDI 읽기 (readMidiFile)', () => {
       expect(r.ok).toBe(false)
       return r.ok ? '' : r.error
     }
-    expect(await bad(file('x', 'a.txt'))).toContain('MIDI 파일(.mid, .midi)이 아닙니다')
+    expect(await bad(file('x', 'a.txt'))).toContain('지원하는 형식: mid, midi')
     expect(await bad(file(new Uint8Array(0), 'a.mid'))).toContain('빈 파일')
     expect(await bad(file(new Uint8Array(MAX_MIDI_BYTES + 1), 'a.mid'))).toContain('5MB')
     expect(await bad(file('not a midi file at all', 'a.mid'))).toContain('읽을 수 없습니다')

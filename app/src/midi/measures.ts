@@ -1,3 +1,4 @@
+import { t } from '../text/ko'
 import { beatSteps, type MeasureSpec, type QNote } from './quantize'
 
 /** 표기 가능한 한 덩어리 (음표·화음 또는 쉼표). midis가 비면 쉼표 */
@@ -132,8 +133,8 @@ function assignVoices(events: ChordEvent[], warnings: string[]): ChordEvent[][] 
       trimmed++
     }
   }
-  if (merged) warnings.push(`동시에 울리는 성부가 ${MAX_VOICES}개를 넘어 일부 음 ${merged}개를 화음으로 합쳤습니다.`)
-  if (trimmed) warnings.push(`성부가 ${MAX_VOICES}개를 넘어 일부 음 ${trimmed}개의 길이를 줄였습니다.`)
+  if (merged) warnings.push(t.warnings.voicesMerged(MAX_VOICES, merged))
+  if (trimmed) warnings.push(t.warnings.voicesTrimmed(MAX_VOICES, trimmed))
   return voices
 }
 

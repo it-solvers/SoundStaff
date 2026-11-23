@@ -163,9 +163,16 @@ export function toMusicXml(model: ScoreModel): string {
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n` +
     `<score-partwise version="3.1"><work><work-title>${escapeXml(model.title)}</work-title></work>` +
+    (model.composer
+      ? `<identification><creator type="composer">${escapeXml(model.composer)}</creator></identification>`
+      : '') +
     PAGE_DEFAULTS +
     `<credit page="1"><credit-type>title</credit-type>` +
     `<credit-words default-x="600" default-y="1612" justify="center" valign="top" font-family="${TITLE_FONT}" font-size="24">${escapeXml(model.title)}</credit-words></credit>` +
+    (model.composer
+      ? `<credit page="1"><credit-type>composer</credit-type>` +
+        `<credit-words default-x="1115" default-y="1560" justify="right" valign="top" font-family="${TITLE_FONT}" font-size="12">${escapeXml(model.composer)}</credit-words></credit>`
+      : '') +
     `<part-list>${partList}</part-list>\n` +
     model.parts.map((p, i) => partXml(p, model, i === 0)).join('\n') +
     `\n</score-partwise>\n`

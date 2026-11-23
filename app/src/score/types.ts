@@ -8,6 +8,10 @@ export interface ScoreSettings {
   tempos: TempoChange[]
   timeSignatures: TimeSignatureChange[]
   key: { fifths: number; mode: 'major' | 'minor' }
+  /** 악보 제목 (PDF·MusicXML에 기록). 기본값은 파일 이름 */
+  title: string
+  /** 작곡자 (비어 있으면 기록하지 않는다) */
+  composer: string
 }
 
 /** 보표 하나. 피아노는 한 파트에 보표 2개(오른손 높은음자리표, 왼손 낮은음자리표) */
@@ -29,6 +33,7 @@ export interface PartModel {
 
 export interface ScoreModel {
   title: string
+  composer: string
   key: { fifths: number; mode: 'major' | 'minor' }
   grid: MeasureSpec[]
   /** 마디 번호(0부터) → 그 마디에서 시작하는 템포 */
@@ -43,6 +48,9 @@ export interface PartReport {
 }
 
 export type ConvertMode = 'instrument' | 'piano'
+
+/** merged: 첨부한 모든 파일을 악보 하나로 / separate: 파일별로 각각 악보 */
+export type OutputUnit = 'merged' | 'separate'
 
 export interface ScoreReport {
   mode: ConvertMode

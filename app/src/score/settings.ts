@@ -1,0 +1,87 @@
+import { MAJOR_BY_FIFTHS, accidentalsLabel, prettyTonic, tonicName, type KeyMode } from '../midi/keys'
+import type { MidiFileInfo } from '../midi/types'
+import { baseName } from '../utils/fileName'
+import { t } from '../text/ko'
+import type { ScoreSettings } from './types'
+
+/** 사용자가 입력 칸에서 바꾼 값. 값이 없으면(undefined) MIDI 파일의 값을 쓴다. */
+export interface SettingsOverride {
+  title?: string
+  composer?: string
+  tempo?: number
+  beats?: number
+  beatType?: number
+  key?: { fifths: number; mode: KeyMode }
+}
+
+export const TEMPO_MIN = 20
+export const TEMPO_MAX = 400
+export const BEAT_TYPES = [2, 4, 8, 16]
+
+/** MIDI 파일에서 읽은 값 (입력 칸의 기본값과 안내용). 파일에 없으면 MIDI 표준 기본값(120BPM, 4/4)과 C장조 */
+export function fileValues(info: MidiFileInfo) {
+  const k = info.keySignatures[0]
+  const ts = info.timeSignatures[0]
+  return {
+    tempo: Math.round((info.tempos[0]?.bpm ?? 120) * 100) / 100,
+    beats: ts?.numerator ?? 4,
+    beatType: ts?.denominator ?? 4,
+    key: k ? { fifths: k.fifths, mode: k.scale } : { fifths: 0, mode: 'major' as KeyMode },
+    keyFromFile: !!k,
+    title: baseName(info.fileName),
+  }
+}
+
+/** MIDI 파일 값을 기본으로 하고, 사용자가 바꾼 값만 덮어쓴다. 템포·박자를 직접 입력하면 파일의 변화 정보는 모두 그 값 하나로 바뀐다. */
+export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): ScoreSettings {
+  const f = fileValues(info)
+  const tempos =
+    o.tempo !== undefined ? [{ ticks: 0, bpm: o.tempo }] : info.tempos.length ? info.tempos : [{ ticks: 0, bpm: 120 }]
+  const timeSignatures =
+    o.beats !== undefined || o.beatType !== undefined
+      ? [{ ticks: 0, numerator: o.beats ?? f.beats, denominator: o.beatType ?? f.beatType }]
+      : info.timeSignatures.length
+        ? info.timeSignatures
+        : [{ ticks: 0, numerator: 4, denominator: 4 }]
+  return {
+    tempos,
+    timeSignatures,
+    key: o.key ?? f.key,
+    title: o.title?.trim() ? o.title.trim() : f.title,
+    composer: o.composer?.trim() ?? '',
+  }
+}
+
+export function isValidTempo(n: number): boolean {
+  return Number.isFinite(n) && n >= TEMPO_MIN && n <= TEMPO_MAX
+}
+
+export function isValidBeats(n: number): boolean {
+  return Number.isInteger(n) && n >= 1 && n <= 32
+}
+
+export interface KeyOption {
+  value: string
+  fifths: number
+  mode: KeyMode
+  label: string
+}
+
+/** 입력 칸의 조성 목록: 장조 15개 + 단조 15개 */
+export const KEY_OPTIONS: KeyOption[] = (['major', 'minor'] as KeyMode[]).flatMap((mode) =>
+  MAJOR_BY_FIFTHS.map((_, i) => {
+    const fifths = i - 7
+    return {
+      value: `${mode === 'major' ? 'M' : 'm'}:${fifths}`,
+      fifths,
+      mode,
+      label: `${prettyTonic(tonicName(fifths, mode))} ${mode === 'major' ? t.settings.keyMajor : t.settings.keyMinor} (${accidentalsLabel(fifths)})`,
+    }
+  }),
+)
+
+export const keyValue = (k: { fifths: number; mode: KeyMode }) => `${k.mode === 'major' ? 'M' : 'm'}:${k.fifths}`
+
+export function describeKey(k: { fifths: number; mode: KeyMode }): string {
+  return KEY_OPTIONS.find((o) => o.value === keyValue(k))?.label ?? ''
+}

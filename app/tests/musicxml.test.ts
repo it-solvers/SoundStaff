@@ -106,7 +106,8 @@ describe('MusicXML 구조 — 악기별 악보', () => {
 
   it('제목에 XML 특수문자가 있어도 올바른 파일이 되고 다시 읽으면 같다', () => {
     const tricky = 'A & B <C> "D" \'E\''
-    const r = buildInstrumentScore(info([melody], { fileName: `${tricky}.mid` }), defaultSettings(info([melody])))
+    const src = info([melody], { fileName: `${tricky}.mid` })
+    const r = buildInstrumentScore(src, defaultSettings(src))
     const doc = parse(r.xml)
     expect(all(doc, 'work-title')[0].textContent).toBe(tricky)
     expect(all(doc, 'credit-words')[0].textContent).toBe(tricky)
@@ -166,7 +167,7 @@ describe('MusicXML 구조 — 피아노로 합친 악보', () => {
 describe('만들 수 없는 파일의 오류 안내', () => {
   it('드럼 트랙만 있으면 음높이 트랙이 없다고 알린다', () => {
     const i = info([drums])
-    expect(() => buildInstrumentScore(i, defaultSettings(i))).toThrow('음높이 트랙이 없습니다')
-    expect(() => buildPianoScore(i, defaultSettings(i))).toThrow('음높이 트랙이 없습니다')
+    expect(() => buildInstrumentScore(i, defaultSettings(i))).toThrow('음 높이가 있는 트랙이 없습니다')
+    expect(() => buildPianoScore(i, defaultSettings(i))).toThrow('음 높이가 있는 트랙이 없습니다')
   })
 })

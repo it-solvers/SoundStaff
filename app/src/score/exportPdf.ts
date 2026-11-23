@@ -1,6 +1,22 @@
 import { jsPDF } from 'jspdf'
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
 import { svg2pdf } from 'svg2pdf.js'
+import { t } from '../text/ko'
+import { UserError } from '../utils/errors'
+
+export type PdfOrientation = 'portrait' | 'landscape'
+export type PdfSize = 'small' | 'normal' | 'large'
+
+/** 기획서 8.6장: A4 세로(기본)·가로, 악보 크기 작게/보통/크게 */
+export interface PdfSettings {
+  orientation: PdfOrientation
+  size: PdfSize
+}
+
+export const DEFAULT_PDF_SETTINGS: PdfSettings = { orientation: 'portrait', size: 'normal' }
+
+/** 악보 크기별 확대 비율 (정확한 값은 시험하며 정한다 — 기획서 8.6장) */
+export const SIZE_ZOOM: Record<PdfSize, number> = { small: 0.75, normal: 1, large: 1.3 }
 
 const FONT_NAME = 'SoundStaffKR'
 const FONT_FILE = 'SoundStaffKR-Regular.ttf'
@@ -9,7 +25,7 @@ const NEEDS_CJK = /[Ā-￿]/
 
 async function loadFontBase64(): Promise<string> {
   const res = await fetch(`${import.meta.env.BASE_URL}fonts/${FONT_FILE}`)
-  if (!res.ok) throw new Error('PDF용 한글 글꼴 파일을 불러오지 못했습니다.')
+  if (!res.ok) throw new UserError(t.errors.pdfFont)
   const bytes = new Uint8Array(await res.arrayBuffer())
   let bin = ''
   const CHUNK = 0x8000
@@ -46,24 +62,26 @@ function normalizeText(t: SVGTextElement): void {
  * - 한글이 들어간 글자(곡 제목, 트랙 이름)는 내장한 한글 글꼴로 그린다.
  * - 모든 처리는 브라우저 안에서 하며 서버로 보내지 않는다.
  */
-export async function exportScorePdf(xml: string): Promise<Blob> {
+export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAULT_PDF_SETTINGS): Promise<Blob> {
+  const landscape = settings.orientation === 'landscape'
   const container = document.createElement('div')
-  container.style.cssText = 'position:fixed;left:-20000px;top:0;width:900px;background:#fff'
+  container.style.cssText = `position:fixed;left:-20000px;top:0;width:${landscape ? 1200 : 900}px;background:#fff`
   document.body.appendChild(container)
   const osmd = new OpenSheetMusicDisplay(container, {
     autoResize: false,
     drawTitle: true,
     autoBeam: true,
-    pageFormat: 'A4 P',
+    pageFormat: landscape ? 'A4 L' : 'A4 P',
     pageBackgroundColor: '#FFFFFF',
   })
   try {
     await osmd.load(xml)
+    osmd.zoom = SIZE_ZOOM[settings.size]
     osmd.render()
     const pages = Array.from(container.querySelectorAll<SVGSVGElement>(':scope > div > svg, :scope > svg'))
-    if (!pages.length) throw new Error('악보가 그려지지 않아 PDF를 만들 수 없습니다.')
+    if (!pages.length) throw new UserError(t.errors.pdfNoPages)
 
-    const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' })
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: settings.orientation })
     pdf.addFileToVFS(FONT_FILE, await loadFontBase64())
     pdf.addFont(FONT_FILE, FONT_NAME, 'normal')
 
