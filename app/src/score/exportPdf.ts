@@ -3,21 +3,49 @@ import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
 import { svg2pdf } from 'svg2pdf.js'
 import { t } from '../text/ko'
 import { UserError } from '../utils/errors'
+import { parseOutlineFont, textToPathData, type OutlineFont, type TextAnchor } from './outlineText'
 import { DEFAULT_PDF_SETTINGS, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
 
-const FONT_NAME = 'SoundStaffKR'
 const FONT_FILE = 'SoundStaffKR-Regular.ttf'
 /** 기본 글꼴(Latin-1)로 그릴 수 없는 글자(한글 등)가 들어 있는지 */
-const NEEDS_CJK = /[Ā-￿]/
+const NEEDS_CJK = /[\u0100-\uffff]/
+const SVG_NS = 'http://www.w3.org/2000/svg'
 
-async function loadFontBase64(): Promise<string> {
-  const res = await fetch(`${import.meta.env.BASE_URL}fonts/${FONT_FILE}`)
-  if (!res.ok) throw new UserError(t.errors.pdfFont)
-  const bytes = new Uint8Array(await res.arrayBuffer())
-  let bin = ''
-  const CHUNK = 0x8000
-  for (let i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
-  return btoa(bin)
+let fontPromise: Promise<OutlineFont> | null = null
+
+/** 한글 윤곽선을 만들 글꼴을 한 번만 내려받아 읽는다 (이 브라우저 안에서만 쓰고 어디로도 보내지 않는다) */
+function loadOutlineFont(): Promise<OutlineFont> {
+  fontPromise ??= (async () => {
+    const res = await fetch(`${import.meta.env.BASE_URL}fonts/${FONT_FILE}`)
+    if (!res.ok) throw new UserError(t.errors.pdfFont)
+    return parseOutlineFont(await res.arrayBuffer())
+  })().catch((e) => {
+    fontPromise = null // 실패하면 다음에 다시 시도한다
+    throw e
+  })
+  return fontPromise
+}
+
+/** 한글이 든 <text>를 같은 자리의 윤곽선 <path>로 바꾼다 */
+function textToOutline(el: SVGTextElement, font: OutlineFont): void {
+  const text = el.textContent ?? ''
+  const px = (name: string, fallback: number) => parseFloat(el.getAttribute(name) ?? '') || fallback
+  const path = document.createElementNS(SVG_NS, 'path')
+  path.setAttribute(
+    'd',
+    textToPathData(
+      font,
+      text,
+      px('x', 0),
+      px('y', 0),
+      px('font-size', 16),
+      (el.getAttribute('text-anchor') as TextAnchor) ?? 'start',
+    ),
+  )
+  path.setAttribute('fill', el.getAttribute('fill') ?? '#000')
+  const transform = el.getAttribute('transform')
+  if (transform) path.setAttribute('transform', transform)
+  el.replaceWith(path)
 }
 
 /**
@@ -46,7 +74,7 @@ function normalizeText(t: SVGTextElement): void {
 /**
  * MusicXML을 A4 세로 페이지로 나눠 그린 뒤 벡터 PDF로 만든다.
  * - 악보(음표·오선)는 SVG 경로라 확대해도 선명하다.
- * - 한글이 들어간 글자(곡 제목, 트랙 이름)는 내장한 한글 글꼴로 그린다.
+ * - 한글이 들어간 글자(곡 제목, 트랙 이름, 작곡자)는 글꼴 내장 대신 윤곽선으로 그려 어떤 PDF 뷰어에서도 보이게 한다.
  * - 모든 처리는 브라우저 안에서 하며 서버로 보내지 않는다.
  */
 export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAULT_PDF_SETTINGS): Promise<Blob> {
@@ -69,8 +97,7 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
     if (!pages.length) throw new UserError(t.errors.pdfNoPages)
 
     const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: settings.orientation })
-    pdf.addFileToVFS(FONT_FILE, await loadFontBase64())
-    pdf.addFont(FONT_FILE, FONT_NAME, 'normal')
+    const font = await loadOutlineFont()
 
     const pageW = pdf.internal.pageSize.getWidth()
     const pageH = pdf.internal.pageSize.getHeight()
@@ -79,10 +106,7 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
       const svg = pages[i]
       for (const t of Array.from(svg.querySelectorAll<SVGTextElement>('text'))) {
         normalizeText(t)
-        if (NEEDS_CJK.test(t.textContent ?? '')) {
-          t.setAttribute('font-family', FONT_NAME)
-          t.style.fontFamily = FONT_NAME
-        }
+        if (NEEDS_CJK.test(t.textContent ?? '')) textToOutline(t, font)
       }
       const vb = svg.viewBox.baseVal
       const w = vb && vb.width ? vb.width : svg.getBoundingClientRect().width

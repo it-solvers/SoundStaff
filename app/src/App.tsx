@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import ChangeLog from './components/ChangeLog'
 import Notices from './components/Notices'
+import StepBar from './components/StepBar'
 import OptionsPanel from './components/OptionsPanel'
 import OutputCard, { type OutputItem } from './components/OutputCard'
 import ScorePanel, { type PanelItem } from './components/ScorePanel'
@@ -159,6 +160,8 @@ export default function App() {
         </p>
       </header>
 
+      {!unsupported && <StepBar current={step} />}
+
       <Notices />
 
       {unsupported ? (
@@ -234,6 +237,13 @@ export default function App() {
       )}
 
       <ChangeLog />
+
+      <footer
+        className="mt-auto border-t border-slate-800 pt-4 pb-2 text-center text-xs text-slate-500"
+        data-testid="footer"
+      >
+        {t.footer.copyright} · {t.footer.license}
+      </footer>
     </div>
   )
 }

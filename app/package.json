@@ -1,7 +1,7 @@
 {
   "name": "soundstaff",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,6 +19,7 @@
     "fflate": "^0.8.3",
     "jspdf": "^4.2.1",
     "opensheetmusicdisplay": "^3.0.0",
+    "opentype.js": "^2.0.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "svg2pdf.js": "^2.9.0",

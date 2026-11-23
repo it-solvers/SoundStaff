@@ -12,6 +12,15 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.1.1',
+    date: '2026-11-24',
+    changes: [
+      '수정: PDF에서 한글 제목·트랙 이름·작곡자가 일부 PDF 뷰어에서 보이지 않던 문제 (한글을 글꼴이 아니라 윤곽선으로 그려 어떤 뷰어에서도 보이게 함)',
+      '화면: 스크롤을 내려도 지금 단계가 보이도록 위쪽에 고정되는 단계 막대 추가',
+      '화면: 하단에 저작권 표시 추가 (© 2026 아이티해결단)',
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-11-24',
     changes: [

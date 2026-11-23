@@ -23,6 +23,10 @@ export const ko = {
       { title: '확인하고 저장', desc: '악보를 확대·축소해 보고 PDF, MusicXML, 피아노 MIDI로 저장합니다.' },
       { title: 'Finale에서 열기', desc: 'PC의 Finale에서 MusicXML을 열고 다른 이름으로 저장하면 .musx가 됩니다.' },
     ],
+    /** 위쪽에 고정되는 단계 막대의 짧은 이름 (steps와 같은 순서) */
+    short: ['첨부', '방식', '만들기', '저장', 'Finale'],
+    openGuide: '자세히',
+    barLabel: (current: number, total: number, title: string, desc: string) => `${current}/${total} ${title}: ${desc}`,
     footer:
       'MIDI가 없을 때 쓰는 음원(mp3, wav) 분석은 준비 중입니다. 폰·태블릿에서도 1~4단계를 쓸 수 있고, Finale는 PC에서만 열 수 있어 파일을 PC로 옮겨야 합니다.',
   },
@@ -155,6 +159,9 @@ export const ko = {
   },
 
   changelog: { title: '변경 이력' },
+
+  /** 화면 맨 아래 저작권 표시 (LICENSE의 표기와 같게) */
+  footer: { copyright: '© 2026 아이티해결단', license: 'MIT 라이선스' },
 
   /** 기획서 11.3장 오류 처리 목록 */
   errors: {
