@@ -4,3 +4,6 @@ dist
 # 저작권이 있는 샘플 자료와 변환 결과물은 올리지 않는다
 data/
 output/
+
+# 수동 시험용 작업 폴더 (같은 시험 파일의 저장소용 사본은 app/tests/fixtures, 5MB 초과 파일은 커밋하지 않는다)
+test-midi/
