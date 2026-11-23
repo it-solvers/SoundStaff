@@ -41,11 +41,12 @@ export function escapeXml(s: string): string {
   return s.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]!)
 }
 
-function noteXml(p: Piece, voice: number, fifths: number, stem: string, hiddenRest: boolean): string {
+function noteXml(p: Piece, voice: number, fifths: number, stem: string, hiddenRest: boolean, staff: number | null): string {
   const [type, dot] = TYPE_OF[p.duration]
   const typeXml = `<type>${type}</type>${dot ? '<dot/>' : ''}`
+  const staffXml = staff ? `<staff>${staff}</staff>` : ''
   if (p.midis.length === 0) {
-    return `<note${hiddenRest ? ' print-object="no"' : ''}><rest/><duration>${p.duration}</duration><voice>${voice}</voice>${typeXml}</note>`
+    return `<note${hiddenRest ? ' print-object="no"' : ''}><rest/><duration>${p.duration}</duration><voice>${voice}</voice>${typeXml}${staffXml}</note>`
   }
   const names = fifths < 0 ? FLAT_NAMES : SHARP_NAMES
   const ties = (p.tieStop ? '<tie type="stop"/>' : '') + (p.tieStart ? '<tie type="start"/>' : '')
@@ -59,25 +60,31 @@ function noteXml(p: Piece, voice: number, fifths: number, stem: string, hiddenRe
       const octave = Math.floor(midi / 12) - 1
       return (
         `<note>${i > 0 ? '<chord/>' : ''}<pitch><step>${step}</step>${alter ? `<alter>${alter}</alter>` : ''}<octave>${octave}</octave></pitch>` +
-        `<duration>${p.duration}</duration>${ties}<voice>${voice}</voice>${typeXml}${stem}${tied}</note>`
+        `<duration>${p.duration}</duration>${ties}<voice>${voice}</voice>${typeXml}${stem}${staffXml}${tied}</note>`
       )
     })
     .join('')
 }
 
+/** 보표가 여러 개인 파트에서 보표마다 성부 번호가 겹치지 않도록 하는 간격 (MAX_VOICES와 같은 값) */
+const VOICES_PER_STAFF = 4
+
 function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): string {
-  const measures = part.layout.map((voices, mi) => {
-    const spec = model.grid[mi]
+  const multi = part.staves.length > 1
+  const measures = model.grid.map((spec, mi) => {
     const prev = model.grid[mi - 1]
     const timeChanged = !prev || prev.numerator !== spec.numerator || prev.denominator !== spec.denominator
 
     let attrs = ''
     if (mi === 0) {
+      const clefs = part.staves
+        .map((st, si) => `<clef${multi ? ` number="${si + 1}"` : ''}><sign>${st.clef}</sign><line>${st.clef === 'G' ? 2 : 4}</line></clef>`)
+        .join('')
       attrs =
         `<attributes><divisions>4</divisions>` +
         `<key><fifths>${model.key.fifths}</fifths><mode>${model.key.mode}</mode></key>` +
         `<time><beats>${spec.numerator}</beats><beat-type>${spec.denominator}</beat-type></time>` +
-        `<clef><sign>${part.clef}</sign><line>${part.clef === 'G' ? 2 : 4}</line></clef></attributes>`
+        `${multi ? `<staves>${part.staves.length}</staves><part-symbol>brace</part-symbol>` : ''}${clefs}</attributes>`
     } else if (timeChanged) {
       attrs = `<attributes><time><beats>${spec.numerator}</beats><beat-type>${spec.denominator}</beat-type></time></attributes>`
     }
@@ -88,19 +95,26 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
         `<per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`
       : ''
 
-    const multi = voices.length > 1
-    const body = voices
-      .map((vm) => {
+    // 보표 → 성부 순서로 이어 쓰고, 각 성부 사이는 <backup>으로 마디 처음으로 되돌린다
+    const chunks: string[] = []
+    part.staves.forEach((staff, si) => {
+      const voices = staff.layout[mi]
+      const stemmed = voices.length > 1
+      const staffNo = multi ? si + 1 : null
+      for (const vm of voices) {
+        const voiceNo = vm.voice + (multi ? si * VOICES_PER_STAFF : 0)
+        const hidden = vm.voice > 1
         if (vm.wholeRest) {
-          const hidden = vm.voice > 1 ? ' print-object="no"' : ''
-          return `<note${hidden}><rest measure="yes"/><duration>${spec.length}</duration><voice>${vm.voice}</voice></note>`
+          chunks.push(
+            `<note${hidden ? ' print-object="no"' : ''}><rest measure="yes"/><duration>${spec.length}</duration><voice>${voiceNo}</voice>${staffNo ? `<staff>${staffNo}</staff>` : ''}</note>`,
+          )
+        } else {
+          const stem = stemmed ? `<stem>${vm.voice % 2 === 1 ? 'up' : 'down'}</stem>` : ''
+          chunks.push(vm.pieces.map((p) => noteXml(p, voiceNo, model.key.fifths, stem, hidden, staffNo)).join(''))
         }
-        const stem = multi ? `<stem>${vm.voice % 2 === 1 ? 'up' : 'down'}</stem>` : ''
-        return vm.pieces.map((p) => noteXml(p, vm.voice, model.key.fifths, stem, vm.voice > 1)).join('')
-      })
-      .join(`<backup><duration>${spec.length}</duration></backup>`)
-
-    return `<measure number="${mi + 1}">${attrs}${tempo}${body}</measure>`
+      }
+    })
+    return `<measure number="${mi + 1}">${attrs}${tempo}${chunks.join(`<backup><duration>${spec.length}</duration></backup>`)}</measure>`
   })
   return `<part id="${part.id}">\n${measures.join('\n')}\n</part>`
 }

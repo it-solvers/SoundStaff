@@ -12,23 +12,26 @@ export interface Validation {
 export function validateModel(model: ScoreModel): Validation {
   const errors: string[] = []
   for (const part of model.parts) {
-    const open = new Map<number, string>() // 성부 → 열린 붙임줄의 음높이 목록
-    part.layout.forEach((voices, mi) => {
-      const len = model.grid[mi].length
-      for (const vm of voices) {
-        const sum = vm.wholeRest ? len : vm.pieces.reduce((a, p) => a + p.duration, 0)
-        if (sum !== len) errors.push(`${part.name}: ${mi + 1}마디 ${vm.voice}성부 길이 ${sum} ≠ 마디 길이 ${len}`)
-        if (!vm.wholeRest) {
-          for (const p of vm.pieces) {
-            const key = p.midis.join(',')
-            if (p.tieStop && open.get(vm.voice) !== key) errors.push(`${part.name}: ${mi + 1}마디 ${vm.voice}성부 붙임줄 시작 없이 끝남`)
-            if (p.tieStop) open.delete(vm.voice)
-            if (p.tieStart) open.set(vm.voice, key)
+    part.staves.forEach((staff, si) => {
+      const open = new Map<number, string>() // 성부 → 열린 붙임줄의 음높이 목록
+      const where = part.staves.length > 1 ? `${part.name} ${si + 1}단` : part.name
+      staff.layout.forEach((voices, mi) => {
+        const len = model.grid[mi].length
+        for (const vm of voices) {
+          const sum = vm.wholeRest ? len : vm.pieces.reduce((a, p) => a + p.duration, 0)
+          if (sum !== len) errors.push(`${where}: ${mi + 1}마디 ${vm.voice}성부 길이 ${sum} ≠ 마디 길이 ${len}`)
+          if (!vm.wholeRest) {
+            for (const p of vm.pieces) {
+              const key = p.midis.join(',')
+              if (p.tieStop && open.get(vm.voice) !== key) errors.push(`${where}: ${mi + 1}마디 ${vm.voice}성부 붙임줄 시작 없이 끝남`)
+              if (p.tieStop) open.delete(vm.voice)
+              if (p.tieStart) open.set(vm.voice, key)
+            }
           }
         }
-      }
+      })
+      if (open.size) errors.push(`${where}: 끝나지 않은 붙임줄이 있습니다`)
     })
-    if (open.size) errors.push(`${part.name}: 끝나지 않은 붙임줄이 있습니다`)
   }
   return { ok: errors.length === 0, errors }
 }

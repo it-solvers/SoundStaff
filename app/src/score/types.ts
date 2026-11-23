@@ -1,5 +1,6 @@
 import type { VoiceMeasure } from '../midi/measures'
 import type { MeasureSpec } from '../midi/quantize'
+import type { ReduceReport } from '../piano/types'
 import type { TempoChange, TimeSignatureChange } from '../midi/types'
 
 /** 악보를 만들 때 쓰는 설정. 기본값은 MIDI 파일에서 읽고, M5에서 사용자가 수정할 수 있게 된다. */
@@ -7,6 +8,12 @@ export interface ScoreSettings {
   tempos: TempoChange[]
   timeSignatures: TimeSignatureChange[]
   key: { fifths: number; mode: 'major' | 'minor' }
+}
+
+/** 보표 하나. 피아노는 한 파트에 보표 2개(오른손 높은음자리표, 왼손 낮은음자리표) */
+export interface StaffModel {
+  clef: 'G' | 'F'
+  layout: VoiceMeasure[][]
 }
 
 export interface PartModel {
@@ -17,8 +24,7 @@ export interface PartModel {
   channel: number
   /** MIDI 프로그램 번호 (0~127) */
   program: number
-  clef: 'G' | 'F'
-  layout: VoiceMeasure[][]
+  staves: StaffModel[]
 }
 
 export interface ScoreModel {
@@ -36,7 +42,12 @@ export interface PartReport {
   maxVoices: number
 }
 
+export type ConvertMode = 'instrument' | 'piano'
+
 export interface ScoreReport {
+  mode: ConvertMode
+  /** 피아노로 합친 경우에만 있음: 중복·제거된 음 수 등 */
+  reduction?: ReduceReport
   measureCount: number
   parts: PartReport[]
   excludedDrums: string[]
