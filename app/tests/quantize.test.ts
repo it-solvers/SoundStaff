@@ -1,0 +1,109 @@
+import { describe, expect, it } from 'vitest'
+import { beatSteps, buildMeasureGrid, gridTicks, measureLength, quantizeNotes } from '../src/midi/quantize'
+import { G, PPQ } from './helpers'
+
+const note = (startStep: number, durSteps: number, midi = 60) => ({
+  ticks: startStep * G,
+  durationTicks: durSteps * G,
+  midi,
+  velocity: 0.7,
+})
+
+describe('양자화 (quantizeNotes)', () => {
+  it('틱을 16분음표 칸으로 바꾼다 (4분음표 = 4칸)', () => {
+    expect(gridTicks(PPQ)).toBe(120)
+    const r = quantizeNotes([note(0, 4), note(4, 8)], PPQ)
+    expect(r.notes.map((n) => [n.start, n.end])).toEqual([
+      [0, 4],
+      [4, 12],
+    ])
+  })
+
+  it('가장 가까운 칸으로 반올림한다', () => {
+    const r = quantizeNotes([{ ticks: 130, durationTicks: 230, midi: 60, velocity: 1 }], PPQ)
+    expect(r.notes[0]).toMatchObject({ start: 1, end: 3 }) // 130→1.08칸→1, 끝 360→3칸
+  })
+
+  it('아주 짧은 음도 최소 1칸을 가진다', () => {
+    const r = quantizeNotes([{ ticks: 0, durationTicks: 5, midi: 60, velocity: 1 }], PPQ)
+    expect(r.notes[0].end - r.notes[0].start).toBe(1)
+  })
+
+  it('같은 시작·같은 높이는 하나로 합치고 더 긴 쪽을 남긴다', () => {
+    const r = quantizeNotes([note(0, 2, 60), note(0, 4, 60), note(0, 4, 64)], PPQ)
+    expect(r.notes).toHaveLength(2)
+    expect(r.notes.find((n) => n.midi === 60)!.end).toBe(4)
+  })
+
+  it('격자 이탈은 시작 위치만 센다 (끝을 살짝 떼는 연주는 정상)', () => {
+    const staccato = quantizeNotes([note(0, 4), { ticks: 4 * G, durationTicks: 3.6 * G, midi: 62, velocity: 1 }], PPQ)
+    expect(staccato.offGrid).toBe(0)
+    const triplets = quantizeNotes(
+      [0, 1, 2, 3].map((i) => ({ ticks: i * 160, durationTicks: 150, midi: 60, velocity: 1 })),
+      PPQ,
+    )
+    expect(triplets.offGrid).toBeGreaterThan(0)
+  })
+
+  it('시작 순서로 정렬해서 돌려준다', () => {
+    const r = quantizeNotes([note(8, 1), note(0, 1), note(4, 1)], PPQ)
+    expect(r.notes.map((n) => n.start)).toEqual([0, 4, 8])
+  })
+})
+
+describe('마디 길이·박 (measureLength, beatSteps)', () => {
+  it.each([
+    [4, 4, 16],
+    [3, 4, 12],
+    [6, 8, 12],
+    [7, 8, 14],
+    [2, 2, 16],
+    [5, 16, 5],
+  ])('%i/%i 박자는 %i칸', (n, d, expected) => {
+    expect(measureLength(n, d)).toBe(expected)
+  })
+
+  it('분모가 1·2·4·8·16이 아니면 지원하지 않는다', () => {
+    expect(measureLength(3, 32)).toBeNull()
+    expect(measureLength(4, 3)).toBeNull()
+    expect(measureLength(0, 4)).toBeNull()
+  })
+
+  it('겹박자(6/8, 9/8, 12/8)는 점4분음표가 한 박', () => {
+    expect(beatSteps(6, 8)).toBe(6)
+    expect(beatSteps(9, 8)).toBe(6)
+    expect(beatSteps(3, 8)).toBe(2)
+    expect(beatSteps(4, 4)).toBe(4)
+    expect(beatSteps(3, 4)).toBe(4)
+  })
+})
+
+describe('마디 경계 (buildMeasureGrid)', () => {
+  it('박자표가 없으면 4/4로 만든다', () => {
+    const g = buildMeasureGrid([], PPQ, 40)
+    expect(g.measures.map((m) => m.length)).toEqual([16, 16, 16])
+    expect(g.measures[2].startStep).toBe(32)
+  })
+
+  it('마지막 음까지 덮도록 마디를 만든다 (끝이 마디 경계면 더 만들지 않는다)', () => {
+    expect(buildMeasureGrid([], PPQ, 16).measures).toHaveLength(1)
+    expect(buildMeasureGrid([], PPQ, 17).measures).toHaveLength(2)
+    expect(buildMeasureGrid([], PPQ, 0).measures).toHaveLength(1)
+  })
+
+  it('중간에 바뀌는 박자표는 다음 마디부터 적용한다', () => {
+    const sigs = [
+      { ticks: 0, numerator: 4, denominator: 4 },
+      { ticks: 32 * G, numerator: 3, denominator: 4 },
+    ]
+    const g = buildMeasureGrid(sigs, PPQ, 56)
+    expect(g.measures.map((m) => `${m.numerator}/${m.denominator}`)).toEqual(['4/4', '4/4', '3/4', '3/4'])
+    expect(g.measures[2].startStep).toBe(32)
+  })
+
+  it('지원하지 않는 박자표는 4/4로 처리하고 경고한다', () => {
+    const g = buildMeasureGrid([{ ticks: 0, numerator: 3, denominator: 32 }], PPQ, 16)
+    expect(g.measures[0]).toMatchObject({ numerator: 4, denominator: 4, length: 16 })
+    expect(g.warnings.length).toBe(1)
+  })
+})
