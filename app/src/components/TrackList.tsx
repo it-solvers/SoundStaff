@@ -2,7 +2,10 @@ import { formatBytes, formatDuration, formatPitch, summarize } from '../midi/for
 import type { MidiFileInfo, TrackInfo } from '../midi/types'
 import { t } from '../text/ko'
 
-function FromFileBadge({ fromFile }: { fromFile: boolean }) {
+function FromFileBadge({ fromFile, audio }: { fromFile: boolean; audio: boolean }) {
+  // 음원 분석 결과의 템포·박자·조성은 모두 추정값이다
+  if (audio)
+    return <span className="ml-1 rounded bg-sky-900/60 px-1.5 py-0.5 text-xs text-sky-200">{t.audio.estimated}</span>
   return fromFile ? null : (
     <span className="ml-1 rounded bg-amber-900/50 px-1.5 py-0.5 text-xs text-amber-200">{t.files.notInFile}</span>
   )
@@ -21,6 +24,7 @@ function kindLabel(tr: TrackInfo) {
 /** 파일 하나에서 읽은 정보: 템포·박자·조성, 트랙 목록 */
 export default function TrackList({ info }: { info: MidiFileInfo }) {
   const s = summarize(info)
+  const isAudio = info.source === 'audio' && !!info.audio
   const drumCount = info.tracks.filter((tr) => tr.kind === 'drum').length
   const c = t.files.columns
 
@@ -29,30 +33,53 @@ export default function TrackList({ info }: { info: MidiFileInfo }) {
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="break-all text-base font-semibold">{info.fileName}</h3>
         <p className="text-xs text-slate-400">
-          {t.files.meta(formatBytes(info.size), formatDuration(info.durationSec), info.ppq)}
+          {isAudio
+            ? t.files.metaAudio(formatBytes(info.size), formatDuration(info.durationSec))
+            : t.files.meta(formatBytes(info.size), formatDuration(info.durationSec), info.ppq)}
         </p>
       </header>
+
+      {isAudio && info.audio && (
+        <div
+          className="mt-3 space-y-1 rounded-lg bg-amber-900/40 px-3 py-2 text-sm text-amber-200"
+          data-testid="audio-banner"
+        >
+          <p className="font-medium">
+            {t.audio.warning} {t.audio.warningMore}
+          </p>
+          <p data-testid="audio-summary">
+            {t.audio.summary(
+              info.audio.detectedCount,
+              info.audio.notes.length,
+              info.audio.backend,
+              Math.round(info.audio.elapsedMs / 1000),
+            )}
+          </p>
+          <p data-testid="audio-vocal-hint">{t.audio.vocalHint}</p>
+          <p>{t.audio.guessed}</p>
+        </div>
+      )}
 
       <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
         <div className="rounded-lg bg-slate-800/60 px-3 py-2">
           <dt className="text-xs text-slate-400">{t.files.tempo}</dt>
           <dd data-testid="tempo">
             {s.tempo.text}
-            <FromFileBadge fromFile={s.tempo.fromFile} />
+            <FromFileBadge fromFile={s.tempo.fromFile} audio={isAudio} />
           </dd>
         </div>
         <div className="rounded-lg bg-slate-800/60 px-3 py-2">
           <dt className="text-xs text-slate-400">{t.files.timeSignature}</dt>
           <dd data-testid="timesig">
             {s.timeSignature.text}
-            <FromFileBadge fromFile={s.timeSignature.fromFile} />
+            <FromFileBadge fromFile={s.timeSignature.fromFile} audio={isAudio} />
           </dd>
         </div>
         <div className="rounded-lg bg-slate-800/60 px-3 py-2">
           <dt className="text-xs text-slate-400">{t.files.key}</dt>
           <dd data-testid="key">
             {s.key.text}
-            <FromFileBadge fromFile={s.key.fromFile} />
+            <FromFileBadge fromFile={s.key.fromFile} audio={isAudio} />
           </dd>
         </div>
       </dl>

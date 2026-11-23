@@ -1,7 +1,7 @@
 {
   "name": "soundstaff",
   "private": true,
-  "version": "1.1.2",
+  "version": "1.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,7 +14,9 @@
     "check": "tsc -b && oxlint && vitest run"
   },
   "dependencies": {
+    "@spotify/basic-pitch": "^1.0.1",
     "@tailwindcss/vite": "^4.3.5",
+    "@tensorflow/tfjs": "^3.21.0",
     "@tonejs/midi": "^2.0.28",
     "fflate": "^0.8.3",
     "jspdf": "^4.2.1",

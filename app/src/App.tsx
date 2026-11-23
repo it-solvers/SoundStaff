@@ -1,4 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AnalysisCancelled, analyzeAudioFile } from './audio/analyze'
+import { isPhoneOrTablet, readDeviceEnv } from './audio/device'
+import { kindOfFile } from './audio/format'
+import AnalysisProgress, { type AnalysisState } from './components/AnalysisProgress'
+import AudioUpload from './components/AudioUpload'
 import ChangeLog from './components/ChangeLog'
 import Notices from './components/Notices'
 import StepBar from './components/StepBar'
@@ -25,15 +30,20 @@ interface FailedFile {
   error: string
 }
 
-/** 출력 단위에 따라 악보를 만들 단위를 정한다: 합쳐서 하나 / 파일마다 하나 */
+/**
+ * 출력 단위에 따라 악보를 만들 단위를 정한다: 합쳐서 하나 / 파일마다 하나.
+ * 음원 분석 결과는 MIDI와 템포·박자 기준이 달라 합치지 않고 항상 파일마다 따로 만든다.
+ */
 function deriveItems(files: MidiFileInfo[], unit: OutputUnit): OutputItem[] {
-  if (!files.length) return []
-  if (unit === 'merged') {
-    const m = mergeFiles(files)
-    const label = files.length > 1 ? `${baseName(files[0].fileName)} 외 ${files.length - 1}개` : files[0].fileName
-    return [{ id: 'merged', label, info: m.info, warnings: m.warnings }]
+  const midi = files.filter((f) => f.source !== 'audio')
+  const audio = files.filter((f) => f.source === 'audio')
+  const audioItems: OutputItem[] = audio.map((f) => ({ id: f.id, label: f.fileName, info: f, warnings: [] }))
+  if (unit === 'merged' && midi.length) {
+    const m = mergeFiles(midi)
+    const label = midi.length > 1 ? `${baseName(midi[0].fileName)} 외 ${midi.length - 1}개` : midi[0].fileName
+    return [{ id: 'merged', label, info: m.info, warnings: m.warnings }, ...audioItems]
   }
-  return files.map((f) => ({ id: f.id, label: f.fileName, info: f, warnings: [] }))
+  return [...midi.map((f) => ({ id: f.id, label: f.fileName, info: f, warnings: [] as string[] })), ...audioItems]
 }
 
 function buildState(item: OutputItem, override: SettingsOverride, mode: ConvertMode): ScoreState {
@@ -57,6 +67,16 @@ export default function App() {
   const [overrides, setOverrides] = useState<Record<string, SettingsOverride>>({})
   const [results, setResults] = useState<Record<string, ScoreState>>({})
   const [selectedId, setSelectedId] = useState('')
+  const [phone, setPhone] = useState(() => isPhoneOrTablet(readDeviceEnv()))
+  const [analysis, setAnalysis] = useState<AnalysisState | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
+
+  // 화면 크기가 바뀌면 폰·태블릿 판별을 다시 한다 (기획서 6.1장)
+  useEffect(() => {
+    const onResize = () => setPhone(isPhoneOrTablet(readDeviceEnv()))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   const items = useMemo(() => deriveItems(files, unit), [files, unit])
 
@@ -68,10 +88,48 @@ export default function App() {
     setResults({})
     setOverrides({})
     setTouched(false)
+    const audio = picked.filter((f) => kindOfFile(f.name) === 'audio')
+    const others = picked.filter((f) => kindOfFile(f.name) !== 'audio')
+    const problems: FailedFile[] = []
     try {
-      const read = await Promise.all(picked.map(readMidiFile))
+      const read = await Promise.all(others.map(readMidiFile))
       setFiles(read.flatMap((r) => (r.ok ? [r.info] : [])))
-      setFailed(read.flatMap((r) => (r.ok ? [] : [{ fileName: r.fileName, error: r.error }])))
+      problems.push(...read.flatMap((r) => (r.ok ? [] : [{ fileName: r.fileName, error: r.error }])))
+      setFailed([...problems])
+
+      // 음원은 PC에서만 분석한다. 폰·태블릿에서는 안내만 한다 (기획서 6.1장)
+      if (phone) {
+        problems.push(...audio.map((f) => ({ fileName: f.name.normalize('NFC'), error: t.errors.phoneAudio })))
+        setFailed([...problems])
+      } else {
+        for (const file of audio) {
+          const ctrl = new AbortController()
+          abortRef.current = ctrl
+          setAnalysis({ fileName: file.name.normalize('NFC'), stage: 'decode' })
+          try {
+            const info = await analyzeAudioFile(
+              file,
+              (stage, percent) => setAnalysis({ fileName: file.name.normalize('NFC'), stage, percent }),
+              ctrl.signal,
+            )
+            setFiles((prev) => [...prev, info])
+            // 분석이 끝나면 바로 주 멜로디 악보를 만들어 하단에 보여 준다 (기획서 5장 7번)
+            const item: OutputItem = { id: info.id, label: info.fileName, info, warnings: [] }
+            setResults((prev) => ({ ...prev, [info.id]: buildState(item, {}, mode) }))
+            setSelectedId(info.id)
+          } catch (e) {
+            if (e instanceof AnalysisCancelled) {
+              problems.push({ fileName: file.name.normalize('NFC'), error: t.audio.cancelled })
+              setFailed([...problems])
+              break
+            }
+            problems.push({ fileName: file.name.normalize('NFC'), error: reportError(e) })
+            setFailed([...problems])
+          }
+        }
+        setAnalysis(null)
+        abortRef.current = null
+      }
     } catch (e) {
       setFailed([{ fileName: '', error: reportError(e) }])
     } finally {
@@ -141,6 +199,8 @@ export default function App() {
         info: item.info,
         settings,
         result: r.result,
+        // 음원 분석 결과에는 "주 멜로디만" 안내를 미리보기 위에도 보여 준다 (기획서 8.5장 8번)
+        note: item.info.source === 'audio' ? [t.audio.warning, t.audio.warningMore] : undefined,
       },
     ]
   })
@@ -149,15 +209,20 @@ export default function App() {
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-4xl font-semibold tracking-tight">
           {t.appName}{' '}
-          <span className="text-lg font-normal text-slate-400" data-testid="app-version">
+          <span className="text-[27px] font-normal text-slate-400" data-testid="app-version">
             ({APP_VERSION})
           </span>
         </h1>
         <p className="mt-1 text-sm text-slate-300" data-testid="tagline">
-          {t.tagline}
+          {phone ? t.taglineMidiOnly : t.tagline}
         </p>
+        {!phone && (
+          <p className="mt-1 text-xs text-slate-400" data-testid="tagline-note">
+            {t.taglineNote}
+          </p>
+        )}
       </header>
 
       {!unsupported && <StepBar current={step} />}
@@ -175,7 +240,9 @@ export default function App() {
       ) : (
         <>
           <UsageGuide current={step} />
-          <UploadZone disabled={loading} onFiles={handleFiles} />
+          <UploadZone disabled={loading} phone={phone} onFiles={handleFiles} />
+          <AudioUpload phone={phone} disabled={loading} onFiles={handleFiles} />
+          {analysis && <AnalysisProgress state={analysis} onCancel={() => abortRef.current?.abort()} />}
           {loading && <p className="text-sm text-slate-300">{t.upload.reading}</p>}
 
           {failed.length > 0 && (
@@ -210,7 +277,20 @@ export default function App() {
                 ))}
               </section>
 
-              <OptionsPanel unit={unit} mode={mode} onUnit={changeUnit} onMode={changeMode} />
+              {/* 출력 단위·변환 방식은 MIDI에만 적용한다. 음원 분석 결과는 항상 주 멜로디 한 단이다. */}
+              {files.some((f) => f.source !== 'audio') ? (
+                <OptionsPanel
+                  unit={unit}
+                  mode={mode}
+                  hasAudio={files.some((f) => f.source === 'audio')}
+                  onUnit={changeUnit}
+                  onMode={changeMode}
+                />
+              ) : (
+                <p className="text-xs text-slate-400" data-testid="audio-separate-note">
+                  {t.audio.separateNote}
+                </p>
+              )}
 
               {items.map((item) => (
                 <OutputCard

@@ -1,5 +1,6 @@
 import { Midi } from '@tonejs/midi'
 import type { MidiFileInfo } from '../midi/types'
+import { materializeAudio } from './audioInfo'
 import type { ScoreSettings } from './types'
 
 const OUT_PPQ = 480 // @tonejs/midi로 새로 만드는 파일의 기본 해상도
@@ -15,7 +16,8 @@ const asUtf8Bytes = (s: string) => String.fromCharCode(...new TextEncoder().enco
  * - 드럼 트랙은 제외한다. 남겨 두면 피아노로 통일했는데도 드럼 소리가 나기 때문이다.
  * - 템포·박자·조성은 악보 설정(사용자가 고친 값 포함)을 따른다.
  */
-export function buildPianoMidi(info: MidiFileInfo, settings: ScoreSettings): Uint8Array {
+export function buildPianoMidi(source: MidiFileInfo, settings: ScoreSettings): Uint8Array {
+  const info = materializeAudio(source, settings)
   const ratio = OUT_PPQ / info.ppq
   const m = new Midi()
   for (const t of [...settings.tempos].sort((a, b) => a.ticks - b.ticks)) {

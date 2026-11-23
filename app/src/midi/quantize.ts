@@ -44,6 +44,24 @@ export function quantizeNotes(notes: NoteEvent[], ppq: number): QuantizeResult {
   return { notes: [...byKey.values()].sort((a, b) => a.start - b.start || b.midi - a.midi), offGrid }
 }
 
+/**
+ * 한 줄 선율로 만든다: 칸에 맞춘 뒤에도 겹치는 음이 없게 한다. (음원 분석 결과용, 기획서 12장)
+ * 초 단위로는 겹치지 않던 음도 16분음표 칸으로 반올림하면 같은 칸에 놓이거나 1칸 겹칠 수 있다.
+ * - 같은 칸에서 시작한 음은 더 긴 음(같으면 더 높은 음) 하나만 남긴다.
+ * - 앞 음이 다음 음 시작 뒤까지 이어지면 다음 음이 시작하는 칸에서 끊는다.
+ */
+export function enforceMonophonic(notes: QNote[]): QNote[] {
+  const sorted = [...notes].sort((a, b) => a.start - b.start || b.end - b.start - (a.end - a.start) || b.midi - a.midi)
+  const out: QNote[] = []
+  for (const n of sorted) {
+    const last = out[out.length - 1]
+    if (last && n.start <= last.start) continue
+    if (last && n.start < last.end) last.end = n.start
+    out.push({ ...n })
+  }
+  return out
+}
+
 export interface MeasureSpec {
   startStep: number
   length: number // step 수

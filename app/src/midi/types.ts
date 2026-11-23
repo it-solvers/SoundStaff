@@ -43,7 +43,31 @@ export interface TrackInfo {
   notes: NoteEvent[]
 }
 
+/** 음원 분석으로 찾은 음표 (초 단위). 템포를 바꾸면 박 위치가 달라지므로 악보를 만들 때 환산한다. */
+export interface AudioNote {
+  startSec: number
+  durationSec: number
+  midi: number
+  velocity: number
+}
+
+/** 음원 분석 결과에만 있는 정보. 값은 모두 "추정"이다. */
+export interface AudioSourceInfo {
+  notes: AudioNote[]
+  /** 거르기 전에 AI가 찾은 음표 수 */
+  detectedCount: number
+  /** 추정 확신도 0~1 (확률이 아니라 상대적인 값) */
+  bpmConfidence: number
+  keyConfidence: number
+  /** 연산 백엔드(webgl, cpu)와 걸린 시간 */
+  backend: string
+  elapsedMs: number
+}
+
 export interface MidiFileInfo {
+  /** 음원에서 분석한 결과이면 'audio' (없으면 MIDI 파일) */
+  source?: 'midi' | 'audio'
+  audio?: AudioSourceInfo
   id: string
   fileName: string
   size: number

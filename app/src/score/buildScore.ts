@@ -1,10 +1,11 @@
 import { layoutTrack } from '../midi/measures'
-import { buildMeasureGrid, quantizeNotes, type MeasureGrid, type QNote } from '../midi/quantize'
+import { buildMeasureGrid, enforceMonophonic, quantizeNotes, type MeasureGrid, type QNote } from '../midi/quantize'
 import type { MidiFileInfo, TrackInfo } from '../midi/types'
 import { reduceToPiano } from '../piano/reduce'
 import { t } from '../text/ko'
 import { UserError } from '../utils/errors'
 import { baseName as baseNameOf } from '../utils/fileName'
+import { materializeAudio } from './audioInfo'
 import { applySettings } from './settings'
 import { toMusicXml } from './toMusicXml'
 import type { BuildResult, ConvertMode, PartModel, PartReport, ScoreModel, ScoreSettings } from './types'
@@ -49,7 +50,8 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
     const q = quantizeNotes(t.notes, info.ppq)
     offGrid += q.offGrid
     noteTotal += t.notes.length
-    return { track: t, notes: q.notes }
+    // 음원 분석 결과는 주 멜로디 한 줄이므로, 칸에 맞춘 뒤에도 겹치는 음이 없게 보장한다
+    return { track: t, notes: info.source === 'audio' ? enforceMonophonic(q.notes) : q.notes }
   })
   if (noteTotal > 0 && offGrid / noteTotal > 0.1) {
     warnings.push(t.warnings.offGrid(Math.round((offGrid / noteTotal) * 100)))
@@ -105,7 +107,8 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
       instrumentName: track.instrumentName || 'piano',
       channel: track.channel,
       program: track.instrumentNumber,
-      staves: [{ clef: pickClef(notes), layout: layout.measures }],
+      // 음원 분석 결과(주 멜로디)는 항상 높은음자리표 한 단이다 (기획서 8.5장 7번)
+      staves: [{ clef: info.source === 'audio' ? 'G' : pickClef(notes), layout: layout.measures }],
     })
     partReports.push({
       name: trackName(track),
@@ -175,5 +178,8 @@ export function buildPianoScore(info: MidiFileInfo, settings: ScoreSettings): Bu
 }
 
 export function buildScore(info: MidiFileInfo, settings: ScoreSettings, mode: ConvertMode): BuildResult {
-  return mode === 'piano' ? buildPianoScore(info, settings) : buildInstrumentScore(info, settings)
+  const resolved = materializeAudio(info, settings) // 음원 분석 결과는 지금 템포로 박 위치를 환산
+  // 음원 분석 결과는 주 멜로디 한 줄이라 출력 방식과 상관없이 한 단으로 만든다 (기획서 5장 7번)
+  if (resolved.source === 'audio') return buildInstrumentScore(resolved, settings)
+  return mode === 'piano' ? buildPianoScore(resolved, settings) : buildInstrumentScore(resolved, settings)
 }

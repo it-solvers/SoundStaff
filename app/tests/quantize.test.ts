@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { beatSteps, buildMeasureGrid, gridTicks, measureLength, quantizeNotes } from '../src/midi/quantize'
+import {
+  beatSteps,
+  buildMeasureGrid,
+  enforceMonophonic,
+  gridTicks,
+  measureLength,
+  quantizeNotes,
+} from '../src/midi/quantize'
 import { G, PPQ } from './helpers'
 
 const note = (startStep: number, durSteps: number, midi = 60) => ({
@@ -105,5 +112,39 @@ describe('마디 경계 (buildMeasureGrid)', () => {
     const g = buildMeasureGrid([{ ticks: 0, numerator: 3, denominator: 32 }], PPQ, 16)
     expect(g.measures[0]).toMatchObject({ numerator: 4, denominator: 4, length: 16 })
     expect(g.warnings.length).toBe(1)
+  })
+})
+
+describe('한 줄 선율 보장 (enforceMonophonic)', () => {
+  const q = (start: number, end: number, midi: number, velocity = 0.7) => ({ start, end, midi, velocity })
+  it('같은 칸에서 시작한 음은 더 긴 음 하나만 남긴다', () => {
+    expect(enforceMonophonic([q(0, 1, 72), q(0, 4, 60)])).toEqual([q(0, 4, 60)])
+  })
+  it('길이가 같으면 더 높은 음을 남긴다', () => {
+    expect(enforceMonophonic([q(0, 2, 60), q(0, 2, 67)])).toEqual([q(0, 2, 67)])
+  })
+  it('앞 음이 다음 음 시작 뒤까지 이어지면 다음 음 시작에서 끊는다', () => {
+    expect(enforceMonophonic([q(0, 6, 60), q(4, 8, 62)])).toEqual([q(0, 4, 60), q(4, 8, 62)])
+  })
+  it('이미 한 줄이면 그대로', () => {
+    const line = [q(0, 2, 60), q(2, 4, 62), q(6, 8, 64)]
+    expect(enforceMonophonic(line)).toEqual(line)
+  })
+  it('빈 입력은 빈 결과', () => expect(enforceMonophonic([])).toEqual([]))
+  it('무작위로 겹친 음도 항상 시작 순서이고 겹침이 없으며 길이가 1칸 이상이다', () => {
+    let seed = 5
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+    for (let t = 0; t < 100; t++) {
+      const notes = Array.from({ length: 60 }, () => {
+        const s = Math.floor(rnd() * 80)
+        return q(s, s + 1 + Math.floor(rnd() * 10), 48 + Math.floor(rnd() * 36))
+      })
+      const out = enforceMonophonic(notes)
+      expect(out.length).toBeGreaterThan(0)
+      out.forEach((n, i) => {
+        expect(n.end - n.start).toBeGreaterThanOrEqual(1)
+        if (i > 0) expect(n.start).toBeGreaterThanOrEqual(out[i - 1].end)
+      })
+    }
   })
 })

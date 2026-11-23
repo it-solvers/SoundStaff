@@ -3,10 +3,12 @@ import { t } from '../text/ko'
 
 interface Props {
   disabled?: boolean
+  /** 폰·태블릿이면 MIDI만 받는다 (음원 분석은 PC 전용) */
+  phone?: boolean
   onFiles: (files: File[]) => void
 }
 
-export default function UploadZone({ disabled, onFiles }: Props) {
+export default function UploadZone({ disabled, phone, onFiles }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
 
@@ -42,8 +44,8 @@ export default function UploadZone({ disabled, onFiles }: Props) {
         dragging ? 'border-sky-400 bg-sky-950' : 'border-slate-700 bg-slate-900'
       }`}
     >
-      <p className="text-base font-medium text-slate-100">{t.upload.drop}</p>
-      <p className="mt-1 text-sm text-slate-400">{t.upload.hint}</p>
+      <p className="text-base font-medium text-slate-100">{phone ? t.upload.dropMidiOnly : t.upload.drop}</p>
+      <p className="mt-1 text-sm text-slate-400">{phone ? t.upload.hintMidiOnly : t.upload.hint}</p>
       <button
         type="button"
         disabled={disabled}
@@ -56,7 +58,9 @@ export default function UploadZone({ disabled, onFiles }: Props) {
         ref={inputRef}
         type="file"
         multiple
-        accept=".mid,.midi,audio/midi,audio/x-midi"
+        accept={
+          phone ? '.mid,.midi,audio/midi,audio/x-midi' : '.mid,.midi,audio/midi,audio/x-midi,.mp3,.wav,.m4a,.ogg,.flac'
+        }
         className="hidden"
         data-testid="midi-input"
         onChange={(e) => {

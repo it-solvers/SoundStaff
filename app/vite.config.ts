@@ -24,4 +24,6 @@ function htmlVersion(): Plugin {
 export default defineConfig({
   plugins: [react(), tailwindcss(), htmlVersion()],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  // 음원 분석 작업 스레드(Web Worker)를 모듈 형식으로 묶는다 (AI 라이브러리를 가져오기 위해)
+  worker: { format: 'es' },
 })

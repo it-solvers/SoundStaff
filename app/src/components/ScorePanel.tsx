@@ -18,6 +18,8 @@ export interface PanelItem {
   info: MidiFileInfo
   settings: ScoreSettings
   result: BuildResult
+  /** 이 악보에 대한 안내 문구 (음원 분석 결과의 "주 멜로디만" 안내 등) */
+  note?: string[]
 }
 
 interface Props {
@@ -96,6 +98,11 @@ export default function ScorePanel({ items, selectedId, onSelect, showZip }: Pro
             </button>
           ))}
         </div>
+      )}
+      {item.note && (
+        <p className="mt-3 rounded-lg bg-amber-900/40 px-3 py-2 text-sm text-amber-200" data-testid="panel-note">
+          {item.note.join(' ')}
+        </p>
       )}
       <div className="mt-3">
         <Suspense fallback={<p className="text-sm text-slate-400">{t.panel.drawing}</p>}>

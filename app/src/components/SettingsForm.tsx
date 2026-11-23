@@ -27,6 +27,8 @@ const label = 'block text-xs text-slate-400'
 /** 제목·작곡자·박자·템포·조성 입력 칸. 기본값은 MIDI 파일에서 읽은 값이고, 바꾸면 그 값으로 악보를 다시 만든다. */
 export default function SettingsForm({ info, override, onChange }: Props) {
   const f = fileValues(info)
+  // 음원 분석 결과는 MIDI 값이 아니라 "추정값"이 기본이다
+  const hint = info.source === 'audio' ? t.settings.estimatedValue : t.settings.fromFile
   const [tempoText, setTempoText] = useState(override.tempo?.toString() ?? '')
   const [beatsText, setBeatsText] = useState(override.beats?.toString() ?? '')
   const tempoBad = tempoText.trim() !== '' && !isValidTempo(Number(tempoText))
@@ -48,7 +50,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
             onChange(null)
           }}
         >
-          {t.settings.reset}
+          {info.source === 'audio' ? t.settings.resetEstimated : t.settings.reset}
         </button>
       </div>
 
@@ -93,7 +95,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
               else if (isValidTempo(Number(v))) onChange({ tempo: Number(v) })
             }}
           />
-          <span className="mt-1 block text-xs text-slate-500">{t.settings.fromFile(`${f.tempo} BPM`)}</span>
+          <span className="mt-1 block text-xs text-slate-500">{hint(`${f.tempo} BPM`)}</span>
           {tempoBad && (
             <span className="mt-1 block text-xs text-rose-300" data-testid="tempo-error">
               {t.settings.invalidTempo}
@@ -138,7 +140,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
                 ))}
             </select>
           </div>
-          <span className="mt-1 block text-xs text-slate-500">{t.settings.fromFile(`${f.beats}/${f.beatType}`)}</span>
+          <span className="mt-1 block text-xs text-slate-500">{hint(`${f.beats}/${f.beatType}`)}</span>
           {beatsBad && (
             <span className="mt-1 block text-xs text-rose-300" data-testid="beats-error">
               {t.settings.invalidBeats}
@@ -172,7 +174,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
             </optgroup>
           </select>
           <span className="mt-1 block text-xs text-slate-500">
-            {t.settings.fromFile(
+            {hint(
               f.keyFromFile
                 ? `${keyFileLabel} ${f.key.mode === 'minor' ? t.settings.keyMinor : t.settings.keyMajor}`
                 : t.files.noKey,
