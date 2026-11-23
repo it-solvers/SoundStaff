@@ -1,0 +1,6 @@
+.DS_Store
+node_modules
+dist
+# 저작권이 있는 샘플 자료와 변환 결과물은 올리지 않는다
+data/
+output/
