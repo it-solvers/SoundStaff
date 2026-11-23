@@ -265,3 +265,22 @@ describe('오류 안내 (기획서 11.3장)', () => {
     expect(() => buildPianoScore(onlyDrums, applySettings(onlyDrums))).toThrow('음 높이가 있는 트랙이 없습니다.')
   })
 })
+
+describe('분리형 한글(NFD) 제목 처리', () => {
+  const jamo = (s: string) => Array.from(s).filter((c) => c >= 'ᄀ' && c <= 'ᇿ').length
+  it('입력한 제목·작곡자가 분리형이어도 합쳐진 형태로 쓴다', () => {
+    const s = applySettings(info([melody]), {
+      title: '멀티트랙'.normalize('NFD'),
+      composer: '아이티해결단'.normalize('NFD'),
+    })
+    expect(s.title).toBe('멀티트랙')
+    expect(s.composer).toBe('아이티해결단')
+  })
+
+  it('분리형 파일 이름으로 만든 악보의 제목에 분리된 자모가 없다 (PDF·Finale 제목이 깨지지 않게)', () => {
+    const src = info([melody], { fileName: '01_멀티트랙_드럼_3박자_Eb장조.mid'.normalize('NFC') })
+    const res = buildPianoScore(src, applySettings(src))
+    expect(jamo(res.xml)).toBe(0)
+    expect(res.xml).toContain('<work-title>01_멀티트랙_드럼_3박자_Eb장조</work-title>')
+  })
+})

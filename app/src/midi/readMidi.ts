@@ -35,7 +35,7 @@ export function decodeMidiText(text: string): string {
 }
 
 export async function readMidiFile(file: File): Promise<ReadResult> {
-  const fail = (error: string): ReadResult => ({ ok: false, fileName: file.name, error })
+  const fail = (error: string): ReadResult => ({ ok: false, fileName: file.name.normalize('NFC'), error })
 
   if (!MIDI_EXTENSION.test(file.name)) return fail(t.errors.unsupportedFormat)
   if (file.size === 0) return fail(t.errors.empty)
@@ -55,7 +55,7 @@ export async function readMidiFile(file: File): Promise<ReadResult> {
     const pitches = t.notes.map((n) => n.midi)
     return {
       index,
-      name: decodeMidiText(t.name).trim(),
+      name: decodeMidiText(t.name).normalize('NFC').trim(),
       instrumentName: t.instrument.name,
       instrumentNumber: t.instrument.number,
       channel: t.channel + 1,
@@ -75,7 +75,7 @@ export async function readMidiFile(file: File): Promise<ReadResult> {
   const h = midi.header
   const info: MidiFileInfo = {
     id: `${Date.now()}-${seq++}`,
-    fileName: file.name,
+    fileName: file.name.normalize('NFC'),
     size: file.size,
     ppq: h.ppq,
     durationSec: midi.duration,

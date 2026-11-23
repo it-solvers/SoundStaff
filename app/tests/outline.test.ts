@@ -66,3 +66,18 @@ describe('PDF용 글자 윤곽선 (outlineText)', () => {
     expect(textWidth(font, '멜로디', 80)).toBeCloseTo(textWidth(font, '멜로디', 40) * 2, 1)
   })
 })
+
+describe('분리형 한글(NFD)도 PDF에 그려진다 (맥 파일 이름 문제의 회귀 시험)', () => {
+  const title = '01_멀티트랙_드럼_3박자_Eb장조'
+  it('분리형으로 바꾼 제목에서 글자가 지워지지 않고 합쳐진 형태로 남는다', () => {
+    expect(drawableText(font, title.normalize('NFD'))).toBe(title)
+  })
+
+  it('분리형 제목의 윤곽선이 합쳐진 제목의 윤곽선과 똑같다', () => {
+    expect(textToPathData(font, title.normalize('NFD'), 10, 50, 30)).toBe(textToPathData(font, title, 10, 50, 30))
+  })
+
+  it('분리형 한글이 글꼴에 없다는 사실 자체도 기록해 둔다 (그래서 합치는 처리가 필요)', () => {
+    expect(font.charToGlyphIndex('ᄆ')).toBe(0)
+  })
+})

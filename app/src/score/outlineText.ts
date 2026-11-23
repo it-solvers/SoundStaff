@@ -14,7 +14,8 @@ export function parseOutlineFont(buffer: ArrayBuffer): OutlineFont {
 
 /** 글꼴에 없는 글자는 빈 네모(미지정 글리프)로 그려지지 않도록 뺀다. 공백은 남긴다. */
 export function drawableText(font: OutlineFont, text: string): string {
-  return Array.from(text)
+  // 맥 파일 이름처럼 자음·모음이 분리된 한글(NFD)은 글꼴에 없는 글자라 지워지므로, 먼저 합친 형태(NFC)로 바꾼다
+  return Array.from(text.normalize('NFC'))
     .filter((c) => c === ' ' || font.charToGlyphIndex(c) > 0)
     .join('')
 }

@@ -47,8 +47,8 @@ export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): Sco
     tempos,
     timeSignatures,
     key: o.key ?? f.key,
-    title: o.title?.trim() ? o.title.trim() : f.title,
-    composer: o.composer?.trim() ?? '',
+    title: o.title?.trim() ? o.title.normalize('NFC').trim() : f.title,
+    composer: o.composer?.normalize('NFC').trim() ?? '',
   }
 }
 

@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.1.2',
+    date: '2026-11-24',
+    changes: [
+      '수정: 맥에서 한글 파일 이름이 자음·모음이 분리된 형태로 들어와 PDF 제목의 한글이 사라지고 Finale 제목이 깨지던 문제 (파일 이름·트랙 이름·입력한 제목을 항상 합쳐진 형태로 바꿔 처리)',
+    ],
+  },
+  {
     version: '1.1.1',
     date: '2026-11-24',
     changes: [

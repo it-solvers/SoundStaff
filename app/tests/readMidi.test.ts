@@ -109,3 +109,36 @@ describe('MIDI 텍스트 인코딩 복원 (decodeMidiText)', () => {
     expect(decodeMidiText('')).toBe('')
   })
 })
+
+describe('맥 파일 이름처럼 자음·모음이 분리된 한글(NFD)', () => {
+  const nfd = (s: string) => s.normalize('NFD')
+  const jamo = (s: string) => Array.from(s).filter((c) => c >= 'ᄀ' && c <= 'ᇿ').length
+  const bytes = midiBytes((m) => {
+    const t = m.addTrack()
+    // 트랙 이름도 분리형 한글 (UTF-8 바이트를 글자 코드로 넘기는 방식)
+    t.name = String.fromCharCode(...new TextEncoder().encode(nfd('멜로디')))
+    t.addNote({ midi: 60, ticks: 0, durationTicks: 480 })
+  })
+
+  it('파일 이름을 합쳐진 형태(NFC)로 바꿔서 읽는다', async () => {
+    const name = nfd('01_멀티트랙_드럼_3박자_Eb장조.mid')
+    expect(jamo(name)).toBeGreaterThan(0) // 시험 입력이 정말 분리형인지 확인
+    const r = await readMidiFile(file(bytes, name))
+    if (!r.ok) throw new Error('읽기 실패')
+    expect(r.info.fileName).toBe('01_멀티트랙_드럼_3박자_Eb장조.mid')
+    expect(jamo(r.info.fileName)).toBe(0)
+  })
+
+  it('읽기에 실패한 파일의 이름도 합쳐진 형태로 안내한다', async () => {
+    const r = await readMidiFile(file('x', nfd('한글.txt')))
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.fileName).toBe('한글.txt')
+  })
+
+  it('트랙 이름도 합쳐진 형태로 읽는다', async () => {
+    const r = await readMidiFile(file(bytes, 'a.mid'))
+    if (!r.ok) throw new Error('읽기 실패')
+    expect(r.info.tracks[0].name).toBe('멜로디')
+    expect(jamo(r.info.tracks[0].name)).toBe(0)
+  })
+})
