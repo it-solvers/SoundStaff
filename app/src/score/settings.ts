@@ -12,6 +12,8 @@ export interface SettingsOverride {
   beats?: number
   beatType?: number
   key?: { fifths: number; mode: KeyMode }
+  /** 악기(트랙) 단 순서 (트랙 번호 목록) */
+  trackOrder?: number[]
 }
 
 export const TEMPO_MIN = 20
@@ -49,6 +51,7 @@ export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): Sco
     key: o.key ?? f.key,
     title: o.title?.trim() ? o.title.normalize('NFC').trim() : f.title,
     composer: o.composer?.normalize('NFC').trim() ?? '',
+    trackOrder: o.trackOrder,
   }
 }
 

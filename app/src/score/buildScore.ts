@@ -6,6 +6,7 @@ import { UserError } from '../utils/errors'
 import { baseName as baseNameOf } from '../utils/fileName'
 import { materializeAudio } from './audioInfo'
 import { applySettings } from './settings'
+import { orderBy } from './trackOrder'
 import { toMusicXml } from './toMusicXml'
 import type { BuildResult, PartModel, PartReport, ScoreModel, ScoreSettings } from './types'
 import { validateModel, validateXmlWellFormed } from './validate'
@@ -97,7 +98,8 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
   const parts: PartModel[] = []
   const partReports: PartReport[] = []
 
-  p.tracks.forEach(({ track, notes }, i) => {
+  // 사용자가 정한 순서가 있으면 그 순서로 단을 쌓는다
+  orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes }, i) => {
     const layout = layoutTrack(notes, p.grid.measures)
     warnings.push(...layout.warnings.map((w) => t.warnings.track(trackName(track), w)))
     parts.push({

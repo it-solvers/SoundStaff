@@ -11,6 +11,8 @@ export interface ScoreSettings {
   title: string
   /** 작곡자 (비어 있으면 기록하지 않는다) */
   composer: string
+  /** 악기(트랙) 단을 쌓는 순서: 트랙 번호 목록. 없거나 비어 있으면 원래 순서 */
+  trackOrder?: number[]
 }
 
 /** 보표 하나. 피아노는 한 파트에 보표 2개(오른손 높은음자리표, 왼손 낮은음자리표) */

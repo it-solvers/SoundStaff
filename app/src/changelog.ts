@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.10.0',
+    date: '2026-11-24',
+    changes: [
+      '악보 설정에 [악기 순서] 추가: 여러 파일을 합치거나 여러 악기가 든 MIDI의 악보에서 악기(단)가 쌓이는 순서를 정할 수 있음',
+      '끌어서 옮기기(PC)와 ▲▼ 버튼(폰·키보드), [원래 순서로] 되돌리기. 바꾸면 이미 만든 악보가 새 순서로 다시 만들어지고 재생·PDF·MusicXML도 같은 순서를 따름',
+    ],
+  },
+  {
     version: '1.9.0',
     date: '2026-11-24',
     changes: [

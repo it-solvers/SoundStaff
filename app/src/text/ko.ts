@@ -111,6 +111,17 @@ export const ko = {
     },
   },
 
+  trackOrder: {
+    heading: '악기 순서',
+    hint: '악보에서 위에서 아래로 쌓이는 순서입니다. 끌어서 옮기거나 ▲▼ 버튼을 누르세요. 바꾸면 악보가 다시 만들어집니다.',
+    up: '위로',
+    down: '아래로',
+    reset: '원래 순서로',
+    handle: '끌어서 옮기기',
+    track: '트랙',
+    notes: (n: number) => `${n}음`,
+  },
+
   settings: {
     heading: '악보 설정',
     fromFile: (v: string) => `MIDI 값: ${v}`,
