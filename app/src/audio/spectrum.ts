@@ -9,11 +9,11 @@ export const LOW_MIDI = 28
 export const HIGH_MIDI = 96
 
 /** 그 프레임에서 가장 센 음 대비 이 비율 이상이어야 "실제로 들리는 음"으로 본다 */
-export const AUDIBLE_RATIO = 0.25
+export const AUDIBLE_RATIO = 0.55
 /** 찾은 음이 이 비율에도 못 미치는 프레임이 대부분이면 근거 없는 음이다 */
 export const WEAK_RATIO = 0.08
-/** 빠진 음을 새로 넣으려면 이만큼(프레임 수) 이어서 들려야 한다 (약 0.28초) */
-export const MIN_ADD_FRAMES = 3
+/** 빠진 음을 새로 넣으려면 이만큼(프레임 수) 이어서 들려야 한다 (약 0.74초) */
+export const MIN_ADD_FRAMES = 8
 /** 새로 넣는 음의 세기. 낮게 줘서 주된 음 표시에서 회색(덜 주된 음)이 되게 한다 */
 export const ADDED_VELOCITY = 0.3
 
@@ -132,6 +132,16 @@ export function audiblePitches(s: Salience, f: number, ratio = AUDIBLE_RATIO): S
   return out
 }
 
+/** 보정 조정값. 비워 두면 위의 기본 상수를 쓴다 (정확도 시험에서 값을 바꿔 보려고 열어 둠) */
+export interface RefineTuning {
+  audibleRatio?: number
+  weakRatio?: number
+  minAddFrames?: number
+  addedVelocity?: number
+  /** false면 빠진 음을 새로 넣지 않는다 (근거 없는 음 빼기·늘리기만 한다) */
+  addMissing?: boolean
+}
+
 export interface RefineResult {
   notes: AudioNote[]
   added: number
@@ -151,7 +161,11 @@ export function refineNotes(
   sampleRate: number,
   notes: AudioNote[],
   onProgress?: (fraction: number) => void,
+  tuning: RefineTuning = {},
 ): RefineResult {
+  const weakRatio = tuning.weakRatio ?? WEAK_RATIO
+  const minAddFrames = tuning.minAddFrames ?? MIN_ADD_FRAMES
+  const addedVelocity = tuning.addedVelocity ?? ADDED_VELOCITY
   const s = computeSalience(pcm, sampleRate, onProgress)
   const frames = s.times.length
   if (!frames) return { notes, added: 0, removed: 0, extended: 0 }
@@ -174,7 +188,7 @@ export function refineNotes(
     for (let f = a; f <= b; f++) {
       if (s.max[f] < 1e-4) continue
       total++
-      if (s.mag[f][idx(n.midi)] < s.max[f] * WEAK_RATIO) weak++
+      if (s.mag[f][idx(n.midi)] < s.max[f] * weakRatio) weak++
     }
     if (total > 0 && weak / total > 0.6) removed++
     else kept.push({ ...n })
@@ -187,13 +201,13 @@ export function refineNotes(
     const b = Math.max(a, frameOf(n.startSec + n.durationSec))
     for (let f = a; f <= b; f++) covered[f].set(n.midi, n)
   }
-  const audible = Array.from({ length: frames }, (_, f) => audiblePitches(s, f))
+  const audible = Array.from({ length: frames }, (_, f) => audiblePitches(s, f, tuning.audibleRatio ?? AUDIBLE_RATIO))
   const added: AudioNote[] = []
   for (let m = LOW_MIDI + 1; m < HIGH_MIDI; m++) {
     let start = -1
     let last = -1
     const flush = () => {
-      if (start >= 0 && last - start + 1 >= MIN_ADD_FRAMES) {
+      if (start >= 0 && last - start + 1 >= minAddFrames) {
         const startSec = Math.max(0, s.times[start] - hop / 2)
         const endSec = s.times[last] + hop / 2
         // 이미 찾은 같은 높이의 음 바로 앞뒤에 붙은 조각은 그 음이 번지는 부분이라 새 음 대신 그 음을 늘린다
@@ -207,7 +221,9 @@ export function refineNotes(
             after.durationSec = end - after.startSec
           }
           extended++
-        } else added.push({ startSec, durationSec: endSec - startSec, midi: m, velocity: ADDED_VELOCITY })
+        } else if (tuning.addMissing !== false) {
+          added.push({ startSec, durationSec: endSec - startSec, midi: m, velocity: addedVelocity })
+        }
       }
       start = -1
     }

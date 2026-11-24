@@ -31,7 +31,7 @@ interface Sample {
 const PC: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }
 
 /** 16비트 WAV(모노)를 읽는다 */
-function readWav(path: string): { rate: number; data: Float32Array } {
+export function readWav(path: string): { rate: number; data: Float32Array } {
   const b = readFileSync(path)
   let p = 12
   let rate = 44100
