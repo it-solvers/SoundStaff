@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { t } from '../text/ko'
-import ColabLink, { COLAB_OPENED_EVENT } from './ColabLink'
+import { COLAB_OPENED_EVENT, type ColabOpenedDetail } from '../colabWindow'
+import ColabLink from './ColabLink'
 import { COLAB_URL } from '../config'
 
 interface Props {
@@ -17,14 +18,34 @@ interface Props {
 export default function ColabGuide({ disabled, onMidi }: Props) {
   const [opened, setOpened] = useState(false)
   const [back, setBack] = useState(false)
+  const [popupOpen, setPopupOpen] = useState(false)
   const [dragging, setDragging] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Colab 링크를 누르면 안내판이 "다녀오는 중" 상태가 된다. 작은 창으로 열렸다면 그 창이 닫히는 순간을 지켜본다.
   useEffect(() => {
-    const mark = () => setOpened(true)
+    let timer: ReturnType<typeof setInterval> | undefined
+    const mark = (e: Event) => {
+      setOpened(true)
+      const win = (e as CustomEvent<ColabOpenedDetail>).detail?.win ?? null
+      clearInterval(timer)
+      if (!win) return
+      setPopupOpen(true)
+      setBack(false)
+      timer = setInterval(() => {
+        if (!win.closed) return
+        clearInterval(timer)
+        setPopupOpen(false)
+        setBack(true) // 창을 닫고 돌아왔다: 놓는 상자를 강조하고 화면에 보이게 한다
+        dropRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 500)
+    }
     window.addEventListener(COLAB_OPENED_EVENT, mark)
-    return () => window.removeEventListener(COLAB_OPENED_EVENT, mark)
+    return () => {
+      window.removeEventListener(COLAB_OPENED_EVENT, mark)
+      clearInterval(timer)
+    }
   }, [])
 
   useEffect(() => {
@@ -45,6 +66,7 @@ export default function ColabGuide({ disabled, onMidi }: Props) {
   const take = (list: FileList | null) => {
     if (!list || !list.length || disabled) return
     setBack(false)
+    setPopupOpen(false)
     onMidi(Array.from(list))
   }
   const circle = 'flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs text-white'
@@ -69,6 +91,11 @@ export default function ColabGuide({ disabled, onMidi }: Props) {
           <span className={circle}>3</span>
           <div className="min-w-0 flex-1 space-y-1.5">
             <p>{t.colab.guide.step3}</p>
+            {popupOpen && (
+              <p className="text-xs font-medium text-amber-300" data-testid="colab-waiting">
+                {t.colab.guide.waiting}
+              </p>
+            )}
             <div
               ref={dropRef}
               onDragOver={(e) => {

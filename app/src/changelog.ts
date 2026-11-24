@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.6.1',
+    date: '2026-11-24',
+    changes: [
+      '고품질 변환(Colab)을 새 탭 대신 작은 창(팝업)으로 열어, 이 화면이 옆에 그대로 보이게 함 (팝업이 막히면 새 탭으로 열림)',
+      'Colab 창이 열려 있는 동안 안내를 보여 주고, 창을 닫으면 MIDI 놓는 상자를 자동으로 강조',
+    ],
+  },
+  {
     version: '1.6.0',
     date: '2026-11-24',
     changes: [

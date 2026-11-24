@@ -1,8 +1,6 @@
 import { COLAB_URL } from '../config'
+import { COLAB_OPENED_EVENT, openColabWindow, type ColabOpenedDetail } from '../colabWindow'
 import { t } from '../text/ko'
-
-/** 어느 Colab 링크를 눌러도 안내판이 "Colab에 다녀오는 중"임을 알 수 있게 하는 신호 */
-export const COLAB_OPENED_EVENT = 'soundstaff:colab-opened'
 
 /** [고품질 변환(Colab) 열기] 버튼. 주소가 아직 없으면 비활성 "준비 중"으로 보인다. */
 export default function ColabLink({ url = COLAB_URL, onOpen }: { url?: string; onOpen?: () => void }) {
@@ -15,9 +13,12 @@ export default function ColabLink({ url = COLAB_URL, onOpen }: { url?: string; o
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => {
+          onClick={(e) => {
             onOpen?.()
-            window.dispatchEvent(new Event(COLAB_OPENED_EVENT))
+            // 작은 창(팝업)으로 열어 이 화면이 옆에 그대로 보이게 한다. 팝업이 막히면 링크 기본 동작(새 탭)으로 넘어간다.
+            const win = openColabWindow(url)
+            if (win) e.preventDefault()
+            window.dispatchEvent(new CustomEvent<ColabOpenedDetail>(COLAB_OPENED_EVENT, { detail: { win } }))
           }}
           className={`${base} bg-amber-600 text-white hover:bg-amber-500`}
           data-testid="colab-link"
