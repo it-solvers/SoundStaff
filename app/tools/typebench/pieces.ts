@@ -151,13 +151,24 @@ const LONG: Shape[] = [
   { beats: 1, weight: 2 },
 ]
 
-export function buildPieces(): Piece[] {
-  const slowPiano = melody({ seed: 11, bpm: 80, bars: 12, shapes: SLOW, lo: 60, hi: 79, timbre: 'piano' })
-  const rightHand = melody({ seed: 21, bpm: 90, bars: 12, shapes: SLOW, lo: 64, hi: 81, timbre: 'piano', vel: 0.85 })
-  const stringsLine = melody({ seed: 31, bpm: 70, bars: 10, shapes: LONG, lo: 60, hi: 79, timbre: 'strings', vel: 0.9 })
+/** bpmOverride를 주면 모든 시험곡을 그 템포로 만든다 (템포 추정 시험용) */
+export function buildPieces(bpmOverride?: number): Piece[] {
+  const B = (d: number) => bpmOverride ?? d
+  const slowPiano = melody({ seed: 11, bpm: B(80), bars: 12, shapes: SLOW, lo: 60, hi: 79, timbre: 'piano' })
+  const rightHand = melody({ seed: 21, bpm: B(90), bars: 12, shapes: SLOW, lo: 64, hi: 81, timbre: 'piano', vel: 0.85 })
+  const stringsLine = melody({
+    seed: 31,
+    bpm: B(70),
+    bars: 10,
+    shapes: LONG,
+    lo: 60,
+    hi: 79,
+    timbre: 'strings',
+    vel: 0.9,
+  })
   const ensembleLead = melody({
     seed: 41,
-    bpm: 90,
+    bpm: B(90),
     bars: 12,
     shapes: SLOW,
     lo: 67,
@@ -166,66 +177,66 @@ export function buildPieces(): Piece[] {
     vel: 0.95,
   })
   return [
-    { name: '피아노 단선율 · 느림 (80BPM)', group: '피아노 한 줄', bpm: 80, notes: slowPiano },
+    { name: '피아노 단선율 · 느림 (80BPM)', group: '피아노 한 줄', bpm: B(80), notes: slowPiano },
     {
       name: '피아노 단선율 · 빠름 (140BPM, 16분음표)',
       group: '피아노 한 줄',
-      bpm: 140,
-      notes: melody({ seed: 12, bpm: 140, bars: 12, shapes: FAST, lo: 60, hi: 79, timbre: 'piano' }),
+      bpm: B(140),
+      notes: melody({ seed: 12, bpm: B(140), bars: 12, shapes: FAST, lo: 60, hi: 79, timbre: 'piano' }),
     },
     {
       name: '피아노 단선율 · 높은 음역 (C6~C7)',
       group: '피아노 한 줄',
-      bpm: 80,
-      notes: melody({ seed: 13, bpm: 80, bars: 12, shapes: SLOW, lo: 84, hi: 96, timbre: 'piano' }),
+      bpm: B(80),
+      notes: melody({ seed: 13, bpm: B(80), bars: 12, shapes: SLOW, lo: 84, hi: 96, timbre: 'piano' }),
     },
     {
       name: '피아노 단선율 · 낮은 음역 (C2~C3)',
       group: '피아노 한 줄',
-      bpm: 80,
-      notes: melody({ seed: 14, bpm: 80, bars: 12, shapes: SLOW, lo: 36, hi: 50, timbre: 'piano' }),
+      bpm: B(80),
+      notes: melody({ seed: 14, bpm: B(80), bars: 12, shapes: SLOW, lo: 36, hi: 50, timbre: 'piano' }),
     },
     {
       name: '피아노 단선율 · 쉼표 많음',
       group: '피아노 한 줄',
-      bpm: 90,
-      notes: melody({ seed: 15, bpm: 90, bars: 12, shapes: SLOW, lo: 60, hi: 79, timbre: 'piano', rest: 0.35 }),
+      bpm: B(90),
+      notes: melody({ seed: 15, bpm: B(90), bars: 12, shapes: SLOW, lo: 60, hi: 79, timbre: 'piano', rest: 0.35 }),
     },
     {
       name: '피아노 양손 · 멜로디 + 아르페지오',
       group: '피아노 여러 음',
-      bpm: 90,
-      notes: [...rightHand, ...accompaniment(12, 90, 'arp', 'piano')],
+      bpm: B(90),
+      notes: [...rightHand, ...accompaniment(12, B(90), 'arp', 'piano')],
     },
     {
       name: '피아노 양손 · 멜로디 + 블록 화음',
       group: '피아노 여러 음',
-      bpm: 90,
-      notes: [...rightHand, ...accompaniment(12, 90, 'block', 'piano')],
+      bpm: B(90),
+      notes: [...rightHand, ...accompaniment(12, B(90), 'block', 'piano')],
     },
-    { name: '피아노 4성부 화음 (합창풍)', group: '피아노 여러 음', bpm: 80, notes: choir(10, 80, 'piano', 51) },
+    { name: '피아노 4성부 화음 (합창풍)', group: '피아노 여러 음', bpm: B(80), notes: choir(10, B(80), 'piano', 51) },
     {
       name: '피아노 양손 · 사람 연주 흔들림',
       group: '피아노 여러 음',
-      bpm: 90,
-      notes: humanize([...rightHand, ...accompaniment(12, 90, 'arp', 'piano')], 61),
+      bpm: B(90),
+      notes: humanize([...rightHand, ...accompaniment(12, B(90), 'arp', 'piano')], 61),
     },
-    { name: '현악(합성) 단선율 · 길게 이어짐', group: '악기 소리 달라짐', bpm: 70, notes: stringsLine },
-    { name: '현악(합성) 4성부 화음', group: '악기 소리 달라짐', bpm: 80, notes: choir(10, 80, 'strings', 71) },
+    { name: '현악(합성) 단선율 · 길게 이어짐', group: '악기 소리 달라짐', bpm: B(70), notes: stringsLine },
+    { name: '현악(합성) 4성부 화음', group: '악기 소리 달라짐', bpm: B(80), notes: choir(10, B(80), 'strings', 71) },
     {
       name: '현악 멜로디 + 피아노 반주',
       group: '악기 소리 달라짐',
-      bpm: 90,
-      notes: [...ensembleLead, ...accompaniment(12, 90, 'arp', 'piano')],
+      bpm: B(90),
+      notes: [...ensembleLead, ...accompaniment(12, B(90), 'arp', 'piano')],
     },
     {
       name: '현악 멜로디 + 피아노 반주 + 플루트 대선율',
       group: '악기 소리 달라짐',
-      bpm: 90,
+      bpm: B(90),
       notes: [
         ...ensembleLead,
-        ...accompaniment(12, 90, 'arp', 'piano'),
-        ...melody({ seed: 81, bpm: 90, bars: 12, shapes: LONG, lo: 79, hi: 91, timbre: 'flute', vel: 0.7 }),
+        ...accompaniment(12, B(90), 'arp', 'piano'),
+        ...melody({ seed: 81, bpm: B(90), bars: 12, shapes: LONG, lo: 79, hi: 91, timbre: 'flute', vel: 0.7 }),
       ],
     },
   ]

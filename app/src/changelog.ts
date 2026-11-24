@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.21.2',
+    date: '2026-11-25',
+    changes: [
+      '[음원 분석] 빠른 곡(140~150BPM)의 템포를 절반(70~75)으로 잘못 잡던 경향을 줄임: 같은 박이 두 템포로 해석될 때 고르는 기준(가장 흔한 템포)을 95 → 115BPM으로 올림',
+      '시험: 합성 시험곡 130개(13유형 × 60~150BPM) 템포 정답률 60% → 69%, 실제 곡은 정답(82BPM) 그대로',
+    ],
+  },
+  {
     version: '1.21.1',
     date: '2026-11-25',
     changes: [

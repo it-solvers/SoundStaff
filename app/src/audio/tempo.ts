@@ -90,13 +90,39 @@ function autocorr(env: Float32Array, lagFrames: number): number {
 /**
  * 파형의 온셋 곡선으로 템포를 추정한다 (음표 간격보다 정확했다: 같은 곡에서 파형 방식은 정답, 음표 방식은 1.5배 오답).
  * 1단계: 박 주기와 그 배수 주기의 자기상관 합(하모닉 합)이 가장 큰 템포(50~140 BPM)를 찾는다.
- * 2단계: 옥타브(÷2, ×2) 모호성은 "박 주기 자기상관 × 일반적인 템포 분포(95 BPM 부근)"로 고른다.
+ * 2단계: 옥타브(÷2, ×2) 모호성은 "박 주기 자기상관 × 일반적인 템포 분포(115 BPM 부근)"로 고른다.
  * 같은 박이 두 템포(예: 70과 140)로 해석되는 모호성은 남으므로 화면의 ÷2·×2 입력으로 고칠 수 있다.
  */
-export function estimateBpmFromAudio(pcm: Float32Array, sampleRate: number): Estimate<number> | null {
+export function estimateBpmFromAudio(
+  pcm: Float32Array,
+  sampleRate: number,
+  tuning: TempoTuning = {},
+): Estimate<number> | null {
   if (pcm.length < sampleRate * 4) return null
   const { env, hopSec } = onsetEnvelope(pcm, sampleRate)
+  return estimateBpmFromEnvelope(env, hopSec, tuning)
+}
+
+/** 템포 추정 조정값. 비워 두면 아래 기본 상수를 쓴다 (정확도 시험에서 값을 바꿔 보려고 열어 둠) */
+export interface TempoTuning {
+  /** 가장 흔한 템포(BPM): 옥타브 모호성에서 이 쪽에 가까운 후보를 고른다 */
+  priorCenter?: number
+  /** 위 분포의 폭(옥타브 단위 표준편차) */
+  priorWidth?: number
+}
+
+export const TEMPO_PRIOR_CENTER = 115
+export const TEMPO_PRIOR_WIDTH = 0.6
+
+/** 온셋 곡선에서 템포를 고른다 (estimateBpmFromAudio의 계산 부분. 곡선을 한 번만 만들어 여러 조정값을 시험하려고 나눔) */
+export function estimateBpmFromEnvelope(
+  env: Float32Array,
+  hopSec: number,
+  tuning: TempoTuning = {},
+): Estimate<number> | null {
   if (env.length < 100) return null
+  const center = tuning.priorCenter ?? TEMPO_PRIOR_CENTER
+  const width = tuning.priorWidth ?? TEMPO_PRIOR_WIDTH
 
   const scores: { bpm: number; score: number }[] = []
   for (let bpm = 50; bpm <= 140; bpm += 0.5) {
@@ -108,7 +134,7 @@ export function estimateBpmFromAudio(pcm: Float32Array, sampleRate: number): Est
   const best = scores.reduce((a, c) => (c.score > a.score ? c : a))
   const mean = scores.reduce((a, c) => a + c.score, 0) / scores.length
 
-  const prior = (t: number) => Math.exp(-0.5 * (Math.log2(t / 95) / 0.6) ** 2)
+  const prior = (t: number) => Math.exp(-0.5 * (Math.log2(t / center) / width) ** 2)
   const candidates = [best.bpm / 2, best.bpm, best.bpm * 2].filter((t) => t >= 56 && t <= 150)
   const pick = candidates.reduce(
     (a, t) => {
