@@ -7,7 +7,14 @@ import { buildInstrumentScore } from '../src/score/buildScore'
 import { buildPianoMidi } from '../src/score/exportPianoMidi'
 import { buildZip } from '../src/score/exportZip'
 import { mergeFiles } from '../src/score/mergeFiles'
-import { KEY_OPTIONS, applySettings, fileValues, isValidBeats, isValidTempo } from '../src/score/settings'
+import {
+  KEY_OPTIONS,
+  applySettings,
+  fileValues,
+  isValidBeats,
+  isValidTempo,
+  tempoAlternatives,
+} from '../src/score/settings'
 import { G, info, track } from './helpers'
 
 const melody = track(0, 'Melody', [
@@ -282,5 +289,17 @@ describe('분리형 한글(NFD) 제목 처리', () => {
     const res = buildInstrumentScore(src, applySettings(src))
     expect(jamo(res.xml)).toBe(0)
     expect(res.xml).toContain('<work-title>01_멀티트랙_드럼_3박자_Eb장조</work-title>')
+  })
+})
+
+describe('템포 절반·두 배 후보 (tempoAlternatives)', () => {
+  it('지금 템포의 절반과 두 배를 반올림해서 돌려준다', () => {
+    expect(tempoAlternatives(70)).toEqual({ half: 35, double: 140 })
+    expect(tempoAlternatives(75)).toEqual({ half: 38, double: 150 })
+  })
+  it('허용 범위(20~400)를 벗어나는 쪽은 null이다', () => {
+    expect(tempoAlternatives(30)).toEqual({ half: null, double: 60 })
+    expect(tempoAlternatives(300)).toEqual({ half: 150, double: null })
+    expect(tempoAlternatives(NaN)).toEqual({ half: null, double: null })
   })
 })

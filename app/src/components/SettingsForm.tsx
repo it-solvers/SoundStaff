@@ -9,6 +9,7 @@ import {
   fileValues,
   isValidBeats,
   isValidTempo,
+  tempoAlternatives,
   keyValue,
   type SettingsOverride,
 } from '../score/settings'
@@ -34,6 +35,13 @@ export default function SettingsForm({ info, override, onChange }: Props) {
   const tempoBad = tempoText.trim() !== '' && !isValidTempo(Number(tempoText))
   const beatsBad = beatsText.trim() !== '' && !isValidBeats(Number(beatsText))
   const keyNow = override.key ?? f.key
+  // 음원 분석: 지금 템포(고친 값이 있으면 그 값)의 절반·두 배 후보
+  const tempoNow = override.tempo ?? f.tempo
+  const alt = tempoAlternatives(tempoNow)
+  const setTempo = (v: number) => {
+    setTempoText(String(v))
+    onChange({ tempo: v })
+  }
   const keyFileLabel = f.keyFromFile ? `${prettyTonic(tonicName(f.key.fifths, f.key.mode))}` : ''
 
   return (
@@ -200,6 +208,33 @@ export default function SettingsForm({ info, override, onChange }: Props) {
           {tempoBad && (
             <span className="mt-1 block text-xs text-rose-300" data-testid="tempo-error">
               {t.settings.invalidTempo}
+            </span>
+          )}
+          {info.source === 'audio' && !tempoBad && (
+            <span className="mt-2 block" data-testid="tempo-octave">
+              <span className="block text-xs text-slate-400">{t.settings.tempoOctaveHint}</span>
+              <span className="mt-1 flex flex-wrap gap-2">
+                {alt.half !== null && (
+                  <button
+                    type="button"
+                    className="inline-flex min-h-9 items-center rounded-lg border border-slate-600 bg-slate-800 px-3 text-xs text-slate-100 hover:bg-slate-700"
+                    data-testid="tempo-half"
+                    onClick={() => setTempo(alt.half!)}
+                  >
+                    {t.settings.tempoHalf(alt.half)}
+                  </button>
+                )}
+                {alt.double !== null && (
+                  <button
+                    type="button"
+                    className="inline-flex min-h-9 items-center rounded-lg border border-slate-600 bg-slate-800 px-3 text-xs text-slate-100 hover:bg-slate-700"
+                    data-testid="tempo-double"
+                    onClick={() => setTempo(alt.double!)}
+                  >
+                    {t.settings.tempoDouble(alt.double)}
+                  </button>
+                )}
+              </span>
             </span>
           )}
         </label>

@@ -184,6 +184,10 @@ export const ko = {
     reset: 'MIDI 값으로 되돌리기',
     resetEstimated: '추정값으로 되돌리기',
     invalidTempo: '템포는 20~400 사이 숫자로 입력해 주세요.',
+    tempoOctaveHint:
+      '음원에서는 템포가 절반이나 두 배로 잡히는 일이 있습니다. 음표가 너무 빽빽하거나 성기면 눌러 보세요.',
+    tempoHalf: (bpm: number) => `절반 (${bpm} BPM)`,
+    tempoDouble: (bpm: number) => `두 배 (${bpm} BPM)`,
     invalidBeats: '박자의 윗수는 1~32 사이 정수로 입력해 주세요.',
     changedHint: '값을 바꾸면 악보가 바로 다시 만들어집니다.',
   },

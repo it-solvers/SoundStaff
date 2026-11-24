@@ -84,6 +84,16 @@ export function isValidTempo(n: number): boolean {
   return Number.isFinite(n) && n >= TEMPO_MIN && n <= TEMPO_MAX
 }
 
+/**
+ * 음원 분석은 같은 박을 절반이나 두 배 템포로 잘못 읽는 일이 있다(70↔140). 지금 템포의 절반·두 배 후보를 돌려준다.
+ * 허용 범위(TEMPO_MIN~TEMPO_MAX)를 벗어나는 쪽은 null이다. 소수는 반올림한다.
+ */
+export function tempoAlternatives(bpm: number): { half: number | null; double: number | null } {
+  const ok = (n: number) => (isValidTempo(Math.round(n)) ? Math.round(n) : null)
+  if (!Number.isFinite(bpm)) return { half: null, double: null }
+  return { half: ok(bpm / 2), double: ok(bpm * 2) }
+}
+
 export function isValidBeats(n: number): boolean {
   return Number.isInteger(n) && n >= 1 && n <= 32
 }

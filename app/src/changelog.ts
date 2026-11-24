@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.22.0',
+    date: '2026-11-25',
+    changes: [
+      '[악보 설정] 음원 분석 곡에서 템포 칸 아래에 [절반]·[두 배] 버튼을 추가함. 같은 박이 70/140처럼 두 템포로 읽히는 모호성을 한 번에 고칠 수 있음(누르면 그 템포로 악보를 다시 만듦)',
+    ],
+  },
+  {
     version: '1.21.2',
     date: '2026-11-25',
     changes: [
