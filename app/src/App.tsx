@@ -95,7 +95,7 @@ export default function App() {
   const items = useMemo(() => deriveItems(files, unit), [files, unit])
 
   // 기획서 5장 6번: 다른 파일을 첨부하면 이전 결과를 지우고 다시 읽는다.
-  async function handleFiles(picked: File[]) {
+  async function handleFiles(picked: File[], autoBuild = false) {
     setLoading(true)
     setFiles([])
     setFailed([])
@@ -107,7 +107,17 @@ export default function App() {
     const problems: FailedFile[] = []
     try {
       const read = await Promise.all(others.map(readMidiFile))
-      setFiles(read.flatMap((r) => (r.ok ? [r.info] : [])))
+      const infos = read.flatMap((r) => (r.ok ? [r.info] : []))
+      setFiles(infos)
+      if (autoBuild && infos.length) {
+        // Colab에서 받은 MIDI는 [악보 만들기]를 누르지 않아도 바로 악보까지 만들고, 악보 위치로 이동한다
+        const built: Record<string, ScoreState> = {}
+        const list = deriveItems(infos, unit)
+        for (const item of list) built[item.id] = buildState(item, {}, mode)
+        setResults(built)
+        setSelectedId(list[0]?.id ?? '')
+        scrollToScore()
+      }
       problems.push(...read.flatMap((r) => (r.ok ? [] : [{ fileName: r.fileName, error: r.error }])))
       setFailed([...problems])
 
@@ -149,6 +159,14 @@ export default function App() {
     } finally {
       setLoading(false)
     }
+  }
+
+  /** 악보가 그려질 시간을 조금 준 뒤 악보 영역으로 부드럽게 이동한다 */
+  function scrollToScore() {
+    setTimeout(
+      () => document.querySelector('[data-testid=score-panel]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      400,
+    )
   }
 
   function clearAll() {
@@ -262,7 +280,7 @@ export default function App() {
             <UploadZone disabled={loading} phone={phone} onFiles={handleFiles} />
             <AudioUpload phone={phone} disabled={loading} onFiles={handleFiles} />
           </div>
-          <AudioNotes phone={phone} />
+          <AudioNotes phone={phone} disabled={loading} onMidi={(f) => handleFiles(f, true)} />
           {analysis && <AnalysisProgress state={analysis} onCancel={() => abortRef.current?.abort()} />}
           {loading && <p className="text-sm text-slate-300">{t.upload.reading}</p>}
 

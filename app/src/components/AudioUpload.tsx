@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { AUDIO_EXTENSIONS } from '../audio/format'
 import { t } from '../text/ko'
-import ColabLink from './ColabLink'
+import ColabGuide from './ColabGuide'
 
 interface Props {
   /** 폰·태블릿이면 메뉴를 숨기고 PC 이용 안내만 보여 준다 (기획서 6.1장) */
@@ -74,14 +74,19 @@ export default function AudioUpload({ phone, disabled, onFiles }: Props) {
 }
 
 /** 두 첨부 카드 아래에 한 줄로 보여 주는 음원 안내: 고품질 변환(Colab) 안내와 정확도 경고 (PC 전용) */
-export function AudioNotes({ phone }: { phone: boolean }) {
+export function AudioNotes({
+  phone,
+  disabled,
+  onMidi,
+}: {
+  phone: boolean
+  disabled?: boolean
+  onMidi: (files: File[]) => void
+}) {
   if (phone) return null
   return (
     <div className="mt-4 space-y-3" data-testid="audio-notes">
-      <div className="space-y-1 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-xs text-slate-400">
-        <ColabLink />
-        <p>{t.colab.howTo}</p>
-      </div>
+      <ColabGuide disabled={disabled} onMidi={onMidi} />
       <p className="rounded-lg bg-amber-900/40 px-3 py-2 text-sm text-amber-200" data-testid="audio-warning">
         {t.audio.warning} {t.audio.warningMore}
       </p>

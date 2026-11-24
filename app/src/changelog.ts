@@ -12,6 +12,16 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.5.0',
+    date: '2026-11-24',
+    changes: [
+      '고품질 변환(Colab)을 3단계 안내판으로 정리: ① Colab 열기 → ② 받기 → ③ 이 화면으로 돌아와 MIDI 놓기',
+      'Colab 탭에서 돌아오면 MIDI 놓는 상자가 강조되고 화면에 자동으로 보임',
+      'Colab에서 받은 MIDI를 놓으면 [악보 만들기]를 누르지 않아도 악보가 자동으로 만들어지고 악보 위치로 이동',
+      '음원 분석 결과 안내의 Colab 링크를 눌러도 같은 안내판이 이어서 동작',
+    ],
+  },
+  {
     version: '1.4.1',
     date: '2026-11-24',
     changes: ['화면: 밝은 모드에서 단계 막대와 사용 방법 카드의 숫자가 안 보이던 문제 수정 (어두운 원에는 흰 글씨)'],

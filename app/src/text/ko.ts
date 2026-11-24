@@ -60,6 +60,16 @@ export const ko = {
     question: '더 정확한 반주 제거 분석이 필요하신가요?',
     open: '고품질 변환(Colab) 열기',
     pending: '준비 중',
+    guide: {
+      heading: '더 정확한 변환: 반주를 제거하고 MIDI로 가져오기',
+      step1: '새 탭에서 Colab을 열고, 내 음원을 올려 실행합니다.',
+      step2: '끝나면 MIDI 파일이 내려받아집니다. (이 앱은 그동안 그대로 열어 두세요)',
+      step3: '이 화면으로 돌아와 받은 MIDI 파일을 아래에 놓으면 악보가 자동으로 만들어집니다.',
+      dropTitle: '받은 MIDI 파일을 여기에 놓거나 눌러서 선택',
+      dropBack: 'Colab에서 돌아오셨네요! 받은 MIDI 파일을 여기에 놓아 주세요.',
+      dropHint: 'mid, midi 파일 · 놓으면 바로 악보가 만들어집니다',
+      noUrl: '(노트북 주소가 준비되면 1단계 버튼이 켜집니다. MIDI 파일은 지금도 아래에 놓을 수 있습니다.)',
+    },
     howTo:
       '내 구글 계정의 무료 GPU에서 반주를 제거하고(Demucs) 음표를 찾은(Basic Pitch) 뒤, 받은 MIDI 파일을 이 앱에 첨부하세요. 파일은 이 앱으로 전송되지 않습니다.',
   },
