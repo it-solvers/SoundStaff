@@ -3,7 +3,7 @@ import type { AudioNote, MidiFileInfo, TrackInfo } from '../midi/types'
 import type { AudioMode } from '../score/types'
 import { t } from '../text/ko'
 import type { KeyGuess } from './key'
-import { mergeRepeatedNotes } from './notes'
+import { markMinorNotes, mergeRepeatedNotes } from './notes'
 import type { Estimate } from './types'
 
 export const AUDIO_PPQ = 480
@@ -33,6 +33,7 @@ export function toNoteEvents(notes: AudioNote[], bpm: number) {
     durationTicks: Math.max(1, Math.round(n.durationSec * ticksPerSec)),
     midi: n.midi,
     velocity: n.velocity,
+    minor: n.minor,
   }))
 }
 
@@ -67,10 +68,12 @@ export function audioTracks(
   mode: AudioMode,
   bpm: number,
   merge = true,
+  emphasis = true,
 ): TrackInfo[] {
   if (mode === 'melody') return [makeTrack(0, t.audio.trackName, audio.notes, bpm, { clef: 'G' })]
   const found = audio.allNotes ?? audio.notes
-  const all = merge ? mergeRepeatedNotes(found) : found // 같은 높이로 이어진 음은 하나로 (끄면 AI가 나눈 그대로)
+  const merged = merge ? mergeRepeatedNotes(found) : found // 같은 높이로 이어진 음은 하나로 (끄면 AI가 나눈 그대로)
+  const all = emphasis ? markMinorNotes(merged) : merged // 작고 짧은 음은 덜 주된 음으로 표시 (악보에서 회색)
   const right = all.filter((n) => n.midi >= HAND_SPLIT)
   const left = all.filter((n) => n.midi < HAND_SPLIT)
   const both = right.length > 0 && left.length > 0
@@ -107,7 +110,7 @@ export function audioToInfo(r: AudioResult): MidiFileInfo {
         tonic: tonicName(r.key.value.fifths, r.key.value.mode),
       },
     ],
-    tracks: audioTracks(r, 'full', r.bpm.value, true),
+    tracks: audioTracks(r, 'full', r.bpm.value, true, true),
     audio: {
       notes: r.notes,
       allNotes: r.allNotes ?? r.notes,

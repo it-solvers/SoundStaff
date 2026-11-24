@@ -10,6 +10,8 @@ export interface QNote {
   end: number
   midi: number
   velocity: number
+  /** true면 덜 주된 음 (회색으로 그린다) */
+  minor?: boolean
 }
 
 export interface QuantizeResult {
@@ -39,7 +41,10 @@ export function quantizeNotes(notes: NoteEvent[], ppq: number): QuantizeResult {
     // 같은 시작·같은 높이의 중복 음은 하나로 (더 긴 쪽 유지)
     const key = `${start}:${n.midi}`
     const prev = byKey.get(key)
-    if (!prev || prev.end < end) byKey.set(key, { start, end, midi: n.midi, velocity: n.velocity })
+    // 둘 중 하나라도 주된 음이면 합친 음도 주된 음이다
+    const minor = prev ? !!(prev.minor && n.minor) : !!n.minor
+    if (!prev || prev.end < end) byKey.set(key, { start, end, midi: n.midi, velocity: n.velocity, minor })
+    else prev.minor = minor
   }
   return { notes: [...byKey.values()].sort((a, b) => a.start - b.start || b.midi - a.midi), offGrid }
 }
@@ -153,7 +158,7 @@ export function simplifyToChords(notes: QNote[], maxNotes = MAX_CHORD_NOTES): QN
     }
     const nextStart = i + 1 < starts.length ? starts[i + 1] : Infinity
     const end = Math.max(start + 1, Math.min(nextStart, Math.max(...group.map((n) => n.end))))
-    for (const n of group) out.push({ start, end, midi: n.midi, velocity: n.velocity })
+    for (const n of group) out.push({ start, end, midi: n.midi, velocity: n.velocity, minor: n.minor })
   })
   return out
 }

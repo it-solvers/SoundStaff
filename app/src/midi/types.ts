@@ -25,6 +25,8 @@ export interface NoteEvent {
   durationTicks: number
   midi: number
   velocity: number
+  /** true면 "덜 주된 음"(작고 짧은 음). 악보에서 회색으로 흐리게 그린다 (음원 분석의 주된 음 돋보이기) */
+  minor?: boolean
 }
 
 export type TrackKind = 'pitched' | 'drum' | 'empty'
@@ -53,6 +55,8 @@ export interface AudioNote {
   durationSec: number
   midi: number
   velocity: number
+  /** true면 덜 주된 음 (악보에서 회색) */
+  minor?: boolean
 }
 
 /** 음원 분석 결과에만 있는 정보. 값은 모두 "추정"이다. */

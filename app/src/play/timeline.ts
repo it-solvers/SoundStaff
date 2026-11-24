@@ -73,6 +73,7 @@ export function buildTimeline(model: ScoreModel): Timeline {
   for (const part of model.parts) {
     if (part.muted) continue // 소리를 끈 악기는 재생 목록에 넣지 않는다 (악보에는 그대로 있다)
     part.staves.forEach((staff, si) => {
+      if (staff.muted) return // 소리를 끈 보표 (악보에는 그대로 있다)
       const open = new Map<string, { startStep: number; steps: number; midi: number }>()
       const done: { startStep: number; steps: number; midi: number }[] = []
       staff.layout.forEach((voices, mi) => {

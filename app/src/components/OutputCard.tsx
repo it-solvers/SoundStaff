@@ -35,6 +35,13 @@ export default function OutputCard({ item, override, state, onChange }: Props) {
         excluded={override.excludedTracks}
         muted={override.mutedTracks}
         onChange={onChange}
+        reorder={
+          !(
+            item.info.source === 'audio' &&
+            (override.audioMode ?? 'full') === 'full' &&
+            (override.audioSimplify ?? true)
+          )
+        }
       />
       {state && <ScoreResult state={state} />}
     </section>

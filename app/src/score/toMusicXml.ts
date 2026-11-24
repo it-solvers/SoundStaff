@@ -61,6 +61,9 @@ export function escapeXml(s: string): string {
   return s.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]!)
 }
 
+/** 덜 주된 음(작고 짧은 음)의 색 */
+export const MINOR_COLOR = '#8a8a8a'
+
 function noteXml(
   p: Piece,
   voice: number,
@@ -85,8 +88,10 @@ function noteXml(
     .map((midi, i) => {
       const [step, alter] = names[midi % 12]
       const octave = Math.floor(midi / 12) - 1
+      // 덜 주된 음은 회색으로 (MusicXML note의 color 속성. 악보 미리보기·PDF에서 보인다)
+      const color = p.minor?.includes(midi) ? ` color="${MINOR_COLOR}"` : ''
       return (
-        `<note>${i > 0 ? '<chord/>' : ''}<pitch><step>${step}</step>${alter ? `<alter>${alter}</alter>` : ''}<octave>${octave}</octave></pitch>` +
+        `<note${color}>${i > 0 ? '<chord/>' : ''}<pitch><step>${step}</step>${alter ? `<alter>${alter}</alter>` : ''}<octave>${octave}</octave></pitch>` +
         `<duration>${p.duration}</duration>${ties}<voice>${voice}</voice>${typeXml}${stem}${staffXml}${tied}</note>`
       )
     })

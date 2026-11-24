@@ -1,4 +1,4 @@
-import { layoutTrack, splitIntoLayers } from '../midi/measures'
+import { fitMinorToVoices, layoutTrack, selectMainNotes, splitIntoLayers } from '../midi/measures'
 import {
   buildMeasureGrid,
   enforceMonophonic,
@@ -15,7 +15,7 @@ import { materializeAudio } from './audioInfo'
 import { applySettings } from './settings'
 import { orderBy } from './trackOrder'
 import { toMusicXml } from './toMusicXml'
-import type { BuildResult, PartModel, PartReport, ScoreModel, ScoreSettings } from './types'
+import type { BuildResult, PartModel, PartReport, ScoreModel, ScoreSettings, StaffModel } from './types'
 import { validateModel, validateXmlWellFormed } from './validate'
 
 /** MIDI 파일에서 읽은 값으로 기본 설정을 만든다 (사용자가 바꾼 값이 있으면 applySettings를 쓴다) */
@@ -69,7 +69,16 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
         ? q.notes
         : t.chords
           ? settings.audioSimplify
-            ? simplifyToChords(q.notes)
+            ? settings.audioEmphasis === false
+              ? simplifyToChords(q.notes)
+              : // 주된 음은 길이를 지키고(겹치면 성부로 나눠 적는다) 덜 주된 음(회색)만 한 성부 화음으로 단순화한다: 주된 음이 돋보인다
+                (() => {
+                  const marked = selectMainNotes(q.notes) // 주된 음을 성부 3개 안에 자리 잡아 주고 나머지는 회색으로
+                  return fitMinorToVoices([
+                    ...marked.filter((n) => !n.minor),
+                    ...simplifyToChords(marked.filter((n) => n.minor)),
+                  ])
+                })()
             : q.notes
           : enforceMonophonic(q.notes)
     if (t.chords) trimmed += t.notes.length - notes.length
@@ -130,31 +139,60 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
   const partReports: PartReport[] = []
 
   const muted = new Set(settings.mutedTracks ?? [])
+  // 음원 "들리는 대로" + 읽기 쉽게 정리: 오른손·왼손을 한 파트의 두 보표(피아노 대보표)로 묶는다. 순서는 오른손(높은음자리표) → 왼손(낮은음자리표)로 고정.
+  const grand =
+    info.source === 'audio' &&
+    settings.audioMode !== 'melody' &&
+    !!settings.audioSimplify &&
+    p.tracks.every((x) => x.track.chords)
+  if (grand) {
+    const hands = [...p.tracks].sort((a, b) => a.track.index - b.track.index)
+    const staves: StaffModel[] = []
+    let noteCount = 0
+    let maxVoices = 1
+    for (const { track, notes } of hands) {
+      const layout = layoutTrack(notes, p.grid.measures)
+      warnings.push(...layout.warnings.map((w) => t.warnings.track(trackName(track), w)))
+      staves.push({ clef: track.clef ?? pickClef(notes), layout: layout.measures, muted: muted.has(track.index) })
+      noteCount += track.noteCount
+      maxVoices = Math.max(maxVoices, ...layout.measures.map((vs) => vs.length))
+    }
+    parts.push({
+      id: 'P1',
+      name: t.audio.trackSingle,
+      instrumentName: 'Acoustic Grand Piano',
+      channel: 1,
+      program: 0,
+      staves,
+    })
+    partReports.push({ name: t.audio.trackSingle, noteCount, maxVoices })
+  }
   // 사용자가 정한 순서가 있으면 그 순서로 단을 쌓는다
-  orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes }) => {
-    // 음원 "들리는 대로": 한 단에 4성부가 넘는 음은 줄이지 않고 같은 음자리표의 추가 단("오른손 2" 등)으로 나눈다
-    const layered = info.source === 'audio' && !!track.chords && !settings.audioSimplify
-    const layers = layered ? splitIntoLayers(notes) : [notes]
-    layers.forEach((layerNotes, l) => {
-      const name = l === 0 ? trackName(track) : `${trackName(track)} ${l + 1}`
-      const layout = layoutTrack(layerNotes, p.grid.measures, { legatoTrim: !layered }) // 층은 이미 정리를 마쳤으므로 다시 하지 않는다
-      warnings.push(...layout.warnings.map((w) => t.warnings.track(name, w)))
-      parts.push({
-        id: `P${parts.length + 1}`,
-        name,
-        instrumentName: track.instrumentName || 'piano',
-        channel: track.channel,
-        program: track.instrumentNumber,
-        staves: [{ clef: track.clef ?? pickClef(layerNotes), layout: layout.measures }],
-        muted: muted.has(track.index),
-      })
-      partReports.push({
-        name,
-        noteCount: layers.length > 1 ? layerNotes.length : track.noteCount,
-        maxVoices: Math.max(1, ...layout.measures.map((vs) => vs.length)),
+  if (!grand)
+    orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes }) => {
+      // 음원 "들리는 대로": 한 단에 4성부가 넘는 음은 줄이지 않고 같은 음자리표의 추가 단("오른손 2" 등)으로 나눈다
+      const layered = info.source === 'audio' && !!track.chords && !settings.audioSimplify
+      const layers = layered ? splitIntoLayers(notes) : [notes]
+      layers.forEach((layerNotes, l) => {
+        const name = l === 0 ? trackName(track) : `${trackName(track)} ${l + 1}`
+        const layout = layoutTrack(layerNotes, p.grid.measures, { legatoTrim: !layered }) // 층은 이미 정리를 마쳤으므로 다시 하지 않는다
+        warnings.push(...layout.warnings.map((w) => t.warnings.track(name, w)))
+        parts.push({
+          id: `P${parts.length + 1}`,
+          name,
+          instrumentName: track.instrumentName || 'piano',
+          channel: track.channel,
+          program: track.instrumentNumber,
+          staves: [{ clef: track.clef ?? pickClef(layerNotes), layout: layout.measures }],
+          muted: muted.has(track.index),
+        })
+        partReports.push({
+          name,
+          noteCount: layers.length > 1 ? layerNotes.length : track.noteCount,
+          maxVoices: Math.max(1, ...layout.measures.map((vs) => vs.length)),
+        })
       })
     })
-  })
   if (p.excludedDrums.length) warnings.push(t.warnings.drumsExcluded(p.excludedDrums.length))
 
   const model: ScoreModel = {

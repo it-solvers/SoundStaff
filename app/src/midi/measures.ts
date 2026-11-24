@@ -7,6 +7,8 @@ export interface Piece {
   midis: number[]
   tieStart: boolean
   tieStop: boolean
+  /** 이 조각의 음 중 덜 주된 음(회색)의 높이 */
+  minor?: number[]
 }
 
 export interface VoiceMeasure {
@@ -21,6 +23,8 @@ interface ChordEvent {
   start: number
   end: number
   midis: number[]
+  /** 덜 주된 음(회색)의 높이 */
+  minor?: Set<number>
 }
 
 export const MAX_VOICES = 4
@@ -83,11 +87,18 @@ function toChordEvents(notes: QNote[]): ChordEvent[] {
     const e = map.get(key)
     if (e) e.midis.push(n.midi)
     else map.set(key, { start: n.start, end: n.end, midis: [n.midi] })
+    if (n.minor) {
+      const ev = map.get(key)!
+      ;(ev.minor ??= new Set()).add(n.midi)
+    }
   }
   const events = [...map.values()]
   for (const e of events) e.midis.sort((a, b) => a - b)
-  // 같은 시작이면 높은 음이 먼저 → 1성부(위쪽 선율)에 배정된다
-  return events.sort((a, b) => a.start - b.start || b.midis[b.midis.length - 1] - a.midis[a.midis.length - 1])
+  // 같은 시작이면 주된 음이 먼저, 그다음 높은 음이 먼저 → 1성부(위쪽 줄기)에 배정된다
+  const faint = (e: ChordEvent) => (e.minor && e.minor.size === e.midis.length ? 1 : 0)
+  return events.sort(
+    (a, b) => a.start - b.start || faint(a) - faint(b) || b.midis[b.midis.length - 1] - a.midis[a.midis.length - 1],
+  )
 }
 
 /** 겹치는 음을 성부로 나눈다. 이어 연주(레가토)로 1칸 이하만 겹친 음은 앞 음을 잘라 성부를 늘리지 않는다. */
@@ -126,7 +137,16 @@ function assignVoices(events: ChordEvent[], warnings: string[], legatoTrim: bool
     // 성부 상한 초과: 같은 시작의 화음이 있으면 합치고, 없으면 앞 음을 잘라낸다
     const same = voices.map((v) => v.find((e) => e.start === ev.start)).find(Boolean)
     if (same) {
-      same.midis = [...new Set([...same.midis, ...ev.midis])].sort((a, b) => a - b)
+      const flag = (e: ChordEvent, midi: number) => e.minor?.has(midi)
+      const union = [...new Set([...same.midis, ...ev.midis])].sort((a, b) => a - b)
+      const minorNow = new Set<number>()
+      for (const midi of union) {
+        const a = same.midis.includes(midi) ? !!flag(same, midi) : null
+        const b = ev.midis.includes(midi) ? !!flag(ev, midi) : null
+        if ((a ?? true) && (b ?? true)) minorNow.add(midi) // 둘 다 덜 주된 음일 때만 흐리게 (한쪽에만 있으면 그쪽 표시를 따른다)
+      }
+      same.midis = union
+      same.minor = minorNow
       merged++
     } else {
       const v = voices.reduce((best, cur) => (cur[cur.length - 1].end < best[best.length - 1].end ? cur : best))
@@ -144,7 +164,7 @@ function assignVoices(events: ChordEvent[], warnings: string[], legatoTrim: bool
 
 /** 성부 하나의 음·쉼표 시간선을 마디별 표기 조각(붙임줄 포함)으로 만든다 */
 function layoutVoice(events: ChordEvent[], grid: MeasureSpec[]): Piece[][] {
-  type Seg = { start: number; end: number; midis: number[] }
+  type Seg = { start: number; end: number; midis: number[]; minor?: Set<number> }
   const segs: Seg[] = []
   const total = grid[grid.length - 1].startStep + grid[grid.length - 1].length
   let cursor = 0
@@ -153,7 +173,7 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[]): Piece[][] {
     if (e.start >= total) continue
     const end = Math.min(e.end, total)
     if (e.start > cursor) segs.push({ start: cursor, end: e.start, midis: [] })
-    segs.push({ start: e.start, end, midis: e.midis })
+    segs.push({ start: e.start, end, midis: e.midis, minor: e.minor })
     cursor = end
   }
   if (cursor < total) segs.push({ start: cursor, end: total, midis: [] })
@@ -188,6 +208,7 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[]): Piece[][] {
         midis: seg.midis,
         tieStart: isNote && i < pieces.length - 1,
         tieStop: isNote && i > 0,
+        minor: seg.minor && seg.minor.size ? seg.midis.filter((x) => seg.minor!.has(x)) : undefined,
       })
     })
   }
@@ -245,9 +266,75 @@ export function splitIntoLayers(notes: QNote[], maxVoices = MAX_VOICES): QNote[]
   for (let i = 0; i < voices.length; i += maxVoices) {
     const layer: QNote[] = []
     for (const v of voices.slice(i, i + maxVoices)) {
-      for (const e of v) for (const midi of e.midis) layer.push({ start: e.start, end: e.end, midi, velocity: 0.7 })
+      for (const e of v)
+        for (const midi of e.midis)
+          layer.push({ start: e.start, end: e.end, midi, velocity: 0.7, minor: e.minor?.has(midi) })
     }
     layers.push(layer)
   }
   return layers
+}
+
+/**
+ * 성부 자리(maxVoices)가 모자랄 때 덜 주된 음(회색)을 먼저 뺀다. 주된 음은 하나도 건드리지 않는다.
+ * ① 주된 음만 먼저 성부에 배치하고 ② 남는 자리나 빈틈에 회색 음을 채우되, 들어갈 자리가 없는 회색 음은 뺀다.
+ * 그러면 레이아웃(layoutTrack)이 성부 초과를 합치거나 길이를 줄이는 방식으로 주된 음을 다치게 하는 일이 없다.
+ * (주된 음만으로도 성부가 maxVoices를 넘으면 그 초과는 레이아웃의 기존 처리에 맡긴다.)
+ */
+export function fitMinorToVoices(notes: QNote[], maxVoices = MAX_VOICES): QNote[] {
+  const events = toChordEvents(notes)
+  const isFaint = (e: ChordEvent) => !!e.minor && e.minor.size === e.midis.length
+  const main = events.filter((e) => !isFaint(e))
+  const faint = events.filter(isFaint)
+  const voices: ChordEvent[][] = []
+  const fits = (v: ChordEvent[], e: ChordEvent) => v.every((x) => x.end <= e.start || e.end <= x.start)
+  for (const e of main) {
+    const v = voices.find((x) => fits(x, e))
+    if (v) v.push(e)
+    else voices.push([e])
+  }
+  const dropped = new Set<ChordEvent>()
+  for (const e of faint) {
+    const v = voices.find((x) => fits(x, e))
+    if (v) v.push(e)
+    else if (voices.length < maxVoices) voices.push([e])
+    else dropped.add(e)
+  }
+  if (!dropped.size) return notes
+  const gone = new Set<string>()
+  for (const e of dropped) for (const midi of e.midis) gone.add(`${e.start}:${e.end}:${midi}`)
+  return notes.filter((n) => !gone.has(`${n.start}:${n.end}:${n.midi}`))
+}
+
+/** 주된 음에 허용하는 성부 수. 나머지 1성부는 덜 주된 음(회색)을 단순화해 넣는 데 쓴다 (한 보표 최대 4성부). */
+export const MAIN_VOICES = MAX_VOICES - 1
+
+/**
+ * 주된 음을 성부 자리에 맞춰 고른다 (음원 "주된 음 돋보이게").
+ * 이미 덜 주된 음(minor)으로 표시된 음은 그대로 두고, 나머지 음을 중요도(세기 × √길이) 순서로 maxVoices개 성부 안에 자리를 잡아 준다.
+ * 같은 시작·끝의 음은 한 화음으로 같은 자리를 쓴다. 자리가 없는 음은 덜 주된 음(minor)으로 돌려, 주된 음은 잘리거나 합쳐지지 않게 한다.
+ * 결과의 주된 음만으로는 항상 maxVoices개 이하의 성부로 적힌다. 음은 지우지 않고 표시만 바꾼다.
+ */
+export function selectMainNotes(notes: QNote[], maxVoices = MAIN_VOICES): QNote[] {
+  const strength = (n: QNote) => n.velocity * Math.sqrt(Math.max(1, n.end - n.start))
+  const order = notes
+    .map((n, i) => ({ n, i }))
+    .filter((x) => !x.n.minor)
+    .sort((a, b) => strength(b.n) - strength(a.n) || a.n.start - b.n.start || a.i - b.i)
+  const voices: { start: number; end: number }[][] = []
+  const slotOfChord = new Map<string, number>()
+  const demoted = new Set<number>()
+  for (const { n, i } of order) {
+    const key = `${n.start}:${n.end}`
+    if (slotOfChord.has(key)) continue // 이미 자리를 잡은 화음에 합류
+    const v = voices.findIndex((list) => list.every((x) => x.end <= n.start || n.end <= x.start))
+    if (v >= 0) {
+      voices[v].push({ start: n.start, end: n.end })
+      slotOfChord.set(key, v)
+    } else if (voices.length < maxVoices) {
+      voices.push([{ start: n.start, end: n.end }])
+      slotOfChord.set(key, voices.length - 1)
+    } else demoted.add(i)
+  }
+  return notes.map((n, i) => (demoted.has(i) ? { ...n, minor: true } : n))
 }

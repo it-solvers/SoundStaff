@@ -18,6 +18,8 @@ interface Props {
   /** 재생할 때 소리를 끈 악기 */
   muted?: number[]
   onChange: (patch: TrackPatch) => void
+  /** false면 순서를 바꾸지 못한다 (피아노 대보표: 오른손이 위, 왼손이 아래로 고정) */
+  reorder?: boolean
 }
 
 /** 소리 켜짐: 스피커 + 소리 물결 / 꺼짐: 스피커 + ✕ (이모지는 작고 흐릿해서 구분이 어려워 그림으로 직접 그린다) */
@@ -58,7 +60,7 @@ const hoverMuted = 'hover:bg-amber-900'
  * 악기(트랙)별 설정: 악보에서 쌓이는 순서(끌어서 옮기기·▲▼), 재생할 때 소리 끄기(스피커 버튼), 악보에서 빼기(✕).
  * 바꾸면 이미 만든 악보가 새 설정으로 다시 만들어진다. 빼기는 [다시 넣기]로 되돌린다.
  */
-export default function TrackOrder({ info, order, excluded, muted, onChange }: Props) {
+export default function TrackOrder({ info, order, excluded, muted, onChange, reorder = true }: Props) {
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const tracks = info.tracks.filter((tr) => tr.kind === 'pitched')
@@ -116,7 +118,7 @@ export default function TrackOrder({ info, order, excluded, muted, onChange }: P
           </button>
         )}
       </div>
-      <p className="mt-1 text-xs text-slate-400">{t.trackOrder.hint}</p>
+      <p className="mt-1 text-xs text-slate-400">{reorder ? t.trackOrder.hint : t.trackOrder.hintFixed}</p>
       <ol className="mt-2 space-y-1.5">
         {active.map((tr, i) => {
           const isMuted = mutedSet.has(tr.index)
@@ -124,7 +126,7 @@ export default function TrackOrder({ info, order, excluded, muted, onChange }: P
           return (
             <li
               key={tr.index}
-              draggable
+              draggable={reorder}
               onDragStart={(e) => {
                 setDragFrom(i)
                 e.dataTransfer.effectAllowed = 'move'
@@ -156,15 +158,19 @@ export default function TrackOrder({ info, order, excluded, muted, onChange }: P
               data-muted={isMuted ? 'true' : 'false'}
             >
               <div className="flex min-w-0 flex-1 basis-48 items-center gap-2">
-                <span
-                  className="cursor-grab select-none px-1 text-slate-400"
-                  aria-hidden="true"
-                  title={t.trackOrder.handle}
-                  data-testid="track-order-handle"
-                >
-                  ⠿
-                </span>
-                <span className="w-5 shrink-0 text-center text-xs tabular-nums text-slate-400">{i + 1}</span>
+                {reorder && (
+                  <span
+                    className="cursor-grab select-none px-1 text-slate-400"
+                    aria-hidden="true"
+                    title={t.trackOrder.handle}
+                    data-testid="track-order-handle"
+                  >
+                    ⠿
+                  </span>
+                )}
+                {reorder && (
+                  <span className="w-5 shrink-0 text-center text-xs tabular-nums text-slate-400">{i + 1}</span>
+                )}
                 <span className="min-w-0 flex-1 break-all">
                   <span className={isMuted ? 'text-slate-400 line-through decoration-1' : ''}>
                     {label(tr)} <span className="text-xs text-slate-400">· {t.trackOrder.notes(tr.noteCount)}</span>
@@ -188,26 +194,30 @@ export default function TrackOrder({ info, order, excluded, muted, onChange }: P
                 >
                   <SpeakerIcon on={!isMuted} />
                 </button>
-                <button
-                  type="button"
-                  className={`${btn} ${hoverNormal}`}
-                  disabled={i === 0}
-                  aria-label={`${label(tr)} ${t.trackOrder.up}`}
-                  onClick={() => move(i, i - 1)}
-                  data-testid={`track-up-${tr.index}`}
-                >
-                  ▲
-                </button>
-                <button
-                  type="button"
-                  className={`${btn} ${hoverNormal}`}
-                  disabled={i === active.length - 1}
-                  aria-label={`${label(tr)} ${t.trackOrder.down}`}
-                  onClick={() => move(i, i + 1)}
-                  data-testid={`track-down-${tr.index}`}
-                >
-                  ▼
-                </button>
+                {reorder && (
+                  <button
+                    type="button"
+                    className={`${btn} ${hoverNormal}`}
+                    disabled={i === 0}
+                    aria-label={`${label(tr)} ${t.trackOrder.up}`}
+                    onClick={() => move(i, i - 1)}
+                    data-testid={`track-up-${tr.index}`}
+                  >
+                    ▲
+                  </button>
+                )}
+                {reorder && (
+                  <button
+                    type="button"
+                    className={`${btn} ${hoverNormal}`}
+                    disabled={i === active.length - 1}
+                    aria-label={`${label(tr)} ${t.trackOrder.down}`}
+                    onClick={() => move(i, i + 1)}
+                    data-testid={`track-down-${tr.index}`}
+                  >
+                    ▼
+                  </button>
+                )}
                 <button
                   type="button"
                   className={`${btn} ${hoverNormal}`}
