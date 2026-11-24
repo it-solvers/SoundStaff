@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.14.1',
+    date: '2026-11-24',
+    changes: [
+      '악기별 소리 끄기 버튼의 이모지를 직접 그린 스피커 그림으로 교체: 켜짐은 스피커 + 소리 물결, 꺼짐은 스피커 + ✕ (꺼짐은 주황색)',
+    ],
+  },
+  {
     version: '1.14.0',
     date: '2026-11-24',
     changes: [

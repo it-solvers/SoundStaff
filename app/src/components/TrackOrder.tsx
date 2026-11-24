@@ -20,12 +20,42 @@ interface Props {
   onChange: (patch: TrackPatch) => void
 }
 
+/** 소리 켜짐: 스피커 + 소리 물결 / 꺼짐: 스피커 + ✕ (이모지는 작고 흐릿해서 구분이 어려워 그림으로 직접 그린다) */
+function SpeakerIcon({ on }: { on: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      data-testid={on ? 'icon-sound-on' : 'icon-sound-off'}
+    >
+      <path d="M3 9v6h4l5 4V5L7 9H3z" fill="currentColor" stroke="none" />
+      {on ? (
+        <>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+          <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+        </>
+      ) : (
+        <path d="M16 9l6 6M22 9l-6 6" />
+      )}
+    </svg>
+  )
+}
+
 const label = (tr: TrackInfo) => tr.name || tr.instrumentName || `${t.trackOrder.track} ${tr.index + 1}`
 const btn =
-  'inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-slate-200 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent'
+  'inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-slate-200 disabled:opacity-30'
+// 마우스를 올렸을 때 배경: 반투명 회색이라 어두운·밝은 화면 모두에서 글자가 보인다 (slate-700 같은 진한 색은 밝은 화면에서 글자와 같은 색이 된다)
+const hoverNormal = 'hover:bg-slate-500/20 disabled:hover:bg-transparent'
+const hoverMuted = 'hover:bg-amber-900'
 
 /**
- * 악기(트랙)별 설정: 악보에서 쌓이는 순서(끌어서 옮기기·▲▼), 재생할 때 소리 끄기(🔇), 악보에서 빼기(✕).
+ * 악기(트랙)별 설정: 악보에서 쌓이는 순서(끌어서 옮기기·▲▼), 재생할 때 소리 끄기(스피커 버튼), 악보에서 빼기(✕).
  * 바꾸면 이미 만든 악보가 새 설정으로 다시 만들어진다. 빼기는 [다시 넣기]로 되돌린다.
  */
 export default function TrackOrder({ info, order, excluded, muted, onChange }: Props) {
@@ -149,18 +179,18 @@ export default function TrackOrder({ info, order, excluded, muted, onChange }: P
               <div className="ml-auto flex items-center gap-1.5">
                 <button
                   type="button"
-                  className={`${btn} ${isMuted ? 'border-amber-500 bg-amber-950 text-amber-200' : ''}`}
+                  className={`${btn} ${isMuted ? `border-amber-500 bg-amber-950 text-amber-200 ${hoverMuted}` : hoverNormal}`}
                   aria-pressed={isMuted}
                   aria-label={`${label(tr)} ${isMuted ? t.trackOrder.unmute : t.trackOrder.mute}`}
                   title={isMuted ? t.trackOrder.unmute : t.trackOrder.mute}
                   onClick={() => toggleMute(tr.index)}
                   data-testid={`track-mute-${tr.index}`}
                 >
-                  {isMuted ? '🔇' : '🔊'}
+                  <SpeakerIcon on={!isMuted} />
                 </button>
                 <button
                   type="button"
-                  className={btn}
+                  className={`${btn} ${hoverNormal}`}
                   disabled={i === 0}
                   aria-label={`${label(tr)} ${t.trackOrder.up}`}
                   onClick={() => move(i, i - 1)}
@@ -170,7 +200,7 @@ export default function TrackOrder({ info, order, excluded, muted, onChange }: P
                 </button>
                 <button
                   type="button"
-                  className={btn}
+                  className={`${btn} ${hoverNormal}`}
                   disabled={i === active.length - 1}
                   aria-label={`${label(tr)} ${t.trackOrder.down}`}
                   onClick={() => move(i, i + 1)}
@@ -180,7 +210,7 @@ export default function TrackOrder({ info, order, excluded, muted, onChange }: P
                 </button>
                 <button
                   type="button"
-                  className={btn}
+                  className={`${btn} ${hoverNormal}`}
                   disabled={onlyOne}
                   aria-label={`${label(tr)} ${t.trackOrder.remove}`}
                   title={onlyOne ? t.trackOrder.keepOne : t.trackOrder.remove}
@@ -210,7 +240,7 @@ export default function TrackOrder({ info, order, excluded, muted, onChange }: P
                 </span>
                 <button
                   type="button"
-                  className="inline-flex min-h-9 items-center rounded-lg border border-slate-700 px-3 text-xs text-slate-200 hover:bg-slate-700"
+                  className="inline-flex min-h-9 items-center rounded-lg border border-slate-700 px-3 text-xs text-slate-200 hover:bg-slate-500/20"
                   onClick={() => restore(tr.index)}
                   data-testid={`track-restore-${tr.index}`}
                 >

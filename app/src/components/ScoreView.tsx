@@ -238,7 +238,7 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
           type="button"
           onClick={togglePlay}
           disabled={status !== 'ready' || !timeline.notes.length}
-          className="rounded bg-sky-600 px-3 py-1 font-medium text-white hover:bg-sky-500 disabled:opacity-40"
+          className="rounded bg-sky-600 px-3 py-1 font-medium text-white hover:bg-sky-700 disabled:opacity-40"
           data-testid="play-toggle"
           data-state={playState}
         >
