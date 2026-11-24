@@ -3,17 +3,9 @@ import { APP_VERSION } from '../version'
 
 /**
  * 화면 위쪽에 고정되는 얇은 단계 막대. 스크롤을 내려도 지금 어느 단계인지 보인다.
- * 자세한 설명(UsageGuide)은 그대로 두고, 여기서 눌러 펼칠 수 있다.
  */
 export default function StepBar({ current, showTitle }: { current: 1 | 2 | 3 | 4; showTitle: boolean }) {
   const steps = t.guide.steps
-  function openGuide() {
-    const guide = document.querySelector<HTMLDetailsElement>('[data-testid=usage-guide]')
-    if (!guide) return
-    guide.open = true
-    guide.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
   return (
     <nav
       aria-label={t.guide.title}
@@ -63,14 +55,6 @@ export default function StepBar({ current, showTitle }: { current: 1 | 2 | 3 | 4
             )
           })}
         </ol>
-        <button
-          type="button"
-          onClick={openGuide}
-          className="inline-flex min-h-9 shrink-0 items-center px-1 text-xs text-slate-400 underline hover:text-slate-100 sm:text-sm"
-          data-testid="step-bar-open"
-        >
-          {t.guide.openGuide}
-        </button>
       </div>
       <p className="mt-1 truncate text-xs text-slate-300 sm:text-sm" data-testid="step-bar-desc">
         {t.guide.barLabel(current, steps.length, steps[current - 1].title, steps[current - 1].desc)}

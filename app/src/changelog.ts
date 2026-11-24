@@ -12,6 +12,15 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.7.0',
+    date: '2026-11-24',
+    changes: [
+      '고품질 변환(Colab) 기능 제거: 안내판, 열기 버튼, 노트북을 모두 뺌 (사용 절차가 복잡해 일반 사용자에게 맞지 않는다고 판단)',
+      '음원 분석 실패·멜로디 없음 안내와 경고 문구를 원래 문구로 되돌림 (가능하면 MIDI 사용 안내)',
+      '위쪽 고정 단계 막대의 [자세히] 링크 제거',
+    ],
+  },
+  {
     version: '1.6.2',
     date: '2026-11-24',
     changes: [

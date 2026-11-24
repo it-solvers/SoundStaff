@@ -32,7 +32,6 @@ export const ko = {
     ],
     /** 위쪽에 고정되는 단계 막대의 짧은 이름 (steps와 같은 순서) */
     short: ['첨부', '방식', '만들기', '저장', 'Finale'],
-    openGuide: '자세히',
     barLabel: (current: number, total: number, title: string, desc: string) => `${current}/${total} ${title}: ${desc}`,
     footer:
       '폰·태블릿에서는 MIDI 변환만 쓸 수 있고, 음원 분석은 PC에서 이용해 주세요. Finale는 PC에서만 열 수 있어 폰에서 받은 파일은 PC로 옮겨야 합니다.',
@@ -56,35 +55,13 @@ export const ko = {
     autoNote: (rise: string, set: string, now: string) => `인천 일출 ${rise} · 일몰 ${set} 기준, 지금은 ${now}`,
   },
 
-  colab: {
-    question: '더 정확한 반주 제거 분석이 필요하신가요?',
-    open: '고품질 변환(Colab) 열기',
-    pending: '준비 중',
-    guide: {
-      heading: '더 정확하게 변환하고 싶다면: 반주를 지우고 MIDI로 가져오기',
-      optional: '(선택, 클릭해서 펼치기)',
-      step1:
-        '버튼을 누르면 Colab이 작은 창으로 열립니다. 그 창에서 내 음원을 올려 실행합니다. (이 화면은 옆에 그대로 보입니다)',
-      step2: '몇 분 기다리면 MIDI 파일이 자동으로 내려받아집니다. 받았으면 Colab 창을 닫으세요.',
-      step3: '이 화면으로 돌아와 받은 MIDI 파일을 아래에 놓으면 악보가 자동으로 만들어집니다.',
-      dropTitle: '받은 MIDI 파일을 여기에 놓거나 눌러서 선택',
-      waiting: 'Colab 창이 열려 있습니다. 끝나면 받은 MIDI 파일을 아래에 놓으세요.',
-      dropBack: 'Colab에서 돌아오셨네요! 받은 MIDI 파일을 여기에 놓아 주세요.',
-      dropHint: 'mid, midi 파일 · 놓으면 바로 악보가 만들어집니다',
-      noUrl: '(노트북 주소가 준비되면 1단계 버튼이 켜집니다. MIDI 파일은 지금도 아래에 놓을 수 있습니다.)',
-    },
-    howTo:
-      '내 구글 계정의 무료 GPU에서 반주를 제거하고(Demucs) 음표를 찾은(Basic Pitch) 뒤, 받은 MIDI 파일을 이 앱에 첨부하세요. 파일은 이 앱으로 전송되지 않습니다.',
-  },
-
   audio: {
     heading: '음원 파일 분석',
     pcOnly: 'PC 전용',
     button: '음원 파일 선택',
     hint: '.mp3, .wav, .m4a, .ogg, .flac · 최대 50MB, 10분 · MIDI가 없을 때 쓰세요',
     warning: '음원에서 주 멜로디만 악보로 만들었습니다. 화음과 반주는 작곡가가 편곡으로 채워 주세요.',
-    warningMore:
-      '자동 분석 결과는 오류가 있을 수 있습니다. 더 정확한 변환이 필요하면 고품질 변환(Colab)으로 반주를 제거한 뒤 MIDI를 첨부하세요.',
+    warningMore: '자동 분석 결과는 오류가 있을 수 있습니다. 가능하면 MIDI를 사용하세요.',
     vocalHint: '보컬만 분리된 파일(보컬 스템)을 올리면 주 멜로디를 훨씬 정확하게 찾습니다.',
     phone: '음원 분석은 PC에서 이용해 주세요.',
     separateNote:
@@ -237,13 +214,13 @@ export const ko = {
   errors: {
     unreadable: '파일을 읽을 수 없습니다. 다른 파일로 시도해 주세요.',
     unsupportedFormat: '지원하는 형식: mid, midi, mp3, wav, m4a, ogg, flac',
-    analysisFailed: '음원 분석에 실패했습니다. 더 짧은 파일로 시도하거나 고품질 변환(Colab)을 이용해 주세요.',
+    analysisFailed: '음원 분석에 실패했습니다. 더 짧은 파일로 시도하거나 PC에서 이용해 주세요.',
     audioTooBig: (mb: string, maxMb: number) => `음원 파일이 너무 큽니다 (${mb}MB). 최대 ${maxMb}MB까지 지원합니다.`,
     audioTooLong: (maxMin: number) => `음원이 너무 깁니다. 최대 ${maxMin}분까지 지원합니다.`,
-    noMemory: '브라우저 메모리가 부족할 수 있습니다. 더 짧은 파일로 시도하거나 고품질 변환(Colab)을 이용해 주세요.',
+    noMemory: '브라우저 메모리가 부족할 수 있습니다. 더 짧은 파일로 시도하거나 PC에서 이용해 주세요.',
     phoneAudio: '음원 분석은 PC에서 이용해 주세요.',
     silent: '음원이 무음이거나 소리가 너무 작아 분석할 수 없습니다.',
-    noDetected: '주 멜로디를 찾지 못했습니다. 고품질 변환(Colab)으로 반주를 제거하거나 MIDI로 시도해 주세요.',
+    noDetected: '주 멜로디를 찾지 못했습니다. 보컬 파일이나 MIDI로 시도해 주세요.',
     empty: '빈 파일입니다.',
     tooBig: (mb: string, maxMb: number) => `파일이 너무 큽니다 (${mb}MB). 최대 ${maxMb}MB까지 지원합니다.`,
     noNotes: '음표가 없는 파일입니다.',
