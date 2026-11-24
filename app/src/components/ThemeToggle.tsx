@@ -2,11 +2,10 @@ import { t } from '../text/ko'
 import { setThemeMode, useTheme, type ThemeMode } from '../theme/theme'
 
 const MODES: ThemeMode[] = ['auto', 'light', 'dark']
-const clock = (d: Date) => new Intl.DateTimeFormat('ko-KR', { timeStyle: 'short', timeZone: 'Asia/Seoul' }).format(d)
 
 /** 화면 색 선택: 자동(일출·일몰 기준) / 밝게 / 어둡게 */
 export default function ThemeToggle() {
-  const { mode, resolved, sun } = useTheme()
+  const { mode } = useTheme()
   return (
     <div className="flex flex-col items-start gap-1 sm:items-end" data-testid="theme-toggle">
       <div
@@ -29,11 +28,6 @@ export default function ThemeToggle() {
           </button>
         ))}
       </div>
-      {sun && (
-        <p className="text-xs text-slate-400" data-testid="theme-note">
-          {t.theme.autoNote(clock(sun.sunrise), clock(sun.sunset), resolved === 'light' ? t.theme.light : t.theme.dark)}
-        </p>
-      )}
     </div>
   )
 }

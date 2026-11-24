@@ -106,7 +106,7 @@ export default function ScorePanel({ items, selectedId, onSelect, showZip }: Pro
       )}
       <div className="mt-3">
         <Suspense fallback={<p className="text-sm text-slate-400">{t.panel.drawing}</p>}>
-          <ScoreView key={item.id} xml={item.result.xml} />
+          <ScoreView key={item.id} xml={item.result.xml} model={item.result.model} />
         </Suspense>
       </div>
 

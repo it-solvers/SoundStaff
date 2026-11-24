@@ -52,7 +52,6 @@ export const ko = {
     auto: '자동',
     light: '밝게',
     dark: '어둡게',
-    autoNote: (rise: string, set: string, now: string) => `인천 일출 ${rise} · 일몰 ${set} 기준, 지금은 ${now}`,
   },
 
   audio: {
@@ -192,6 +191,12 @@ export const ko = {
     zipReady: (name: string) => `ZIP 저장 (${name})`,
     zipHint: '파일이 모두 만들어졌습니다. 아래 링크를 눌러 저장하세요.',
     zipBusy: (done: number, total: number) => `ZIP 만드는 중… (${done}/${total})`,
+    play: '재생',
+    pause: '일시정지',
+    resume: '이어서 재생',
+    stop: '정지',
+    speed: '속도',
+    playHint: '악보에 표시된 음을 피아노 소리로 들려줍니다 (표시된 템포 기준).',
     zoomIn: '확대',
     zoomOut: '축소',
     drawing: '악보를 그리는 중…',

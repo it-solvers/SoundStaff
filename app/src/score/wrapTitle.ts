@@ -45,20 +45,20 @@ export function splitLines(text: string, fits: (s: string) => boolean): string[]
 /**
  * OSMD는 곡 제목을 한 줄로만 그려서 길면 쪽 폭을 넘어 양옆이 잘린다.
  * 가장 큰 글자(곡 제목)가 쪽 폭을 넘으면 여러 줄로 나누고, 나머지 내용을 그만큼 아래로 내린 뒤 쪽 높이를 늘린다.
- * 제목이 짧으면 아무것도 바꾸지 않는다.
+ * 제목이 짧으면 아무것도 바꾸지 않는다. 돌려주는 값은 늘어난 높이(없으면 0)이며, 악보 위 재생 커서를 같은 만큼 내리는 데 쓴다.
  */
 export function wrapTitle(
   svg: SVGSVGElement,
   /** 글자 폭을 직접 재는 함수. PDF는 실제로 그릴 윤곽선 글꼴로 재야 해서 넘겨 준다. 없으면 브라우저가 잰다. */
   measure?: (text: string, fontPx: number) => number | undefined,
-): void {
+): number {
   const vb = svg.viewBox.baseVal
-  if (!vb || !vb.width) return
+  if (!vb || !vb.width) return 0
   const texts = Array.from(svg.querySelectorAll<SVGTextElement>('text'))
   let title: SVGTextElement | null = null
   for (const t of texts) if (!title || fontPx(t) > fontPx(title)) title = t
   const raw = title?.textContent?.trim()
-  if (!title || !raw || fontPx(title) < 24) return
+  if (!title || !raw || fontPx(title) < 24) return 0
 
   const avail = vb.width - SIDE_MARGIN * 2
   const probe = title.cloneNode(false) as SVGTextElement
@@ -74,7 +74,7 @@ export function wrapTitle(
   const needsWrap = !fits(raw)
   const lines = needsWrap ? splitLines(raw, fits) : [raw]
   probe.remove()
-  if (!needsWrap || lines.length < 2) return
+  if (!needsWrap || lines.length < 2) return 0
   if (lines.length > MAX_LINES) {
     // 너무 길면 마지막 줄을 줄여서 …로 끝낸다
     lines.length = MAX_LINES
@@ -119,4 +119,5 @@ export function wrapTitle(
   const h = parseFloat(svg.getAttribute('height') ?? '')
   if (h) svg.setAttribute('height', String(h + extra))
   if (svg.style.height) svg.style.height = `${parseFloat(svg.style.height) + extra}px`
+  return extra
 }

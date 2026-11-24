@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { isDaytime, nearestSunTimes, type SunTimes } from './sun'
+import { isDaytime } from './sun'
 
 export type ThemeMode = 'auto' | 'light' | 'dark'
 export type ResolvedTheme = 'light' | 'dark'
@@ -26,17 +26,14 @@ function readMode(): ThemeMode {
 interface Snapshot {
   mode: ThemeMode
   resolved: ResolvedTheme
-  /** 자동 모드에서 보여 줄 일출·일몰 (그 밖에는 null) */
-  sun: SunTimes | null
 }
 
 const build = (mode: ThemeMode, now: Date): Snapshot => ({
   mode,
   resolved: resolveTheme(mode, now),
-  sun: mode === 'auto' ? nearestSunTimes(now) : null,
 })
 
-let snapshot: Snapshot = { mode: 'auto', resolved: 'dark', sun: null }
+let snapshot: Snapshot = { mode: 'auto', resolved: 'dark' }
 const listeners = new Set<() => void>()
 let started = false
 
@@ -50,11 +47,7 @@ function paint(resolved: ResolvedTheme) {
 
 function apply(next: Snapshot) {
   paint(next.resolved)
-  if (
-    next.mode !== snapshot.mode ||
-    next.resolved !== snapshot.resolved ||
-    next.sun?.sunrise.getTime() !== snapshot.sun?.sunrise.getTime()
-  ) {
+  if (next.mode !== snapshot.mode || next.resolved !== snapshot.resolved) {
     snapshot = next
     listeners.forEach((l) => l())
   }
