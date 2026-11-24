@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.10.1',
+    date: '2026-11-24',
+    changes: [
+      '스크롤할 때 위쪽 단계 막대에 앱 이름·버전이 툭 나타나며 내용이 밀리던 것을 부드러운 애니메이션(0.35초)으로 개선: 폭·높이·투명도가 서서히 바뀌고, 막대 그림자도 서서히 생김',
+      '운영체제의 [움직임 줄이기] 설정을 켠 경우에는 애니메이션 없이 바로 바뀜',
+    ],
+  },
+  {
     version: '1.10.0',
     date: '2026-11-24',
     changes: [
