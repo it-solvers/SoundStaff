@@ -72,11 +72,11 @@ export default function AudioUpload({ phone, disabled, onFiles }: Props) {
   )
 }
 
-/** 두 첨부 카드 아래에 보여 주는 음원 정확도 경고 (PC 전용) */
+/** 두 첨부 카드 위에 보여 주는 음원 정확도 경고 (PC 전용) */
 export function AudioNotes({ phone }: { phone: boolean }) {
   if (phone) return null
   return (
-    <div className="mt-4" data-testid="audio-notes">
+    <div data-testid="audio-notes">
       <p className="rounded-lg bg-amber-900/40 px-3 py-2 text-sm text-amber-200" data-testid="audio-warning">
         {t.audio.warningGeneric}
       </p>

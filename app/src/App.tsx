@@ -266,12 +266,12 @@ export default function App() {
       ) : (
         <>
           <UsageGuide current={step} />
+          <AudioNotes phone={phone} />
           {/* MIDI 첨부와 음원 분석 카드를 PC에서는 좌우로, 폰·태블릿에서는 위아래로 배치한다 */}
           <div className={phone ? 'flex flex-col gap-4' : 'grid gap-4 md:grid-cols-2'} data-testid="upload-cards">
             <UploadZone disabled={loading} phone={phone} onFiles={handleFiles} />
             <AudioUpload phone={phone} disabled={loading} onFiles={handleFiles} />
           </div>
-          <AudioNotes phone={phone} />
           {analysis && <AnalysisProgress state={analysis} onCancel={() => abortRef.current?.abort()} />}
           {loading && <p className="text-sm text-slate-300">{t.upload.reading}</p>}
 

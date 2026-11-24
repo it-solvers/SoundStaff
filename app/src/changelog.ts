@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.22.2',
+    date: '2026-11-25',
+    changes: [
+      '[화면] 음원은 틀린 음이 있을 수 있다는 경고를 첨부 카드 아래에서 위로 옮겨 먼저 눈에 띄게 함(PC만)',
+    ],
+  },
+  {
     version: '1.22.1',
     date: '2026-11-25',
     changes: [
