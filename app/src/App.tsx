@@ -232,6 +232,23 @@ export default function App() {
             {t.taglineNote}
           </p>
         )}
+        {!phone && (
+          <section
+            className="mt-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
+            data-testid="fit-guide"
+          >
+            <h2 className="text-xs font-semibold text-slate-300">{t.fitGuide.heading}</h2>
+            <ul className="mt-1 space-y-1 text-xs text-slate-400">
+              {t.fitGuide.items.map((it) => (
+                <li key={it.label}>
+                  <span className="mr-1.5 inline-block min-w-[3.5rem] font-medium text-slate-200">{it.label}</span>
+                  {it.text}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-xs text-slate-500">{t.fitGuide.note}</p>
+          </section>
+        )}
       </header>
 
       {!unsupported && <StepBar current={step} showTitle={!headerVisible} />}

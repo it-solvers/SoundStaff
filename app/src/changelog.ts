@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.22.1',
+    date: '2026-11-25',
+    changes: [
+      '[화면] 머리말에 "음원 분석이 잘 맞는 곡" 안내를 추가함(PC만): 악기 하나의 한 줄 선율은 잘 맞음, 음이 겹치는 곡은 보통, 여러 악기가 섞인 곡은 초안용. 시험곡으로 본 경향임을 함께 알림',
+    ],
+  },
+  {
     version: '1.22.0',
     date: '2026-11-25',
     changes: [
