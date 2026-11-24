@@ -44,12 +44,11 @@ export default function TrackList({ info }: { info: MidiFileInfo }) {
           className="mt-3 space-y-1 rounded-lg bg-amber-900/40 px-3 py-2 text-sm text-amber-200"
           data-testid="audio-banner"
         >
-          <p className="font-medium">
-            {t.audio.warning} {t.audio.warningMore}
-          </p>
+          <p className="font-medium">{t.audio.warningGeneric}</p>
           <p data-testid="audio-summary">
             {t.audio.summary(
               info.audio.detectedCount,
+              info.audio.allNotes.length,
               info.audio.notes.length,
               info.audio.backend,
               Math.round(info.audio.elapsedMs / 1000),

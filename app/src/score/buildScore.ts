@@ -1,5 +1,12 @@
 import { layoutTrack } from '../midi/measures'
-import { buildMeasureGrid, enforceMonophonic, quantizeNotes, type MeasureGrid, type QNote } from '../midi/quantize'
+import {
+  buildMeasureGrid,
+  enforceMonophonic,
+  quantizeNotes,
+  simplifyToChords,
+  type MeasureGrid,
+  type QNote,
+} from '../midi/quantize'
 import type { MidiFileInfo, TrackInfo } from '../midi/types'
 import { t } from '../text/ko'
 import { UserError } from '../utils/errors'
@@ -50,13 +57,17 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
 
   let offGrid = 0
   let noteTotal = 0
+  let trimmed = 0 // 들리는 대로 악보에서 정리되어 악보에 남지 않은 음의 수 (칸에 맞추며 합친 음 + 화음 정리로 뺀 음)
   const tracks = pitched.map((t) => {
     const q = quantizeNotes(t.notes, info.ppq)
     offGrid += q.offGrid
     noteTotal += t.notes.length
-    // 음원 분석 결과는 주 멜로디 한 줄이므로, 칸에 맞춘 뒤에도 겹치는 음이 없게 보장한다
-    return { track: t, notes: info.source === 'audio' ? enforceMonophonic(q.notes) : q.notes }
+    // 음원 분석 결과는 칸에 맞춘 뒤에도 읽기 쉽게 정리한다: 멜로디는 겹치는 음이 없는 한 줄, 들리는 대로 악보는 겹치지 않는 화음의 나열
+    const notes = info.source !== 'audio' ? q.notes : t.chords ? simplifyToChords(q.notes) : enforceMonophonic(q.notes)
+    if (t.chords) trimmed += t.notes.length - notes.length
+    return { track: t, notes }
   })
+  if (trimmed > 0) warnings.push(t.warnings.chordsTrimmed(trimmed, noteTotal))
   if (noteTotal > 0 && offGrid / noteTotal > 0.1) {
     warnings.push(t.warnings.offGrid(Math.round((offGrid / noteTotal) * 100)))
   }
@@ -113,8 +124,7 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
       instrumentName: track.instrumentName || 'piano',
       channel: track.channel,
       program: track.instrumentNumber,
-      // 음원 분석 결과(주 멜로디)는 항상 높은음자리표 한 단이다 (기획서 8.5장 7번)
-      staves: [{ clef: info.source === 'audio' ? 'G' : pickClef(notes), layout: layout.measures }],
+      staves: [{ clef: track.clef ?? pickClef(notes), layout: layout.measures }],
       muted: muted.has(track.index),
     })
     partReports.push({

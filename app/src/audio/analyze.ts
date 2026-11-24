@@ -99,6 +99,7 @@ export async function analyzeAudioFile(
     size: file.size,
     durationSec,
     notes: r.notes,
+    allNotes: r.allNotes,
     detectedCount: r.detectedCount,
     bpm: r.bpm,
     key: r.key,

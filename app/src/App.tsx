@@ -201,8 +201,11 @@ export default function App() {
         info: item.info,
         settings,
         result: r.result,
-        // 음원 분석 결과에는 "주 멜로디만" 안내를 미리보기 위에도 보여 준다 (기획서 8.5장 8번)
-        note: item.info.source === 'audio' ? [t.audio.warning, t.audio.warningMore] : undefined,
+        // 음원 분석 결과에는 방식에 맞는 안내를 미리보기 위에도 보여 준다 (기획서 8.5장 8번)
+        note:
+          item.info.source === 'audio'
+            ? [settings.audioMode === 'melody' ? t.audio.warning : t.audio.warningFull, t.audio.warningMore]
+            : undefined,
       },
     ]
   })

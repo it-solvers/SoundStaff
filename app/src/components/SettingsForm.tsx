@@ -54,6 +54,46 @@ export default function SettingsForm({ info, override, onChange }: Props) {
         </button>
       </div>
 
+      {info.source === 'audio' && (
+        <fieldset className="mt-3" data-testid="audio-mode">
+          <legend className="text-xs text-slate-400">{t.audio.mode.legend}</legend>
+          <div className="mt-1 grid gap-2 sm:grid-cols-2">
+            {(['full', 'melody'] as const).map((m) => {
+              const on = (override.audioMode ?? 'full') === m
+              return (
+                <label
+                  key={m}
+                  className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm ${
+                    on ? 'border-sky-500 bg-sky-950' : 'border-slate-700 bg-slate-800/60'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="audio-mode"
+                    className="mt-1"
+                    checked={on}
+                    onChange={() =>
+                      // 방식을 바꾸면 악보의 단이 달라지므로 악기 설정(순서·소리 끄기·빼기)은 처음으로 돌린다
+                      onChange({
+                        audioMode: m,
+                        trackOrder: undefined,
+                        excludedTracks: undefined,
+                        mutedTracks: undefined,
+                      })
+                    }
+                    data-testid={`audio-mode-${m}`}
+                  />
+                  <span>
+                    <span className="block font-medium">{t.audio.mode[m].label}</span>
+                    <span className="mt-0.5 block text-xs text-slate-300">{t.audio.mode[m].desc}</span>
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+        </fieldset>
+      )}
+
       <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <label className="block">
           <span className={label}>{t.settings.title}</span>

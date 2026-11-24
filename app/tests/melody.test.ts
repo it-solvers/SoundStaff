@@ -170,7 +170,7 @@ describe('음원 분석 결과 악보 (한 단, 파트 이름 Melody)', () => {
 
   {
     it('항상 높은음자리표 한 단, 화음·겹침 없는 한 줄이다 (파트 이름 Melody)', () => {
-      const res = buildScore(info, applySettings(info))
+      const res = buildScore(info, applySettings(info, { audioMode: 'melody' }))
       const doc = parse(res.xml)
       expect(count(doc, 'score-part')).toBe(1)
       expect(doc.getElementsByTagName('part-name')[0].textContent).toBe('Melody')
@@ -196,7 +196,7 @@ describe('음원 분석 결과 악보 (한 단, 파트 이름 Melody)', () => {
       },
       notes: [n(0, 0.5, 48), n(0.6, 0.5, 50), n(1.2, 0.5, 52), n(1.8, 0.5, 50)],
     })
-    const doc = parse(buildScore(low, applySettings(low)).xml)
+    const doc = parse(buildScore(low, applySettings(low, { audioMode: 'melody' })).xml)
     expect(doc.getElementsByTagName('sign')[0].textContent).toBe('G')
   })
 })

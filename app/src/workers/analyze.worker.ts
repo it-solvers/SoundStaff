@@ -16,9 +16,10 @@ self.onmessage = async (e: MessageEvent<AnalyzeRequest>) => {
   try {
     const { raw, backend } = await detectNotes(pcm, modelUrl, (percent) => post({ type: 'progress', percent }))
     post({ type: 'stage', stage: 'finish' })
-    // 기획서 8.5장: 거르기(3번) → 주 멜로디 선택(4번). 결과는 겹치는 음이 없는 한 줄 선율이다.
-    const notes = selectMelody(filterNotes(raw))
-    if (notes.length < MIN_MELODY_NOTES) return post({ type: 'error', code: 'noNotes' })
+    // 기획서 8.5장: 거르기(3번). 거른 모든 음표는 "들리는 대로" 악보에, 그중 고른 한 줄 선율은 "멜로디만" 악보에 쓴다.
+    const allNotes = filterNotes(raw)
+    const notes = selectMelody(allNotes)
+    if (allNotes.length < MIN_MELODY_NOTES) return post({ type: 'error', code: 'noNotes' })
 
     // 템포: 파형 기반 추정을 우선하고, 근거가 약하면 음표 간격으로 보완한다 (기획서 8.5장 4번)
     const fromAudio = estimateBpmFromAudio(pcm, sampleRate)
@@ -26,15 +27,16 @@ self.onmessage = async (e: MessageEvent<AnalyzeRequest>) => {
       fromAudio && fromAudio.confidence >= 0.1
         ? fromAudio
         : estimateBpmFromNotes(
-            notes.map((n) => n.startSec),
-            notes.map((n) => n.velocity * Math.sqrt(n.durationSec)),
+            allNotes.map((n) => n.startSec),
+            allNotes.map((n) => n.velocity * Math.sqrt(n.durationSec)),
           )
     post({
       type: 'result',
       notes,
+      allNotes,
       detectedCount: raw.length,
       bpm,
-      key: estimateKey(notes),
+      key: estimateKey(allNotes), // 모든 음으로 추정해야 멜로디 한 줄보다 조성이 안정적이다
       backend,
       elapsedMs: Math.round(performance.now() - t0),
     })

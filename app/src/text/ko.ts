@@ -7,7 +7,8 @@ export const ko = {
   // 음원 분석(M6)이 동작하기 전에는 "음원이나"를 뺀다 (없는 기능을 소개하지 않기 위해, 기획서 2.1장)
   tagline: '음원이나 MIDI 파일을 악보로 바꿔 줍니다. 파일은 내 컴퓨터를 떠나지 않습니다.',
   /** PC: 음원 분석이 무엇을 해 주는지 솔직하게 안내한다 (기획서 11.1장 기대 수준) */
-  taglineNote: '음원은 주 멜로디만 악보로 만들며, 화음과 반주는 작곡가가 편곡으로 채워야 합니다.',
+  taglineNote:
+    '음원은 소리만으로 들리는 음을 악보로 옮기는 초안이며 악기는 구분하지 못합니다. [멜로디만]으로 바꿀 수도 있습니다.',
   /** 폰·태블릿: 음원 분석을 제공하지 않으므로 MIDI만 소개한다 */
   taglineMidiOnly: 'MIDI 파일을 악보로 바꿔 줍니다. 파일은 내 기기를 떠나지 않습니다.',
 
@@ -61,12 +62,33 @@ export const ko = {
     pcOnly: 'PC 전용',
     button: '음원 파일 선택',
     hint: '.mp3, .wav, .m4a, .ogg, .flac · 최대 50MB, 10분 · MIDI가 없을 때 쓰세요',
+    /** 멜로디만 방식 */
     warning: '음원에서 주 멜로디만 악보로 만들었습니다. 화음과 반주는 작곡가가 편곡으로 채워 주세요.',
+    /** 들리는 대로 방식 (기본) */
+    warningFull:
+      '음원에서 들리는 음을 악보로 옮겼습니다. 악기는 구분하지 못해서 가온 도 기준으로 높은 음·낮은 음 두 단으로 나눴습니다.',
+    /** 분석 전에 보여 주는 공통 안내 */
+    warningGeneric:
+      '음원은 소리만으로 음을 찾기 때문에 틀린 음이 있을 수 있고 악기는 구분하지 못합니다. 가능하면 MIDI를 사용하세요.',
     warningMore: '자동 분석 결과는 오류가 있을 수 있습니다. 가능하면 MIDI를 사용하세요.',
-    vocalHint: '보컬만 분리된 파일(보컬 스템)을 올리면 주 멜로디를 훨씬 정확하게 찾습니다.',
+    vocalHint: '보컬만 분리된 파일(보컬 스템)을 올리면 훨씬 정확합니다.',
+    mode: {
+      legend: '악보 방식',
+      full: {
+        label: '들리는 대로',
+        desc: '찾은 음을 모두 악보로 옮깁니다. 높은 음·낮은 음 두 단으로 나누고 같은 때의 음은 화음으로 묶습니다.',
+      },
+      melody: {
+        label: '멜로디만',
+        desc: '가장 두드러진 선율 한 줄만 만듭니다. 곡에 따라 엉뚱한 음이 골라질 수 있습니다.',
+      },
+    },
     phone: '음원 분석은 PC에서 이용해 주세요.',
-    separateNote: '음원 분석 결과는 출력 단위와 상관없이 항상 주 멜로디 한 단 악보로, 파일마다 따로 만듭니다.',
+    separateNote: '음원 분석 결과는 출력 단위와 상관없이 파일마다 따로 악보를 만듭니다.',
     trackName: 'Melody',
+    trackRight: '오른손 (높은 음)',
+    trackLeft: '왼손 (낮은 음)',
+    trackSingle: 'Piano',
     estimated: '추정',
     stages: {
       decode: '음원을 읽는 중',
@@ -77,8 +99,8 @@ export const ko = {
     cancel: '취소',
     analyzing: (name: string) => `분석 중: ${name}`,
     cancelled: '분석을 취소했습니다.',
-    summary: (found: number, kept: number, backend: string, sec: number) =>
-      `AI가 음표 ${found}개를 찾았고, 그중 주 멜로디 ${kept}개를 골랐습니다. (${backend}, ${sec}초)`,
+    summary: (found: number, all: number, melody: number, backend: string, sec: number) =>
+      `AI가 음표 ${found}개를 찾았고, 거른 ${all}개를 악보에 옮겼습니다. (멜로디만 고르면 ${melody}개) (${backend}, ${sec}초)`,
     guessed: '템포·박자·조성은 추정값입니다. 틀리면 [악보 설정]에서 고치세요.',
   },
 
@@ -156,6 +178,8 @@ export const ko = {
 
   /** 악보를 만드는 과정에서 나오는 경고 */
   warnings: {
+    chordsTrimmed: (n: number, total: number) =>
+      `읽기 쉽게 정리하면서 같은 칸에 겹친 같은 높이의 음과 한 번에 4음을 넘는 음 ${n}개(전체 ${total}개 중)를 뺐습니다.`,
     offGrid: (pct: number) =>
       `음표의 ${pct}%가 16분음표 격자에서 크게 벗어나 있습니다. 3연음 등은 가장 가까운 16분음표 위치로 맞춰지므로 리듬이 달라질 수 있습니다.`,
     unsupportedTimeSignature:
@@ -222,7 +246,7 @@ export const ko = {
     noMemory: '브라우저 메모리가 부족할 수 있습니다. 더 짧은 파일로 시도하거나 PC에서 이용해 주세요.',
     phoneAudio: '음원 분석은 PC에서 이용해 주세요.',
     silent: '음원이 무음이거나 소리가 너무 작아 분석할 수 없습니다.',
-    noDetected: '주 멜로디를 찾지 못했습니다. 보컬 파일이나 MIDI로 시도해 주세요.',
+    noDetected: '음을 찾지 못했습니다. 소리가 너무 작거나 잡음뿐인지 확인하고, 보컬 파일이나 MIDI로 시도해 주세요.',
     empty: '빈 파일입니다.',
     tooBig: (mb: string, maxMb: number) => `파일이 너무 큽니다 (${mb}MB). 최대 ${maxMb}MB까지 지원합니다.`,
     noNotes: '음표가 없는 파일입니다.',

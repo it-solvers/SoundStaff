@@ -41,6 +41,10 @@ export interface TrackInfo {
   lowestMidi?: number
   highestMidi?: number
   notes: NoteEvent[]
+  /** 악보 음자리표를 정해 둔 경우 (음원 분석의 오른손·왼손). 없으면 음높이로 고른다 */
+  clef?: 'G' | 'F'
+  /** true면 같은 때 울리는 음을 화음으로 묶고 겹치지 않게 정리한다 (음원 분석의 들리는 대로 악보). 아니면 한 줄 선율 */
+  chords?: boolean
 }
 
 /** 음원 분석으로 찾은 음표 (초 단위). 템포를 바꾸면 박 위치가 달라지므로 악보를 만들 때 환산한다. */
@@ -53,7 +57,10 @@ export interface AudioNote {
 
 /** 음원 분석 결과에만 있는 정보. 값은 모두 "추정"이다. */
 export interface AudioSourceInfo {
+  /** 주 멜로디만 골라낸 한 줄 선율 */
   notes: AudioNote[]
+  /** 거르기를 마친 AI가 찾은 모든 음표 (들리는 대로 악보의 재료) */
+  allNotes: AudioNote[]
   /** 거르기 전에 AI가 찾은 음표 수 */
   detectedCount: number
   /** 추정 확신도 0~1 (확률이 아니라 상대적인 값) */

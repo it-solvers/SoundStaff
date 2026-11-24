@@ -2,7 +2,7 @@ import { MAJOR_BY_FIFTHS, accidentalsLabel, prettyTonic, tonicName, type KeyMode
 import type { MidiFileInfo } from '../midi/types'
 import { baseName } from '../utils/fileName'
 import { t } from '../text/ko'
-import type { ScoreSettings } from './types'
+import type { AudioMode, ScoreSettings } from './types'
 
 /** 사용자가 입력 칸에서 바꾼 값. 값이 없으면(undefined) MIDI 파일의 값을 쓴다. */
 export interface SettingsOverride {
@@ -12,6 +12,8 @@ export interface SettingsOverride {
   beats?: number
   beatType?: number
   key?: { fifths: number; mode: KeyMode }
+  /** 음원 분석 결과의 악보 방식 */
+  audioMode?: AudioMode
   /** 악기(트랙) 단 순서 (트랙 번호 목록) */
   trackOrder?: number[]
   /** 악보에서 뺄 악기(트랙 번호) */
@@ -55,6 +57,7 @@ export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): Sco
     key: o.key ?? f.key,
     title: o.title?.trim() ? o.title.normalize('NFC').trim() : f.title,
     composer: o.composer?.normalize('NFC').trim() ?? '',
+    audioMode: o.audioMode ?? 'full',
     trackOrder: o.trackOrder,
     excludedTracks: o.excludedTracks,
     mutedTracks: o.mutedTracks,

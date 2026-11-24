@@ -2,6 +2,9 @@ import type { VoiceMeasure } from '../midi/measures'
 import type { MeasureSpec } from '../midi/quantize'
 import type { TempoChange, TimeSignatureChange } from '../midi/types'
 
+/** 음원 분석 결과를 악보로 옮기는 방식: full 들리는 대로(모든 음, 높은 음·낮은 음 두 단) / melody 주 멜로디 한 줄 */
+export type AudioMode = 'full' | 'melody'
+
 /** 악보를 만들 때 쓰는 설정. 기본값은 MIDI 파일에서 읽고, M5에서 사용자가 수정할 수 있게 된다. */
 export interface ScoreSettings {
   tempos: TempoChange[]
@@ -12,6 +15,8 @@ export interface ScoreSettings {
   /** 작곡자 (비어 있으면 기록하지 않는다) */
   composer: string
   /** 악기(트랙) 단을 쌓는 순서: 트랙 번호 목록. 없거나 비어 있으면 원래 순서 */
+  /** 음원 분석 결과의 악보 방식 (없으면 들리는 대로) */
+  audioMode?: AudioMode
   trackOrder?: number[]
   /** 악보에서 뺄 트랙 번호 목록 (악보·재생·PDF·MusicXML에서 모두 빠진다) */
   excludedTracks?: number[]

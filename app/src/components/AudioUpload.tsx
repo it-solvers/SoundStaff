@@ -78,7 +78,7 @@ export function AudioNotes({ phone }: { phone: boolean }) {
   return (
     <div className="mt-4" data-testid="audio-notes">
       <p className="rounded-lg bg-amber-900/40 px-3 py-2 text-sm text-amber-200" data-testid="audio-warning">
-        {t.audio.warning} {t.audio.warningMore}
+        {t.audio.warningGeneric}
       </p>
     </div>
   )

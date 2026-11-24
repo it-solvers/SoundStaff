@@ -14,6 +14,7 @@ export type AnalyzeResponse =
   | {
       type: 'result'
       notes: AudioNote[]
+      allNotes: AudioNote[]
       detectedCount: number
       bpm: Estimate<number>
       key: Estimate<KeyGuess>

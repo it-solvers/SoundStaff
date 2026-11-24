@@ -1,5 +1,5 @@
 import type { MidiFileInfo } from '../midi/types'
-import { toNoteEvents } from '../audio/toInfo'
+import { audioTracks } from '../audio/toInfo'
 import type { ScoreSettings } from './types'
 
 /**
@@ -12,6 +12,7 @@ export function materializeAudio(info: MidiFileInfo, settings: ScoreSettings): M
   return {
     ...info,
     tempos: [{ ticks: 0, bpm }],
-    tracks: info.tracks.map((tr) => ({ ...tr, notes: toNoteEvents(info.audio!.notes, bpm) })),
+    // 악보 방식(들리는 대로 / 멜로디만)에 맞는 단을 지금 템포로 만든다
+    tracks: audioTracks(info.audio, settings.audioMode ?? 'full', bpm),
   }
 }
