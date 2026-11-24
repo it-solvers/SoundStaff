@@ -1,4 +1,4 @@
-import { t } from '../text/ko'
+import { t } from '../text'
 
 /** 사용 방법 안내. current는 지금 해야 할 단계(1~5)이고 그 앞 단계는 완료로 표시한다. */
 export default function UsageGuide({ current }: { current: 1 | 2 | 3 | 4 }) {

@@ -5,7 +5,7 @@ import { DEFAULT_TIMBRE, TIMBRE_IDS, type TimbreId } from '../play/synth'
 import { buildTimeline } from '../play/timeline'
 import type { ScoreModel } from '../score/types'
 import { wrapTitle } from '../score/wrapTitle'
-import { t } from '../text/ko'
+import { t } from '../text'
 import { useTheme } from '../theme/theme'
 
 /** 미리보기 악보 색: 어두운 배경에서는 밝게, 밝은 배경에서는 어둡게 */

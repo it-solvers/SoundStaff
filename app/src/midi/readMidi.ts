@@ -1,5 +1,5 @@
 import { Midi } from '@tonejs/midi'
-import { t } from '../text/ko'
+import { t } from '../text'
 import { classifyTrack } from './classify'
 import { MAJOR_BY_FIFTHS, MINOR_BY_FIFTHS } from './keys'
 import type { MidiFileInfo, ReadResult, TrackInfo } from './types'

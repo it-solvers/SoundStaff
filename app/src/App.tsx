@@ -3,6 +3,7 @@ import { AnalysisCancelled, analyzeAudioFile } from './audio/analyze'
 import { isPhoneOrTablet, readDeviceEnv } from './audio/device'
 import { kindOfFile } from './audio/format'
 import AnalysisProgress, { type AnalysisState } from './components/AnalysisProgress'
+import LanguageLink from './components/LanguageLink'
 import ThemeToggle from './components/ThemeToggle'
 import AudioUpload, { AudioNotes } from './components/AudioUpload'
 import ChangeLog from './components/ChangeLog'
@@ -21,7 +22,7 @@ import { buildScore } from './score/buildScore'
 import { mergeFiles } from './score/mergeFiles'
 import { applySettings, type SettingsOverride } from './score/settings'
 import type { OutputUnit } from './score/types'
-import { t } from './text/ko'
+import { t } from './text'
 import { checkBrowserSupport, reportError } from './utils/errors'
 import { baseName, safeFileName } from './utils/fileName'
 import { APP_VERSION } from './version'
@@ -41,7 +42,7 @@ function deriveItems(files: MidiFileInfo[], unit: OutputUnit): OutputItem[] {
   const audioItems: OutputItem[] = audio.map((f) => ({ id: f.id, label: f.fileName, info: f, warnings: [] }))
   if (unit === 'merged' && midi.length) {
     const m = mergeFiles(midi)
-    const label = midi.length > 1 ? `${baseName(midi[0].fileName)} 외 ${midi.length - 1}개` : midi[0].fileName
+    const label = midi.length > 1 ? t.files.andMore(baseName(midi[0].fileName), midi.length - 1) : midi[0].fileName
     return [{ id: 'merged', label, info: m.info, warnings: m.warnings }, ...audioItems]
   }
   return [...midi.map((f) => ({ id: f.id, label: f.fileName, info: f, warnings: [] as string[] })), ...audioItems]
@@ -222,7 +223,10 @@ export default function App() {
               ({APP_VERSION})
             </span>
           </h1>
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <LanguageLink />
+            <ThemeToggle />
+          </div>
         </div>
         <p className="mt-1 text-sm text-slate-300" data-testid="tagline">
           {phone ? t.taglineMidiOnly : t.tagline}

@@ -2,7 +2,7 @@ import type { EditTuning } from '../audio/editTuning'
 import { MAJOR_BY_FIFTHS, accidentalsLabel, prettyTonic, tonicName, type KeyMode } from '../midi/keys'
 import type { MidiFileInfo } from '../midi/types'
 import { baseName } from '../utils/fileName'
-import { t } from '../text/ko'
+import { t } from '../text'
 import type { AudioMode, ScoreSettings } from './types'
 
 /** 사용자가 입력 칸에서 바꾼 값. 값이 없으면(undefined) MIDI 파일의 값을 쓴다. */

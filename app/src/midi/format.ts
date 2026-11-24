@@ -1,3 +1,4 @@
+import { t } from '../text'
 import type { KeySignatureChange, MidiFileInfo, TimeSignatureChange } from './types'
 
 export function formatBytes(bytes: number): string {
@@ -13,7 +14,7 @@ export function formatDuration(sec: number): string {
 
 export function formatKey(k: KeySignatureChange): string {
   const name = k.tonic.replace('b', '♭').replace('#', '♯')
-  return `${name} ${k.scale === 'minor' ? '단조' : '장조'}`
+  return t.keys.name(name, k.scale === 'minor')
 }
 
 export function formatTimeSignature(t: TimeSignatureChange): string {
@@ -33,18 +34,18 @@ export interface FileSummary {
 
 /** 파일에 정보가 없을 때는 MIDI 표준 기본값(120BPM, 4/4)을 보여주고 "파일에 없음"으로 표시한다. 조성은 기본값을 임의로 정하지 않는다. */
 export function summarize(info: MidiFileInfo): FileSummary {
-  const t = info.tempos[0]
+  const tempo = info.tempos[0]
   const ts = info.timeSignatures[0]
   const ks = info.keySignatures[0]
-  const tempoChanges = info.tempos.length > 1 ? ` (변화 ${info.tempos.length - 1}회)` : ''
-  const tsChanges = info.timeSignatures.length > 1 ? ` (변화 ${info.timeSignatures.length - 1}회)` : ''
+  const tempoChanges = info.tempos.length > 1 ? t.files.changes(info.tempos.length - 1) : ''
+  const tsChanges = info.timeSignatures.length > 1 ? t.files.changes(info.timeSignatures.length - 1) : ''
   return {
-    tempo: t
-      ? { text: `${Math.round(t.bpm * 10) / 10} BPM${tempoChanges}`, fromFile: true }
+    tempo: tempo
+      ? { text: `${Math.round(tempo.bpm * 10) / 10} BPM${tempoChanges}`, fromFile: true }
       : { text: '120 BPM', fromFile: false },
     timeSignature: ts
       ? { text: `${formatTimeSignature(ts)}${tsChanges}`, fromFile: true }
       : { text: '4/4', fromFile: false },
-    key: ks ? { text: formatKey(ks), fromFile: true } : { text: '정보 없음', fromFile: false },
+    key: ks ? { text: formatKey(ks), fromFile: true } : { text: t.files.noKey, fromFile: false },
   }
 }

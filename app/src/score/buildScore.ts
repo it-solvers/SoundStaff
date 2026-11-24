@@ -9,7 +9,7 @@ import {
   type QNote,
 } from '../midi/quantize'
 import type { MidiFileInfo, TrackInfo } from '../midi/types'
-import { t } from '../text/ko'
+import { t } from '../text'
 import { UserError } from '../utils/errors'
 import { baseName as baseNameOf } from '../utils/fileName'
 import { materializeAudio } from './audioInfo'
@@ -24,8 +24,8 @@ export const defaultSettings = (info: MidiFileInfo): ScoreSettings => applySetti
 
 export const baseName = baseNameOf
 
-function trackName(t: TrackInfo): string {
-  return t.name || t.instrumentName || `트랙 ${t.index + 1}`
+function trackName(track: TrackInfo): string {
+  return track.name || track.instrumentName || t.files.trackNumber(track.index + 1)
 }
 
 function pickClef(notes: QNote[]): 'G' | 'F' {
@@ -50,7 +50,7 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
   const removed = new Set(settings.excludedTracks ?? [])
   const pitched = allPitched.filter((t) => !removed.has(t.index))
   if (allPitched.length && !pitched.length) throw new UserError(t.errors.allRemoved)
-  const excludedDrums = info.tracks.filter((t) => t.kind === 'drum').map((t) => t.name || '드럼')
+  const excludedDrums = info.tracks.filter((tr) => tr.kind === 'drum').map((tr) => tr.name || t.files.drum)
   if (!pitched.length) {
     const anyNotes = info.tracks.some((tr) => tr.noteCount > 0)
     throw new UserError(anyNotes ? t.errors.noPitched : t.errors.noNotes)

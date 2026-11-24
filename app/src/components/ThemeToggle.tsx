@@ -1,4 +1,4 @@
-import { t } from '../text/ko'
+import { t } from '../text'
 import { setThemeMode, useTheme, type ThemeMode } from '../theme/theme'
 
 const MODES: ThemeMode[] = ['auto', 'light', 'dark']

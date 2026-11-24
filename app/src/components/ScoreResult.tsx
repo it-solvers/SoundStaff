@@ -1,4 +1,4 @@
-import { t } from '../text/ko'
+import { t } from '../text'
 import type { BuildResult } from '../score/types'
 
 export type ScoreState = { status: 'ok'; result: BuildResult } | { status: 'error'; message: string }

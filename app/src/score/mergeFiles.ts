@@ -1,6 +1,6 @@
 import { prettyTonic, tonicName } from '../midi/keys'
 import type { MidiFileInfo, TrackInfo } from '../midi/types'
-import { t } from '../text/ko'
+import { t } from '../text'
 import { baseName } from '../utils/fileName'
 
 export interface MergeResult {
@@ -12,7 +12,7 @@ const tempoText = (f: MidiFileInfo) => `${Math.round((f.tempos[0]?.bpm ?? 120) *
 const sigText = (f: MidiFileInfo) => `${f.timeSignatures[0]?.numerator ?? 4}/${f.timeSignatures[0]?.denominator ?? 4}`
 const keyText = (f: MidiFileInfo) => {
   const k = f.keySignatures[0]
-  return k ? `${prettyTonic(tonicName(k.fifths, k.scale))} ${k.scale === 'minor' ? '단조' : '장조'}` : '조표 없음'
+  return k ? t.keys.name(prettyTonic(tonicName(k.fifths, k.scale)), k.scale === 'minor') : t.keys.noSignature
 }
 
 /**
@@ -60,7 +60,7 @@ export function mergeFiles(files: MidiFileInfo[]): MergeResult {
     info: {
       ...base,
       id: 'merged',
-      fileName: `${baseName(base.fileName)} 외 ${files.length - 1}개.mid`,
+      fileName: `${t.files.andMore(baseName(base.fileName), files.length - 1)}.mid`,
       size: files.reduce((a, f) => a + f.size, 0),
       durationSec: Math.max(...files.map((f) => f.durationSec)),
       tracks,

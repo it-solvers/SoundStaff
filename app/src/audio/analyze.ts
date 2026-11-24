@@ -1,5 +1,6 @@
+import { assetUrl } from '../utils/assetUrl'
 import type { MidiFileInfo } from '../midi/types'
-import { t } from '../text/ko'
+import { t } from '../text'
 import { UserError } from '../utils/errors'
 import { ANALYSIS_SAMPLE_RATE, decodeAudio, probeDuration, toMono22k } from './decode'
 import { MAX_AUDIO_BYTES, MAX_AUDIO_SECONDS } from './format'
@@ -61,7 +62,7 @@ function runWorker(
       end()
       reject(new UserError(t.errors.analysisFailed))
     }
-    const modelUrl = new URL(`${import.meta.env.BASE_URL}basic-pitch-model/model.json`, window.location.href).href
+    const modelUrl = new URL(assetUrl('basic-pitch-model/model.json'), window.location.href).href
     const req: AnalyzeRequest = { pcm, sampleRate: ANALYSIS_SAMPLE_RATE, modelUrl }
     worker.postMessage(req, [pcm.buffer]) // 복사하지 않고 넘긴다
   })

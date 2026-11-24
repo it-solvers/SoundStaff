@@ -1,4 +1,4 @@
-import { t } from '../text/ko'
+import { t } from '../text'
 import { beatSteps, type MeasureSpec, type QNote } from './quantize'
 
 /** 표기 가능한 한 덩어리 (음표·화음 또는 쉼표). midis가 비면 쉼표 */

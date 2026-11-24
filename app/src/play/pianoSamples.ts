@@ -1,3 +1,5 @@
+import { assetUrl } from '../utils/assetUrl'
+
 /**
  * 실제 피아노 소리 (Salamander Grand Piano, 야마하 C5 녹음, 저작자 Alexander Holm, CC BY 3.0).
  * 단3도 간격으로 녹음된 30개 mp3(A0~C8)를 public/piano에 두고, 그 사이의 음은 재생 속도를 바꿔 만든다.
@@ -46,7 +48,7 @@ export const sampleLevel = (buf: AudioBuffer): number => levels.get(buf) ?? 1
 const rawCache = new Map<string, Promise<ArrayBuffer>>()
 const decodedCache = new WeakMap<BaseAudioContext, Map<string, AudioBuffer>>()
 
-const sampleUrl = (name: string) => `${import.meta.env.BASE_URL}piano/${name}.mp3`
+const sampleUrl = (name: string) => assetUrl(`piano/${name}.mp3`)
 
 /** 샘플 파일을 한 번만 내려받는다 (실패하면 다음에 다시 시도하도록 기억하지 않는다) */
 function fetchRaw(name: string): Promise<ArrayBuffer> {

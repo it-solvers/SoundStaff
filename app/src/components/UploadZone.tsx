@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { t } from '../text/ko'
+import { t } from '../text'
 
 interface Props {
   disabled?: boolean

@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import type { MidiFileInfo } from '../midi/types'
 import { DEFAULT_PDF_SETTINGS, type PdfOrientation, type PdfSettings, type PdfSize } from '../score/pdfSettings'
 import type { BuildResult, ScoreSettings } from '../score/types'
-import { t } from '../text/ko'
+import { t } from '../text'
 import { reportError } from '../utils/errors'
 import DownloadButtons from './DownloadButtons'
 
@@ -69,7 +69,7 @@ export default function ScorePanel({ items, selectedId, onSelect, showZip }: Pro
       const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/zip' }))
       setZip((old) => {
         if (old) URL.revokeObjectURL(old.url)
-        return { url, name: `${t.appName} 악보.zip`, signature }
+        return { url, name: t.panel.zipName(t.appName), signature }
       })
     } catch (e) {
       setError(t.errors.downloadFailed(reportError(e)))

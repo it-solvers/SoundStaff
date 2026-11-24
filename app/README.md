@@ -35,13 +35,13 @@ npm run check     # 타입 검사 + 코드 검사 + 자동 시험을 한 번에 
 
 `main` 브랜치에 푸시하면 Cloudflare가 자동으로 빌드·배포한다. 주소는 https://soundstaff.itsolvers.co.kr 이다. 저장소에 설정 파일(`wrangler.jsonc`)은 없고, Cloudflare 대시보드(Compute → Workers & Pages → soundstaff → Settings → Builds)의 값으로 동작한다.
 
-| 항목 | 값 |
-|---|---|
-| 저장소 | `it-solvers/SoundStaff`, 브랜치 `main` |
-| Root directory | `app` (칸이 없으면 아래 두 명령 앞에 `cd app &&`를 붙인다) |
-| Build command | `npm run build` |
+| 항목           | 값                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------- |
+| 저장소         | `it-solvers/SoundStaff`, 브랜치 `main`                                                  |
+| Root directory | `app` (칸이 없으면 아래 두 명령 앞에 `cd app &&`를 붙인다)                              |
+| Build command  | `npm run build`                                                                         |
 | Deploy command | `npx wrangler deploy --assets=./dist --name soundstaff --compatibility-date=2026-11-25` |
-| 미리보기 빌드 | 끔 (설정 파일이 없어 `main` 외 브랜치는 배포 명령이 맞지 않을 수 있음) |
+| 미리보기 빌드  | 끔 (설정 파일이 없어 `main` 외 브랜치는 배포 명령이 맞지 않을 수 있음)                  |
 
 - `--name`은 Cloudflare 프로젝트 이름(`soundstaff`)과 같아야 한다. `--compatibility-date`는 Workers 실행 환경의 호환성 기준일이며 정적 파일만 올리는 이 앱의 동작에는 영향이 없다.
 - 커스텀 도메인은 Workers & Pages → soundstaff → Domains → Add Domain에서 `itsolvers.co.kr`을 고르고 하위 이름 `soundstaff`을 붙여 연결했다(DNS 기록은 Cloudflare가 자동 생성). 직접 CNAME을 만들지 않는다.
@@ -61,11 +61,15 @@ Node.js 20 이상. 커밋 전에는 `npm run check`가 통과해야 한다 (기�
 
 올리는 방법: `package.json`의 `version`과 `src/changelog.ts` 맨 위에 새 항목을 **같은 값으로** 함께 바꾼다. 두 값이 다르면 개발 서버·빌드가 멈추고 알려 준다. 화면 하단 "변경 이력"에 `changelog.ts`의 내용이 보인다.
 
+## 언어
+
+한국어는 `/`(`index.html`), 영어는 `/en/`(`en/index.html`)이다. 화면 코드는 하나이고 `<html lang>`에 따라 `src/text/`의 `ko.ts`·`en.ts` 중 하나를 쓴다. 문구를 바꾸면 두 파일을 함께 고친다(항목이 빠지면 타입 검사에서 걸린다). `public/` 파일은 `src/utils/assetUrl.ts`로 가리킨다. 변경 이력은 한국어 화면에만 보인다.
+
 ## 폴더 구조
 
 | 폴더              | 내용                                                                                                                                                                                    |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/text/ko.ts`  | **화면에 보이는 모든 문구** (기획서 2.1장: 언어를 추가하기 쉽게 한 곳에 모음)                                                                                                           |
+| `src/text/`       | **화면에 보이는 모든 문구** (기획서 2.1장: 언어를 추가하기 쉽게 한 곳에 모음)                                                                                                           |
 | `src/midi/`       | MIDI 읽기(`readMidi`), 트랙 분류, 양자화(`quantize`), 마디·성부 배치(`measures`), 조표 표(`keys`)                                                                                       |
 | `src/score/`      | 설정(`settings`), 파일 합치기(`mergeFiles`), 악보 생성(`buildScore`), MusicXML(`toMusicXml`), 검증(`validate`), 내보내기(`exportPdf`, `exportMusicXml`, `exportPianoMidi`, `exportZip`) |
 | `src/components/` | 화면 부품 (`ErrorBoundary`, `UploadZone`, `TrackList`, `OptionsPanel`, `OutputCard`, `SettingsForm`, `ScorePanel`, `ScoreView`, `DownloadButtons` 등)                                   |

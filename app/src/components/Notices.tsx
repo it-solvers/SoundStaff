@@ -1,4 +1,4 @@
-import { t } from '../text/ko'
+import { t } from '../text'
 
 /** 기획서 11.1장: 항상 표시하는 안내 문구 3종 */
 export default function Notices() {

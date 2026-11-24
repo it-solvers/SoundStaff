@@ -1,4 +1,4 @@
-import { t } from '../text/ko'
+import { t } from '../text'
 import { APP_VERSION } from '../version'
 
 /**

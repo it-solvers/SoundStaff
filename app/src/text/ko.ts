@@ -1,9 +1,11 @@
 /**
- * 화면에 보이는 모든 문구 (한국어). 기획서 2.1장: 나중에 언어를 추가하기 쉽도록 문구는 이 파일에만 둔다.
- * 영어를 추가하면 같은 모양의 en.ts를 만들고 아래 `t`를 바꿔 끼우면 된다.
+ * 화면에 보이는 모든 문구 (한국어). 기획서 2.1장: 언어를 추가하기 쉽도록 문구는 text/ 폴더에만 둔다.
+ * 문구를 더하거나 바꾸면 같은 모양의 en.ts(영어)도 함께 고친다. 어느 것을 쓸지는 index.ts가 정한다.
  */
 export const ko = {
   appName: 'SoundStaff',
+  /** 다른 언어 페이지로 가는 링크. href는 지금 페이지 기준 상대 경로 */
+  language: { label: 'English', lang: 'en', href: './en/' },
   // 음원 분석(M6)이 동작하기 전에는 "음원이나"를 뺀다 (없는 기능을 소개하지 않기 위해, 기획서 2.1장)
   tagline: '음원이나 MIDI 파일을 악보로 바꿔 줍니다. 파일은 내 컴퓨터를 떠나지 않습니다.',
   /** PC: 음원 분석이 무엇을 해 주는지 솔직하게 안내한다 (기획서 11.1장 기대 수준) */
@@ -145,11 +147,22 @@ export const ko = {
     columns: { track: '트랙 이름', instrument: '악기', channel: '채널', notes: '음표 수', range: '음역', kind: '구분' },
     unnamed: '(이름 없음)',
     drumInstrument: '드럼/타악기',
+    drum: '드럼',
+    trackNumber: (n: number) => `트랙 ${n}`,
+    andMore: (first: string, n: number) => `${first} 외 ${n}개`,
     kind: { drum: '드럼 · 악보 제외', empty: '음표 없음', pitched: '음높이 악기' },
     drumNotice: (n: number) =>
       `드럼 트랙 ${n}개는 악보에서 제외됩니다. (드럼은 음높이가 없는 타악기 소리라 일반 악보로 옮기지 않습니다)`,
     meta: (size: string, dur: string, ppq: number) => `${size} · 길이 ${dur} · 해상도 ${ppq} PPQ`,
     metaAudio: (size: string, dur: string) => `음원 · ${size} · 길이 ${dur}`,
+  },
+
+  keys: {
+    name: (tonic: string, minor: boolean) => `${tonic} ${minor ? '단조' : '장조'}`,
+    noSignature: '조표 없음',
+    noAccidentals: '♯♭ 없음',
+    flats: (n: number) => `♭${n}개`,
+    sharps: (n: number) => `♯${n}개`,
   },
 
   options: {
@@ -188,6 +201,8 @@ export const ko = {
     composer: '작곡자',
     tempo: '템포 (BPM)',
     timeSignature: '박자',
+    beatsTop: '박자 윗수',
+    beatsBottom: '박자 아랫수',
     key: '조성',
     keyMajor: '장조',
     keyMinor: '단조',
@@ -248,6 +263,8 @@ export const ko = {
     pianoMidiHint: '모든 음높이 악기를 피아노 소리로 통일한 MIDI입니다 (드럼 제외).',
     zip: '전체 ZIP 만들기',
     zipReady: (name: string) => `ZIP 저장 (${name})`,
+    zipName: (app: string) => `${app} 악보.zip`,
+    pianoMidiName: (base: string) => `${base} 피아노.mid`,
     zipHint: '파일이 모두 만들어졌습니다. 아래 링크를 눌러 저장하세요.',
     zipBusy: (done: number, total: number) => `ZIP 만드는 중… (${done}/${total})`,
     play: '재생',
@@ -308,6 +325,16 @@ export const ko = {
     noPitched: '음 높이가 있는 트랙이 없습니다.',
     allRemoved: '악보에 넣을 악기가 없습니다. 악기를 하나 이상 남겨 주세요.',
     structure: (detail: string) => `악보 구조 검증에 실패했습니다: ${detail}`,
+    validation: {
+      staff: (part: string, n: number) => `${part} ${n}단`,
+      length: (where: string, measure: number, voice: number, sum: number, len: number) =>
+        `${where}: ${measure}마디 ${voice}성부 길이 ${sum} ≠ 마디 길이 ${len}`,
+      tieNoStart: (where: string, measure: number, voice: number) =>
+        `${where}: ${measure}마디 ${voice}성부 붙임줄 시작 없이 끝남`,
+      openTie: (where: string) => `${where}: 끝나지 않은 붙임줄이 있습니다`,
+      xml: (detail: string) => `XML 형식 오류: ${detail}`,
+    },
+    outline: '글자 윤곽선 좌표가 올바르지 않습니다.',
     retry: '다시 시도해 주세요.',
     pdfFailed: (msg: string) => `PDF를 만들지 못했습니다: ${msg} 다시 시도해 주세요.`,
     pdfFont: 'PDF용 한글 글꼴 파일을 불러오지 못했습니다.',
@@ -320,5 +347,5 @@ export const ko = {
   },
 }
 
-/** 지금 쓰는 문구. 언어를 추가하면 여기서 고른다. */
-export const t = ko
+/** 모든 언어가 갖춰야 하는 문구의 모양 */
+export type Messages = typeof ko

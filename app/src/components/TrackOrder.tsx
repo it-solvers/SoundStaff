@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { MidiFileInfo, TrackInfo } from '../midi/types'
 import { moveItem, orderBy, sameOrder } from '../score/trackOrder'
-import { t } from '../text/ko'
+import { t } from '../text'
 
 /** 이 목록에서 바꾸는 값들. undefined는 "바꾸지 않음(원래대로)" */
 export interface TrackPatch {

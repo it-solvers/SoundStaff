@@ -1,4 +1,4 @@
-import { t } from '../text/ko'
+import { t } from '../text'
 import { UserError } from '../utils/errors'
 
 /** Basic Pitch가 요구하는 입력 형식: 모노 22,050Hz (기획서 8.5장 1번) */

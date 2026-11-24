@@ -1,5 +1,5 @@
 import type { AnalysisStage } from '../audio/analyze'
-import { t } from '../text/ko'
+import { t } from '../text'
 
 export interface AnalysisState {
   fileName: string

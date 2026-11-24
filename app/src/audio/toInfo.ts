@@ -1,7 +1,7 @@
 import { tonicName } from '../midi/keys'
 import type { AudioNote, MidiFileInfo, TrackInfo } from '../midi/types'
 import type { AudioMode } from '../score/types'
-import { t } from '../text/ko'
+import { t } from '../text'
 import type { KeyGuess } from './key'
 import { resolveEditTuning, type EditTuning } from './editTuning'
 import {

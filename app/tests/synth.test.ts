@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createWave, DEFAULT_TIMBRE, scheduleNote, SYNTH_TIMBRE_IDS, TIMBRE_IDS, TIMBRES } from '../src/play/synth'
-import { t } from '../src/text/ko'
+import { t } from '../src/text'
 
 /** 만들어진 소리 부품의 종류를 세기만 하는 가짜 오디오 장치 (Node에는 Web Audio가 없다) */
 function fakeCtx() {

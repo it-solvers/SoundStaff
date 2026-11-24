@@ -1,5 +1,5 @@
 import { resolveEditTuning, type EditTuning } from '../audio/editTuning'
-import { t } from '../text/ko'
+import { t } from '../text'
 import type { NoteEvent, TimeSignatureChange } from './types'
 
 /** 1 step = 16분음표. 4분음표 = 4 step (MusicXML divisions = 4) */

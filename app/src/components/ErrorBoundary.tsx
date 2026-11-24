@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { t } from '../text/ko'
+import { t } from '../text'
 
 /** 화면을 그리다 예상 못 한 오류가 나도 빈 화면이 되지 않게 안내를 보여 준다 (기획서 11.3장). 상세 내용은 콘솔에만 남긴다. */
 export default class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {

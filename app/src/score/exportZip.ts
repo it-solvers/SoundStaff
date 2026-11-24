@@ -1,4 +1,5 @@
 import { strToU8, zipSync } from 'fflate'
+import { t } from '../text'
 import { uniqueName } from '../utils/fileName'
 import type { PdfSettings } from './pdfSettings'
 import { buildPianoMidi } from './exportPianoMidi'
@@ -42,7 +43,7 @@ export async function buildResultZip(
     entries.push(
       { name: `${it.base}.pdf`, data: new Uint8Array(await pdfBlob.arrayBuffer()) },
       { name: `${it.base}.musicxml`, data: strToU8(it.result.xml) },
-      { name: `${it.base} 피아노.mid`, data: buildPianoMidi(it.info, it.settings) },
+      { name: t.panel.pianoMidiName(it.base), data: buildPianoMidi(it.info, it.settings) },
     )
     onProgress(i + 1, items.length)
   }

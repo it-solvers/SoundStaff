@@ -1,7 +1,8 @@
+import { assetUrl } from '../utils/assetUrl'
 import { jsPDF } from 'jspdf'
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
 import { svg2pdf } from 'svg2pdf.js'
-import { t } from '../text/ko'
+import { t } from '../text'
 import { UserError } from '../utils/errors'
 import { wrapTitle } from './wrapTitle'
 import { parseOutlineFont, textToPathData, textWidth, type OutlineFont, type TextAnchor } from './outlineText'
@@ -17,7 +18,7 @@ let fontPromise: Promise<OutlineFont> | null = null
 /** 한글 윤곽선을 만들 글꼴을 한 번만 내려받아 읽는다 (이 브라우저 안에서만 쓰고 어디로도 보내지 않는다) */
 function loadOutlineFont(): Promise<OutlineFont> {
   fontPromise ??= (async () => {
-    const res = await fetch(`${import.meta.env.BASE_URL}fonts/${FONT_FILE}`)
+    const res = await fetch(assetUrl(`fonts/${FONT_FILE}`))
     if (!res.ok) throw new UserError(t.errors.pdfFont)
     return parseOutlineFont(await res.arrayBuffer())
   })().catch((e) => {

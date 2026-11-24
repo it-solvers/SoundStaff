@@ -13,7 +13,7 @@ import {
   keyValue,
   type SettingsOverride,
 } from '../score/settings'
-import { t } from '../text/ko'
+import { t } from '../text'
 
 interface Props {
   info: MidiFileInfo
@@ -247,7 +247,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
               max={32}
               step={1}
               inputMode="numeric"
-              aria-label={`${t.settings.timeSignature} 윗수`}
+              aria-label={t.settings.beatsTop}
               className={`${field} w-20 ${beatsBad ? 'border-rose-500' : ''}`}
               value={beatsText}
               placeholder={String(f.beats)}
@@ -261,7 +261,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
             />
             <span aria-hidden="true">/</span>
             <select
-              aria-label={`${t.settings.timeSignature} 아랫수`}
+              aria-label={t.settings.beatsBottom}
               className={`${field} w-20`}
               value={override.beatType ?? f.beatType}
               data-testid="input-beattype"

@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
@@ -31,5 +32,12 @@ export default defineConfig({
   build: {
     // 악보 그리기(OSMD)·PDF 만들기 묶음은 원래 크고, 해당 기능을 쓸 때만 내려받으므로 경고 기준을 넉넉히 둔다
     chunkSizeWarningLimit: 2000,
+    // 한국어(/)와 영어(/en/) 페이지. 화면 코드는 같고 <html lang>에 따라 문구만 달라진다.
+    rolldownOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        en: fileURLToPath(new URL('./en/index.html', import.meta.url)),
+      },
+    },
   },
 })

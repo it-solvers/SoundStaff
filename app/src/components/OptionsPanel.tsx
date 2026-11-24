@@ -1,4 +1,4 @@
-import { t } from '../text/ko'
+import { t } from '../text'
 import type { OutputUnit } from '../score/types'
 
 interface Props {

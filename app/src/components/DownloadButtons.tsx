@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { musicXmlBlob } from '../score/exportMusicXml'
 import type { PdfSettings } from '../score/pdfSettings'
 import { buildPianoMidi } from '../score/exportPianoMidi'
-import { t } from '../text/ko'
+import { t } from '../text'
 import { downloadBlob } from '../utils/download'
 import { reportError } from '../utils/errors'
 import type { PanelItem } from './ScorePanel'
@@ -67,7 +67,7 @@ export default function DownloadButtons({ item, pdf, onError }: Props) {
               () =>
                 downloadBlob(
                   new Blob([buildPianoMidi(item.info, item.settings) as BlobPart], { type: 'audio/midi' }),
-                  `${item.base} 피아노.mid`,
+                  t.panel.pianoMidiName(item.base),
                 ),
               t.errors.downloadFailed,
             )

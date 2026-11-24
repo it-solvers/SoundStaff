@@ -1,3 +1,4 @@
+import { t } from '../text'
 import { parse, type Font, type Path } from 'opentype.js'
 
 /**
@@ -26,7 +27,7 @@ export function drawableText(font: OutlineFont, text: string): string {
  */
 function commandsToPathData(path: Path): string {
   const n = (v: number | undefined) => {
-    if (v === undefined || !Number.isFinite(v)) throw new Error('글자 윤곽선 좌표가 올바르지 않습니다.')
+    if (v === undefined || !Number.isFinite(v)) throw new Error(t.errors.outline)
     return String(Math.round(v * 100) / 100)
   }
   return path.commands

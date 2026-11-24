@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { AUDIO_EXTENSIONS } from '../audio/format'
-import { t } from '../text/ko'
+import { t } from '../text'
 
 interface Props {
   /** 폰·태블릿이면 메뉴를 숨기고 PC 이용 안내만 보여 준다 (기획서 6.1장) */
