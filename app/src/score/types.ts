@@ -17,6 +17,8 @@ export interface ScoreSettings {
   /** 악기(트랙) 단을 쌓는 순서: 트랙 번호 목록. 없거나 비어 있으면 원래 순서 */
   /** 음원 분석 결과의 악보 방식 (없으면 들리는 대로) */
   audioMode?: AudioMode
+  /** 들리는 대로 악보에서 읽기 쉽게 정리할지 (같은 때 4음 넘는 음 등 일부를 뺀다). 기본은 정리하지 않아 찾은 음을 모두 적는다 */
+  audioSimplify?: boolean
   trackOrder?: number[]
   /** 악보에서 뺄 트랙 번호 목록 (악보·재생·PDF·MusicXML에서 모두 빠진다) */
   excludedTracks?: number[]

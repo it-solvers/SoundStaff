@@ -6,7 +6,8 @@ import type { AudioNote } from '../src/midi/types'
 import { buildScore } from '../src/score/buildScore'
 import { materializeAudio } from '../src/score/audioInfo'
 import { applySettings } from '../src/score/settings'
-import { rng } from './helpers'
+import { buildTimeline } from '../src/play/timeline'
+import { rng, transcriptionCoverage } from './helpers'
 
 const q = (start: number, end: number, midi: number, velocity = 0.7): QNote => ({ start, end, midi, velocity })
 const an = (startSec: number, durationSec: number, midi: number, velocity = 0.7): AudioNote => ({
@@ -171,7 +172,7 @@ describe('들리는 대로 악보 (기본 방식)', () => {
     expect(materializeAudio(info(), applySettings(info(), { audioMode: 'melody' })).tracks).toHaveLength(1)
   })
 
-  it('아주 빽빽한 무작위 음에서도 오류 없이 만들어지고 한 단에 backup이 없다', () => {
+  it('읽기 쉽게 정리를 켜면 아주 빽빽한 무작위 음에서도 오류 없이 만들어지고 한 단에 backup이 없다', () => {
     const r = rng(9)
     const dense = Array.from({ length: 600 }, () =>
       an(r() * 30, 0.05 + r() * 1.5, 36 + Math.floor(r() * 60), 0.3 + r() * 0.7),
@@ -188,14 +189,14 @@ describe('들리는 대로 악보 (기본 방식)', () => {
       backend: 'cpu',
       elapsedMs: 1,
     })
-    const res = buildScore(i, applySettings(i))
+    const res = buildScore(i, applySettings(i, { audioSimplify: true }))
     expect(res.xml).not.toContain('<backup>')
     expect(res.xml).not.toMatch(/undefined|NaN/)
     expect(res.report.measureCount).toBeGreaterThan(5)
   })
 })
 
-describe('정리로 뺀 음을 알린다', () => {
+describe('읽기 쉽게 정리를 켜면 뺀 음을 알린다', () => {
   const mk = (all: AudioNote[]) =>
     audioToInfo({
       fileName: 'w.wav',
@@ -220,12 +221,12 @@ describe('정리로 뺀 음을 알린다', () => {
       an(1, 1, 72),
       an(2, 1, 74),
     ]
-    const res = buildScore(mk(cluster), applySettings(mk(cluster)))
+    const res = buildScore(mk(cluster), applySettings(mk(cluster), { audioSimplify: true }))
     expect(res.report.warnings.some((w) => w.includes('2개') && w.includes('전체 8개'))).toBe(true)
   })
   it('빠진 음이 없으면 알림도 없다', () => {
     const calm = [an(0, 1, 72), an(1, 1, 74), an(2, 1, 76), an(3, 1, 77)]
-    const res = buildScore(mk(calm), applySettings(mk(calm)))
+    const res = buildScore(mk(calm), applySettings(mk(calm), { audioSimplify: true }))
     expect(res.report.warnings.some((w) => w.includes('뺐습니다'))).toBe(false)
   })
 })
@@ -255,5 +256,64 @@ describe('알림의 "뺀 음" 개수는 실제 악보와 정확히 맞는다', (
       const inScore = (res.xml.match(/<pitch>/g) ?? []).length - (res.xml.match(/<tie type="stop"\/>/g) ?? []).length
       expect(notes.length - removed, `시도 ${trial}`).toBe(inScore)
     }
+  })
+})
+
+describe('찾은 음은 100% 악보에 옮겨진다 (기본: 무손실)', () => {
+  const mkInfo = (all: AudioNote[], bpm: number) =>
+    audioToInfo({
+      fileName: 'z.wav',
+      size: 1,
+      durationSec: 40,
+      notes: all.slice(0, 30),
+      allNotes: all,
+      detectedCount: all.length,
+      bpm: { value: bpm, confidence: 0.5 },
+      key: { value: { fifths: -3, mode: 'major' }, confidence: 0.5 },
+      backend: 'cpu',
+      elapsedMs: 1,
+    })
+  const coverage = (all: AudioNote[], bpm: number, over = {}) => {
+    const info = mkInfo(all, bpm)
+    const res = buildScore(info, applySettings(info, over))
+    return { res, ...transcriptionCoverage(all, buildTimeline(res.model).notes, bpm) }
+  }
+
+  it('설정을 따로 주지 않으면 정리하지 않는다', () =>
+    expect(applySettings(mkInfo([an(0, 1, 60)], 100)).audioSimplify).toBe(false))
+
+  it('무작위로 아주 빽빽하게 겹친 음 12가지에서 찾은 음이 하나도 빠지지 않는다 (같은 높이·시작 오차 1칸 이내)', () => {
+    const r = rng(23)
+    for (let trial = 0; trial < 12; trial++) {
+      const notes = Array.from({ length: 400 }, () =>
+        an(r() * 25, 0.04 + r() * 3, 30 + Math.floor(r() * 70), 0.3 + r() * 0.7),
+      )
+      const c = coverage(notes, 80 + trial * 9)
+      expect(c.matched, `시도 ${trial}: 빠진 음 ${JSON.stringify(c.missing.slice(0, 3))}`).toBe(c.total)
+    }
+  })
+
+  it('길게 이어지는 반주 음 위에서 짧은 음이 움직여도 모두 옮겨진다 (짧은 음이 잘리는 일 없음)', () => {
+    const pad = [an(0, 8, 48), an(0, 8, 55), an(0, 8, 64)] // 8초 동안 이어지는 화음
+    const run = Array.from({ length: 24 }, (_, i) => an(i * 0.3, 0.28, 72 + (i % 7))) // 그 위의 빠른 선율
+    const c = coverage([...pad, ...run], 100)
+    expect(c.matched).toBe(c.total)
+  })
+
+  it('긴 음이 짧은 음 아래에서 이어지는 시간은 악보에서도 유지된다 (끊기지 않는다)', () => {
+    const info = mkInfo([an(0, 4, 48), ...Array.from({ length: 8 }, (_, i) => an(i * 0.5, 0.45, 72))], 120)
+    const tl = buildTimeline(buildScore(info, applySettings(info)).model)
+    const low = tl.notes.find((n) => n.midi === 48)!
+    expect(low.duration).toBeGreaterThan(3.5) // 4초를 크게 벗어나지 않는다
+  })
+
+  it('읽기 쉽게 정리를 켜면 일부 음이 빠질 수 있고, 그 개수는 알림으로 알려 준다 (끄면 0건)', () => {
+    // 한 번에 6음이 울리는 화음 24개 (4음 제한을 넘는다)
+    const notes = Array.from({ length: 24 }, (_, i) => [0, 2, 4, 5, 7, 9].map((k) => an(i * 0.6, 0.55, 60 + k))).flat()
+    const off = coverage(notes, 100)
+    const on = coverage(notes, 100, { audioSimplify: true })
+    expect(off.matched).toBe(off.total)
+    expect(on.matched).toBeLessThan(on.total)
+    expect(on.res.report.warnings.some((w) => w.includes('뺐습니다'))).toBe(true)
   })
 })

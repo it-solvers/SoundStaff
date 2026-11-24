@@ -63,11 +63,25 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
     offGrid += q.offGrid
     noteTotal += t.notes.length
     // 음원 분석 결과는 칸에 맞춘 뒤에도 읽기 쉽게 정리한다: 멜로디는 겹치는 음이 없는 한 줄, 들리는 대로 악보는 겹치지 않는 화음의 나열
-    const notes = info.source !== 'audio' ? q.notes : t.chords ? simplifyToChords(q.notes) : enforceMonophonic(q.notes)
+    // 들리는 대로: 기본은 찾은 음을 하나도 빼지 않고(겹치는 음은 여러 성부로) 적는다. 선택하면 읽기 쉽게 정리한다.
+    const notes =
+      info.source !== 'audio'
+        ? q.notes
+        : t.chords
+          ? settings.audioSimplify
+            ? simplifyToChords(q.notes)
+            : q.notes
+          : enforceMonophonic(q.notes)
     if (t.chords) trimmed += t.notes.length - notes.length
     return { track: t, notes }
   })
-  if (trimmed > 0) warnings.push(t.warnings.chordsTrimmed(trimmed, noteTotal))
+  if (trimmed > 0) {
+    warnings.push(
+      settings.audioSimplify
+        ? t.warnings.chordsTrimmed(trimmed, noteTotal)
+        : t.warnings.chordsDeduped(trimmed, noteTotal),
+    )
+  }
   if (noteTotal > 0 && offGrid / noteTotal > 0.1) {
     warnings.push(t.warnings.offGrid(Math.round((offGrid / noteTotal) * 100)))
   }

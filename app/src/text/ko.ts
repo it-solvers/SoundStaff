@@ -72,6 +72,10 @@ export const ko = {
       '음원은 소리만으로 음을 찾기 때문에 틀린 음이 있을 수 있고 악기는 구분하지 못합니다. 가능하면 MIDI를 사용하세요.',
     warningMore: '자동 분석 결과는 오류가 있을 수 있습니다. 가능하면 MIDI를 사용하세요.',
     vocalHint: '보컬만 분리된 파일(보컬 스템)을 올리면 훨씬 정확합니다.',
+    simplify: {
+      label: '읽기 쉽게 정리하기',
+      desc: '같은 때 4음을 넘는 음과 겹쳐 이어지는 음을 정리해 악보를 단순하게 만듭니다. 일부 음이 빠집니다.',
+    },
     mode: {
       legend: '악보 방식',
       full: {
@@ -178,6 +182,8 @@ export const ko = {
 
   /** 악보를 만드는 과정에서 나오는 경고 */
   warnings: {
+    chordsDeduped: (n: number, total: number) =>
+      `같은 칸에서 같은 높이로 겹친 음 ${n}개(전체 ${total}개 중)는 한 음으로 적었습니다. 소리는 같고 악보에 적힌 음에는 빠진 것이 없습니다.`,
     chordsTrimmed: (n: number, total: number) =>
       `읽기 쉽게 정리하면서 같은 칸에 겹친 같은 높이의 음과 한 번에 4음을 넘는 음 ${n}개(전체 ${total}개 중)를 뺐습니다.`,
     offGrid: (pct: number) =>

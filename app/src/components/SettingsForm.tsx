@@ -91,6 +91,21 @@ export default function SettingsForm({ info, override, onChange }: Props) {
               )
             })}
           </div>
+          {(override.audioMode ?? 'full') === 'full' && (
+            <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-simplify-label">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={override.audioSimplify ?? false}
+                onChange={(e) => onChange({ audioSimplify: e.target.checked ? true : undefined })}
+                data-testid="audio-simplify"
+              />
+              <span>
+                <span className="font-medium">{t.audio.simplify.label}</span>
+                <span className="ml-1 text-xs text-slate-300">{t.audio.simplify.desc}</span>
+              </span>
+            </label>
+          )}
         </fieldset>
       )}
 

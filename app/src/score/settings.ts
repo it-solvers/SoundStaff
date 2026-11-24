@@ -14,6 +14,8 @@ export interface SettingsOverride {
   key?: { fifths: number; mode: KeyMode }
   /** 음원 분석 결과의 악보 방식 */
   audioMode?: AudioMode
+  /** 읽기 쉽게 정리 (일부 음이 빠질 수 있음) */
+  audioSimplify?: boolean
   /** 악기(트랙) 단 순서 (트랙 번호 목록) */
   trackOrder?: number[]
   /** 악보에서 뺄 악기(트랙 번호) */
@@ -58,6 +60,7 @@ export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): Sco
     title: o.title?.trim() ? o.title.normalize('NFC').trim() : f.title,
     composer: o.composer?.normalize('NFC').trim() ?? '',
     audioMode: o.audioMode ?? 'full',
+    audioSimplify: o.audioSimplify ?? false,
     trackOrder: o.trackOrder,
     excludedTracks: o.excludedTracks,
     mutedTracks: o.mutedTracks,

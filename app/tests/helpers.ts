@@ -70,3 +70,30 @@ export function midiBytes(build: (m: Midi) => void, key?: { sf: number; minor: b
   }
   return new Uint8Array(buf)
 }
+
+/**
+ * "찾은 음이 악보에 모두 있는가"를 재는 도구 (음원 분석의 100% 기준).
+ * AI가 찾은 음표마다, 악보에서 같은 높이이고 시작 위치가 1칸(16분음표) 이내인 음이 있으면 "옮겨졌다"로 센다.
+ * 붙임줄로 이어진 음은 한 음으로 본 재생 시간표(buildTimeline)의 음을 쓴다.
+ */
+export function transcriptionCoverage(
+  found: { startSec: number; durationSec: number; midi: number }[],
+  scoreNotes: { midi: number; step: number }[],
+  bpm: number,
+): { matched: number; total: number; missing: { startSec: number; midi: number }[] } {
+  const stepSec = 60 / bpm / 4
+  const byPitch = new Map<number, number[]>()
+  for (const n of scoreNotes) {
+    const list = byPitch.get(n.midi)
+    if (list) list.push(n.step)
+    else byPitch.set(n.midi, [n.step])
+  }
+  let matched = 0
+  const missing: { startSec: number; midi: number }[] = []
+  for (const f of found) {
+    const step = Math.round(f.startSec / stepSec)
+    if ((byPitch.get(f.midi) ?? []).some((s) => Math.abs(s - step) <= 1)) matched++
+    else missing.push({ startSec: f.startSec, midi: f.midi })
+  }
+  return { matched, total: found.length, missing }
+}
