@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.3.1',
+    date: '2026-11-24',
+    changes: ['화면: 맨 위에서도 단계 막대에 앱 이름·버전이 또 보이던 문제 수정 (큰 제목이 가려진 뒤에만 표시)'],
+  },
+  {
     version: '1.3.0',
     date: '2026-11-24',
     changes: [

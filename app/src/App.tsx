@@ -78,7 +78,7 @@ export default function App() {
     const el = headerRef.current
     if (!el || typeof IntersectionObserver === 'undefined') return
     const io = new IntersectionObserver(([e]) => setHeaderVisible(e.isIntersecting), {
-      rootMargin: '-110px 0px 0px 0px',
+      rootMargin: '-60px 0px 0px 0px',
     })
     io.observe(el)
     return () => io.disconnect()
