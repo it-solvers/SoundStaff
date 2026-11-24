@@ -13,6 +13,10 @@ export interface ScoreSettings {
   composer: string
   /** 악기(트랙) 단을 쌓는 순서: 트랙 번호 목록. 없거나 비어 있으면 원래 순서 */
   trackOrder?: number[]
+  /** 악보에서 뺄 트랙 번호 목록 (악보·재생·PDF·MusicXML에서 모두 빠진다) */
+  excludedTracks?: number[]
+  /** 재생할 때만 소리를 끌 트랙 번호 목록 (악보에는 그대로 있다) */
+  mutedTracks?: number[]
 }
 
 /** 보표 하나. 피아노는 한 파트에 보표 2개(오른손 높은음자리표, 왼손 낮은음자리표) */
@@ -30,6 +34,8 @@ export interface PartModel {
   /** MIDI 프로그램 번호 (0~127) */
   program: number
   staves: StaffModel[]
+  /** true면 재생할 때 소리를 내지 않는다 (악보에는 그대로 있다) */
+  muted?: boolean
 }
 
 export interface ScoreModel {

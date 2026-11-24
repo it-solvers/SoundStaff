@@ -37,7 +37,11 @@ interface Prepared {
 /** 두 변환 방식이 공통으로 거치는 단계: 트랙 선별 → 양자화 → 마디 구성 → 템포 배치 */
 function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): Prepared {
   const warnings: string[] = []
-  const pitched = info.tracks.filter((t) => t.kind === 'pitched')
+  const allPitched = info.tracks.filter((t) => t.kind === 'pitched')
+  // 사용자가 악보에서 뺀 악기는 처음부터 없는 것으로 친다 (마디 수·경고·악보·재생·PDF·MusicXML 모두)
+  const removed = new Set(settings.excludedTracks ?? [])
+  const pitched = allPitched.filter((t) => !removed.has(t.index))
+  if (allPitched.length && !pitched.length) throw new UserError(t.errors.allRemoved)
   const excludedDrums = info.tracks.filter((t) => t.kind === 'drum').map((t) => t.name || '드럼')
   if (!pitched.length) {
     const anyNotes = info.tracks.some((tr) => tr.noteCount > 0)
@@ -98,6 +102,7 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
   const parts: PartModel[] = []
   const partReports: PartReport[] = []
 
+  const muted = new Set(settings.mutedTracks ?? [])
   // 사용자가 정한 순서가 있으면 그 순서로 단을 쌓는다
   orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes }, i) => {
     const layout = layoutTrack(notes, p.grid.measures)
@@ -110,6 +115,7 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
       program: track.instrumentNumber,
       // 음원 분석 결과(주 멜로디)는 항상 높은음자리표 한 단이다 (기획서 8.5장 7번)
       staves: [{ clef: info.source === 'audio' ? 'G' : pickClef(notes), layout: layout.measures }],
+      muted: muted.has(track.index),
     })
     partReports.push({
       name: trackName(track),

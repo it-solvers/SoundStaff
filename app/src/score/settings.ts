@@ -14,6 +14,10 @@ export interface SettingsOverride {
   key?: { fifths: number; mode: KeyMode }
   /** 악기(트랙) 단 순서 (트랙 번호 목록) */
   trackOrder?: number[]
+  /** 악보에서 뺄 악기(트랙 번호) */
+  excludedTracks?: number[]
+  /** 재생할 때 소리를 끌 악기(트랙 번호) */
+  mutedTracks?: number[]
 }
 
 export const TEMPO_MIN = 20
@@ -52,6 +56,8 @@ export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): Sco
     title: o.title?.trim() ? o.title.normalize('NFC').trim() : f.title,
     composer: o.composer?.normalize('NFC').trim() ?? '',
     trackOrder: o.trackOrder,
+    excludedTracks: o.excludedTracks,
+    mutedTracks: o.mutedTracks,
   }
 }
 

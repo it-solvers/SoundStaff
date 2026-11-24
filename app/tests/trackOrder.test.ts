@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DOMParser } from '@xmldom/xmldom'
 import { buildInstrumentScore, defaultSettings } from '../src/score/buildScore'
 import { applySettings } from '../src/score/settings'
+import { buildTimeline } from '../src/play/timeline'
 import { mergeFiles } from '../src/score/mergeFiles'
 import { moveItem, orderBy, sameOrder } from '../src/score/trackOrder'
 import { info, track } from './helpers'
@@ -89,5 +90,81 @@ describe('악보에 순서가 반영된다', () => {
   it('순서에 없는 트랙은 맨 뒤에 붙는다 (파일을 더 붙였을 때)', () => {
     const res = buildInstrumentScore(merged, applySettings(merged, { trackOrder: [2] }))
     expect(partNames(res.xml)).toEqual(['b: 피아노', 'a: 멜로디', 'a: 베이스'])
+  })
+})
+
+describe('악기 빼기·소리 끄기', () => {
+  // a: 멜로디(0~4칸) / 베이스(0~4칸)  b: 긴 피아노 (마디 3개 분량)
+  const a = info([track(0, '멜로디', [[0, 4, 72]]), track(1, '베이스', [[0, 4, 40]])], { fileName: 'a.mid' })
+  const b = info(
+    [
+      track(0, '피아노', [
+        [0, 4, 60],
+        [32, 4, 62],
+      ]),
+    ],
+    { fileName: 'b.mid' },
+  )
+  const merged = mergeFiles([a, b]).info // 0: a 멜로디, 1: a 베이스, 2: b 피아노
+  const partNames = (xml: string) =>
+    Array.from(
+      new DOMParser()
+        .parseFromString(xml, 'application/xml')
+        .getElementsByTagName('part-name') as unknown as ArrayLike<Element>,
+    ).map((e) => e.textContent)
+  const noteCount = (xml: string) => (xml.match(/<note>/g) ?? []).filter(Boolean).length
+
+  it('뺀 악기는 악보(MusicXML)에서 완전히 없어진다', () => {
+    const res = buildInstrumentScore(merged, applySettings(merged, { excludedTracks: [1] }))
+    expect(partNames(res.xml)).toEqual(['a: 멜로디', 'b: 피아노'])
+    expect(res.report.parts.map((p) => p.name)).toEqual(['a: 멜로디', 'b: 피아노'])
+    expect(res.model.parts).toHaveLength(2)
+  })
+
+  it('뺀 악기의 음표는 악보에 하나도 남지 않는다', () => {
+    const all = buildInstrumentScore(merged, defaultSettings(merged))
+    const less = buildInstrumentScore(merged, applySettings(merged, { excludedTracks: [0, 1] }))
+    expect(partNames(less.xml)).toEqual(['b: 피아노'])
+    expect(less.report.parts[0].noteCount).toBe(2)
+    expect(noteCount(less.xml)).toBeLessThan(noteCount(all.xml))
+  })
+
+  it('가장 긴 악기를 빼면 악보의 마디 수도 줄어든다', () => {
+    const all = buildInstrumentScore(merged, defaultSettings(merged))
+    const short = buildInstrumentScore(merged, applySettings(merged, { excludedTracks: [2] }))
+    expect(short.report.measureCount).toBeLessThan(all.report.measureCount)
+  })
+
+  it('순서와 함께 써도 뺀 악기를 뺀 나머지가 정한 순서로 나온다', () => {
+    const res = buildInstrumentScore(merged, applySettings(merged, { trackOrder: [2, 1, 0], excludedTracks: [1] }))
+    expect(partNames(res.xml)).toEqual(['b: 피아노', 'a: 멜로디'])
+  })
+
+  it('모든 악기를 빼면 쉬운 안내 문구로 알린다', () => {
+    expect(() => buildInstrumentScore(merged, applySettings(merged, { excludedTracks: [0, 1, 2] }))).toThrow(
+      '악보에 넣을 악기가 없습니다. 악기를 하나 이상 남겨 주세요.',
+    )
+  })
+
+  it('소리를 끈 악기도 악보에는 그대로 있고, 파트에 muted 표시만 붙는다', () => {
+    const res = buildInstrumentScore(merged, applySettings(merged, { mutedTracks: [0] }))
+    expect(partNames(res.xml)).toEqual(['a: 멜로디', 'a: 베이스', 'b: 피아노'])
+    expect(res.model.parts.map((p) => !!p.muted)).toEqual([true, false, false])
+    const plain = buildInstrumentScore(merged, defaultSettings(merged))
+    expect(res.xml).toBe(plain.xml) // MusicXML(= PDF 내용)은 소리 끄기의 영향을 받지 않는다
+  })
+
+  it('소리를 끈 악기는 재생 시간표에서만 빠진다 (길이·커서 위치는 그대로)', () => {
+    const plain = buildTimeline(buildInstrumentScore(merged, defaultSettings(merged)).model)
+    const mute = buildTimeline(buildInstrumentScore(merged, applySettings(merged, { mutedTracks: [0, 1] })).model)
+    expect(plain.notes.map((n) => n.midi).sort()).toEqual([40, 60, 62, 72])
+    expect(mute.notes.map((n) => n.midi)).toEqual([60, 62])
+    expect(mute.totalSeconds).toBe(plain.totalSeconds)
+  })
+
+  it('모두 소리를 끄면 재생할 음이 없다', () => {
+    const tl = buildTimeline(buildInstrumentScore(merged, applySettings(merged, { mutedTracks: [0, 1, 2] })).model)
+    expect(tl.notes).toEqual([])
+    expect(tl.totalSeconds).toBeGreaterThan(0)
   })
 })

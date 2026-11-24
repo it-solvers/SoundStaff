@@ -12,6 +12,15 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.11.0',
+    date: '2026-11-24',
+    changes: [
+      '악기별 [소리 끄기](🔊/🔇) 추가: 악보에는 그대로 두고 재생할 때만 그 악기 소리를 뺌',
+      '악기별 [악보에서 빼기](✕) 추가: 악보·재생·PDF·MusicXML에서 모두 빠지고, [다시 넣기]로 되돌림. 마지막 한 악기는 뺄 수 없음',
+      '[원래대로] 한 번으로 순서·소리 끄기·뺀 악기를 모두 되돌림. "악기 순서" 목록 이름을 "악기 설정"으로 변경',
+    ],
+  },
+  {
     version: '1.10.1',
     date: '2026-11-24',
     changes: [

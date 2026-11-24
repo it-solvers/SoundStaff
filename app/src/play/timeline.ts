@@ -71,6 +71,7 @@ export function buildTimeline(model: ScoreModel): Timeline {
 
   const notes: PlayNote[] = []
   for (const part of model.parts) {
+    if (part.muted) continue // 소리를 끈 악기는 재생 목록에 넣지 않는다 (악보에는 그대로 있다)
     part.staves.forEach((staff, si) => {
       const open = new Map<string, { startStep: number; steps: number; midi: number }>()
       const done: { startStep: number; steps: number; midi: number }[] = []

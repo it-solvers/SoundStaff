@@ -28,7 +28,13 @@ export default function OutputCard({ item, override, state, onChange, onBuild }:
     <section className="rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-5" data-testid="output-card">
       <h3 className="break-all text-base font-semibold">{item.label}</h3>
       <SettingsForm info={item.info} override={override} onChange={onChange} />
-      <TrackOrder info={item.info} order={override.trackOrder} onChange={(trackOrder) => onChange({ trackOrder })} />
+      <TrackOrder
+        info={item.info}
+        order={override.trackOrder}
+        excluded={override.excludedTracks}
+        muted={override.mutedTracks}
+        onChange={onChange}
+      />
       <div className="mt-4">
         <button
           type="button"
