@@ -23,18 +23,17 @@ export const ko = {
     steps: [
       {
         title: 'MIDI 또는 음원 첨부',
-        desc: '파일을 끌어다 놓거나 [파일 선택]을 누릅니다. 음원(mp3, wav 등)은 PC에서 분석합니다.',
+        desc: '파일을 끌어다 놓거나 [파일 선택]을 누르면 악보가 바로 만들어집니다. 음원(mp3, wav 등)은 PC에서 분석합니다.',
       },
       {
-        title: '출력 선택',
-        desc: '악보를 하나로 합칠지 파일별로 만들지 고릅니다. 악보는 악기(트랙)마다 한 줄씩 만들어집니다.',
+        title: '악보 다듬기 (선택)',
+        desc: '출력 단위, 악기 순서·소리·빼기, 제목·템포·박자·조성을 고치면 악보가 바로 다시 만들어집니다.',
       },
-      { title: '[악보 만들기]', desc: '필요하면 박자·템포·조성·제목을 고치고 버튼을 누르면 아래에 악보가 나타납니다.' },
-      { title: '확인하고 저장', desc: '악보를 확대·축소해 보고 PDF, MusicXML, 피아노 MIDI로 저장합니다.' },
+      { title: '확인하고 저장', desc: '악보를 재생해 듣고 확대·축소해 보고 PDF, MusicXML, 피아노 MIDI로 저장합니다.' },
       { title: 'Finale에서 열기', desc: 'PC의 Finale에서 MusicXML을 열고 다른 이름으로 저장하면 .musx가 됩니다.' },
     ],
     /** 위쪽에 고정되는 단계 막대의 짧은 이름 (steps와 같은 순서) */
-    short: ['첨부', '출력', '만들기', '저장', 'Finale'],
+    short: ['첨부', '다듬기', '저장', 'Finale'],
     barLabel: (current: number, total: number, title: string, desc: string) => `${current}/${total} ${title}: ${desc}`,
     footer:
       '폰·태블릿에서는 MIDI 변환만 쓸 수 있고, 음원 분석은 PC에서 이용해 주세요. Finale는 PC에서만 열 수 있어 폰에서 받은 파일은 PC로 옮겨야 합니다.',
@@ -144,12 +143,11 @@ export const ko = {
     resetEstimated: '추정값으로 되돌리기',
     invalidTempo: '템포는 20~400 사이 숫자로 입력해 주세요.',
     invalidBeats: '박자의 윗수는 1~32 사이 정수로 입력해 주세요.',
-    changedHint: '값을 바꾸면 이미 만든 악보가 다시 만들어집니다.',
+    changedHint: '값을 바꾸면 악보가 바로 다시 만들어집니다.',
   },
 
-  build: { button: '악보 만들기' },
-
   result: {
+    warningsSummary: (n: number) => `알림 ${n}건 (눌러서 펼치기)`,
     done: (measures: number, parts: string) => `악보 생성 완료 · ${measures}마디 · ${parts}`,
     partsSummary: (list: string, n: number) => `파트 ${n}개 (${list})`,
     partItem: (name: string, notes: number) => `${name} ${notes}음`,

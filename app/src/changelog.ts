@@ -12,6 +12,15 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.12.0',
+    date: '2026-11-24',
+    changes: [
+      '[악보 만들기] 버튼 삭제: MIDI도 첨부하면 바로 악보가 만들어지고, 출력 단위·악기 설정·제목·템포·박자·조성을 바꾸면 항상 자동으로 다시 만들어짐',
+      '사용 방법을 4단계로 정리 (첨부 → 다듬기(선택) → 확인하고 저장 → Finale)',
+      '악보 아래의 알림(템포·박자·조성 맞춤, 드럼 제외 등) 목록은 기본으로 접어 두고 "알림 N건"을 눌러서 펼쳐 봄',
+    ],
+  },
+  {
     version: '1.11.0',
     date: '2026-11-24',
     changes: [

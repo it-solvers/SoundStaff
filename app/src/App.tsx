@@ -63,7 +63,6 @@ export default function App() {
   const [failed, setFailed] = useState<FailedFile[]>([])
   const [loading, setLoading] = useState(false)
   const [unit, setUnit] = useState<OutputUnit>('merged')
-  const [touched, setTouched] = useState(false)
   const [overrides, setOverrides] = useState<Record<string, SettingsOverride>>({})
   const [results, setResults] = useState<Record<string, ScoreState>>({})
   const [selectedId, setSelectedId] = useState('')
@@ -100,7 +99,6 @@ export default function App() {
     setFailed([])
     setResults({})
     setOverrides({})
-    setTouched(false)
     const audio = picked.filter((f) => kindOfFile(f.name) === 'audio')
     const others = picked.filter((f) => kindOfFile(f.name) !== 'audio')
     const problems: FailedFile[] = []
@@ -108,6 +106,14 @@ export default function App() {
       const read = await Promise.all(others.map(readMidiFile))
       const infos = read.flatMap((r) => (r.ok ? [r.info] : []))
       setFiles(infos)
+      if (infos.length) {
+        // 첨부하면 바로 악보까지 만든다 (출력 단위·설정을 바꾸면 자동으로 다시 만들어진다)
+        const list = deriveItems(infos, unit)
+        const built: Record<string, ScoreState> = {}
+        for (const item of list) built[item.id] = buildState(item, {})
+        setResults(built)
+        setSelectedId(list[0]?.id ?? '')
+      }
       problems.push(...read.flatMap((r) => (r.ok ? [] : [{ fileName: r.fileName, error: r.error }])))
       setFailed([...problems])
 
@@ -156,7 +162,6 @@ export default function App() {
     setFailed([])
     setResults({})
     setOverrides({})
-    setTouched(false)
   }
 
   /** 이미 만든 악보가 있는 항목만 새 설정으로 다시 만든다 ("값을 바꾸면 악보가 다시 만들어진다") */
@@ -168,31 +173,20 @@ export default function App() {
     })
   }
 
-  function build(item: OutputItem) {
-    setResults((prev) => ({ ...prev, [item.id]: buildState(item, overrides[item.id] ?? {}) }))
-    setSelectedId(item.id)
-  }
-
   function changeUnit(next: OutputUnit) {
     setUnit(next)
-    setTouched(true)
-    const had = Object.keys(results).length > 0
     const nextItems = deriveItems(files, next)
-    setResults({}) // 악보를 만드는 단위가 바뀌므로 이전 결과는 지운다
-    if (had) {
-      const built: Record<string, ScoreState> = {}
-      for (const item of nextItems) built[item.id] = buildState(item, overrides[item.id] ?? {})
-      setResults(built)
-      setSelectedId(nextItems[0]?.id ?? '')
-    }
+    const built: Record<string, ScoreState> = {} // 악보를 만드는 단위가 바뀌므로 이전 결과는 버리고 새 단위로 다시 만든다
+    for (const item of nextItems) built[item.id] = buildState(item, overrides[item.id] ?? {})
+    setResults(built)
+    setSelectedId(nextItems[0]?.id ?? '')
   }
 
   function changeSettings(item: OutputItem, patch: SettingsOverride | null) {
     const merged = patch === null ? {} : { ...overrides[item.id], ...patch }
     const nextOverrides = { ...overrides, [item.id]: merged }
     setOverrides(nextOverrides)
-    setTouched(true)
-    if (results[item.id]) rebuild(items, nextOverrides, [item.id])
+    rebuild(items, nextOverrides, [item.id]) // 값을 바꾸면 악보가 바로 다시 만들어진다
   }
 
   const panelItems: PanelItem[] = items.flatMap((item) => {
@@ -212,7 +206,8 @@ export default function App() {
       },
     ]
   })
-  const step = panelItems.length > 0 ? 4 : files.length > 0 ? (touched ? 3 : 2) : 1
+  // 첨부하면 악보가 바로 만들어지므로: 파일이 없으면 1, 악보가 나왔으면 3(확인하고 저장), 읽기만 되고 악보를 못 만들었으면 2(다듬기)
+  const step = panelItems.length > 0 ? 3 : files.length > 0 ? 2 : 1
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
@@ -308,7 +303,6 @@ export default function App() {
                   override={overrides[item.id] ?? {}}
                   state={results[item.id]}
                   onChange={(patch) => changeSettings(item, patch)}
-                  onBuild={() => build(item)}
                 />
               ))}
             </>

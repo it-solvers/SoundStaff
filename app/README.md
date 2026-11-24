@@ -35,7 +35,7 @@ Node.js 20 이상. 커밋 전에는 `npm run check`가 통과해야 한다 (기�
 
 ## 버전 관리
 
-화면 제목 옆 `(1.11.0)`과 브라우저 탭 제목에 버전이 표시된다. 기능을 추가하거나 화면을 바꿀 때마다 올린다.
+화면 제목 옆 `(1.12.0)`과 브라우저 탭 제목에 버전이 표시된다. 기능을 추가하거나 화면을 바꿀 때마다 올린다.
 
 | 변경                           | 올리는 자리 | 예            |
 | ------------------------------ | ----------- | ------------- |
@@ -47,15 +47,15 @@ Node.js 20 이상. 커밋 전에는 `npm run check`가 통과해야 한다 (기�
 
 ## 폴더 구조
 
-| 폴더              | 내용                                                                                                                                                                                      |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/text/ko.ts`  | **화면에 보이는 모든 문구** (기획서 2.1장: 언어를 추가하기 쉽게 한 곳에 모음)                                                                                                             |
-| `src/midi/`       | MIDI 읽기(`readMidi`), 트랙 분류, 양자화(`quantize`), 마디·성부 배치(`measures`), 조표 표(`keys`)                                                                                         |
-| `src/score/`      | 설정(`settings`), 파일 합치기(`mergeFiles`), 악보 만들기(`buildScore`), MusicXML(`toMusicXml`), 검증(`validate`), 내보내기(`exportPdf`, `exportMusicXml`, `exportPianoMidi`, `exportZip`) |
-| `src/components/` | 화면 부품 (`ErrorBoundary`, `UploadZone`, `TrackList`, `OptionsPanel`, `OutputCard`, `SettingsForm`, `ScorePanel`, `ScoreView`, `DownloadButtons` 등)                                     |
-| `src/utils/`      | 파일 이름, 다운로드, 오류 처리(`errors`)                                                                                                                                                  |
-| `tests/`          | 자동 시험. `tests/fixtures/`는 직접 만든 시험용 MIDI(설명: `tests/fixtures/README.md`)                                                                                                    |
-| `public/fonts/`   | PDF에 내장하는 한글 글꼴 (OFL 라이선스 파일 동봉)                                                                                                                                         |
+| 폴더              | 내용                                                                                                                                                                                    |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/text/ko.ts`  | **화면에 보이는 모든 문구** (기획서 2.1장: 언어를 추가하기 쉽게 한 곳에 모음)                                                                                                           |
+| `src/midi/`       | MIDI 읽기(`readMidi`), 트랙 분류, 양자화(`quantize`), 마디·성부 배치(`measures`), 조표 표(`keys`)                                                                                       |
+| `src/score/`      | 설정(`settings`), 파일 합치기(`mergeFiles`), 악보 생성(`buildScore`), MusicXML(`toMusicXml`), 검증(`validate`), 내보내기(`exportPdf`, `exportMusicXml`, `exportPianoMidi`, `exportZip`) |
+| `src/components/` | 화면 부품 (`ErrorBoundary`, `UploadZone`, `TrackList`, `OptionsPanel`, `OutputCard`, `SettingsForm`, `ScorePanel`, `ScoreView`, `DownloadButtons` 등)                                   |
+| `src/utils/`      | 파일 이름, 다운로드, 오류 처리(`errors`)                                                                                                                                                |
+| `tests/`          | 자동 시험. `tests/fixtures/`는 직접 만든 시험용 MIDI(설명: `tests/fixtures/README.md`)                                                                                                  |
+| `public/fonts/`   | PDF에 내장하는 한글 글꼴 (OFL 라이선스 파일 동봉)                                                                                                                                       |
 
 ## 동작 규칙 메모
 
@@ -96,6 +96,8 @@ Node.js 20 이상. 커밋 전에는 `npm run check`가 통과해야 한다 (기�
 - **밝은/다크 모드**: `src/theme/`. 자동은 인천 동구 일대 좌표(`sun.ts`, 소수 둘째 자리)로 일출·일몰을 이 기기 안에서 계산해(NOAA 일출 방정식) 낮이면 밝게, 밤이면 어둡게 한다. 30초마다 다시 확인한다. 선택은 `localStorage`(`soundstaff-theme`)에 저장하며, 저장소를 못 쓰면 자동이다. 밝은 모드 색은 `index.css`에서 Tailwind 팔레트의 진한 쪽과 연한 쪽을 맞바꿔 만든다(`:root[data-theme='light']`, 흰 글씨를 쓰는 500~700 단계는 그대로). 새 색 계열을 쓰면 이 목록에 추가해야 한다. 악보 미리보기 글씨 색은 `ScoreView.tsx`의 `INK`.
 
 - **움직임(애니메이션) 규칙**: 화면 요소를 넣고 빼는 방식으로 바꾸면 툭 끊겨 보인다. 단계 막대의 제목(`StepBar.tsx`)은 항상 두고 `grid-template-columns/rows: 0fr ↔ 1fr`(실제 내용 크기만큼 정확히 펼침)와 투명도·위치·여백을 0.35초 `ease-in-out`으로 바꾼다. `max-width`처럼 실제 크기보다 큰 값으로 움직이면 변화 구간의 일부만 보여 오히려 끊겨 보인다. `motion-reduce`(운영체제의 움직임 줄이기)는 즉시 바뀐다. 프레임 단위 측정 시험으로 확인했다.
+
+- **악보는 자동으로 만든다**: [악보 만들기] 버튼은 없다. 첨부하면 `handleFiles`가 MIDI를 읽자마자(음원은 분석이 끝나면) `deriveItems` → `buildState`로 악보까지 만들고, 출력 단위(`changeUnit`)·설정·악기 설정(`changeSettings`)을 바꾸면 항상 다시 만든다. 사용 방법은 4단계(첨부 → 다듬기(선택) → 확인하고 저장 → Finale)이고 `App.tsx`의 `step`은 파일 없음 1 / 읽기만 됨 2 / 악보 있음 3이다. 악보 아래 알림 목록(`ScoreResult`)은 `<details>`로 기본 접혀 있다.
 
 ## 알려진 사항
 

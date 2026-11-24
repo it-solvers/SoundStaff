@@ -26,11 +26,20 @@ export default function ScoreResult({ state }: { state: ScoreState }) {
         {t.result.done(report.measureCount, parts)}
       </p>
       {report.warnings.length > 0 && (
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-200" data-testid="score-warnings">
-          {report.warnings.map((w, i) => (
-            <li key={i}>{w}</li>
-          ))}
-        </ul>
+        // 알림이 많아도 화면을 차지하지 않게 기본은 접어 두고, 누르면 펼친다
+        <details className="mt-2" data-testid="score-warnings-box">
+          <summary
+            className="inline-flex min-h-9 cursor-pointer items-center text-sm text-amber-200"
+            data-testid="score-warnings-toggle"
+          >
+            ⚠ {t.result.warningsSummary(report.warnings.length)}
+          </summary>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-amber-200" data-testid="score-warnings">
+            {report.warnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   )
