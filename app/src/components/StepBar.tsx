@@ -37,7 +37,7 @@ export default function StepBar({ current, showTitle }: { current: 1 | 2 | 3 | 4
             return (
               <li key={label} className="flex items-center gap-1 sm:gap-2" data-testid="step-chip" data-state={state}>
                 {i > 0 && (
-                  <span aria-hidden="true" className="text-slate-600">
+                  <span aria-hidden="true" className="text-slate-500">
                     ›
                   </span>
                 )}
@@ -47,7 +47,7 @@ export default function StepBar({ current, showTitle }: { current: 1 | 2 | 3 | 4
                       ? 'bg-emerald-700 text-white'
                       : state === 'active'
                         ? 'bg-sky-600 text-white'
-                        : 'bg-slate-700 text-slate-300'
+                        : 'bg-slate-700 text-white'
                   }`}
                   aria-hidden="true"
                 >

@@ -26,11 +26,7 @@ export default function UsageGuide({ current }: { current: 1 | 2 | 3 | 4 }) {
               <div className="flex items-center gap-2">
                 <span
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                    done
-                      ? 'bg-emerald-700 text-white'
-                      : active
-                        ? 'bg-sky-600 text-white'
-                        : 'bg-slate-700 text-slate-300'
+                    done ? 'bg-emerald-700 text-white' : active ? 'bg-sky-600 text-white' : 'bg-slate-700 text-white'
                   }`}
                   aria-hidden="true"
                 >

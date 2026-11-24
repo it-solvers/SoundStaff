@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.4.1',
+    date: '2026-11-24',
+    changes: ['화면: 밝은 모드에서 단계 막대와 사용 방법 카드의 숫자가 안 보이던 문제 수정 (어두운 원에는 흰 글씨)'],
+  },
+  {
     version: '1.4.0',
     date: '2026-11-24',
     changes: [
