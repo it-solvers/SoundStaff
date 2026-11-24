@@ -116,7 +116,8 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
       const h = vb && vb.height ? vb.height : svg.getBoundingClientRect().height
       const scale = Math.min(pageW / w, pageH / h)
       if (i > 0) pdf.addPage()
-      await svg2pdf(svg, pdf, { x: 0, y: 0, width: w * scale, height: h * scale })
+      // 쪽보다 좁아지면(긴 제목을 여러 줄로 나눠 악보가 길어진 경우 등) 왼쪽에 붙지 않고 가로 가운데에 놓는다
+      await svg2pdf(svg, pdf, { x: (pageW - w * scale) / 2, y: 0, width: w * scale, height: h * scale })
 
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(9)

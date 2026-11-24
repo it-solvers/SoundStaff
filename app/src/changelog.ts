@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.8.1',
+    date: '2026-11-24',
+    changes: [
+      '긴 곡 제목이 잘리거나 한쪽으로 쏠리던 문제 수정: 제목이 길면 글자를 줄여 2줄 안에 맞추고(최소 50%, 폰처럼 좁은 화면은 줄 수 증가) 줄마다 가운데 정렬',
+      'PDF에서 긴 제목 때문에 악보가 왼쪽에 붙던 문제 수정 (쪽 가운데에 놓음)',
+    ],
+  },
+  {
     version: '1.8.0',
     date: '2026-11-24',
     changes: [
