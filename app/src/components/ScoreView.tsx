@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
 import { wrapTitle } from '../score/wrapTitle'
 import { t } from '../text/ko'
+import { useTheme } from '../theme/theme'
 
-const PREVIEW_INK = '#e2e8f0'
+/** 미리보기 악보 색: 어두운 배경에서는 밝게, 밝은 배경에서는 어둡게 */
+const INK = { dark: '#e2e8f0', light: '#0f172a' } as const
 const ZOOMS = [0.6, 0.8, 1, 1.25, 1.5, 2]
 
 /** MusicXML을 화면에 그린다 (OSMD). 표시 전용이며 편집 기능은 없다. */
@@ -21,24 +23,26 @@ export default function ScoreView({ xml }: { xml: string }) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState('')
   const zoomRef = useRef(ZOOMS[2])
+  const { resolved } = useTheme()
 
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
     let cancelled = false
     setStatus('loading')
+    const ink = INK[resolved]
     const osmd = new OpenSheetMusicDisplay(host, {
       autoResize: false, // 창 크기가 바뀔 때의 다시 그리기는 아래에서 직접 한다 (긴 제목 줄바꿈을 다시 적용해야 하므로)
       drawTitle: true,
       autoBeam: true,
       backend: 'svg',
       // 다크모드: 어두운 배경에서 눈이 편하도록 악보를 밝은 색으로 그린다 (PDF 내보내기에는 영향 없음)
-      defaultColorMusic: PREVIEW_INK,
-      defaultColorNotehead: PREVIEW_INK,
-      defaultColorStem: PREVIEW_INK,
-      defaultColorRest: PREVIEW_INK,
-      defaultColorLabel: PREVIEW_INK,
-      defaultColorTitle: PREVIEW_INK,
+      defaultColorMusic: ink,
+      defaultColorNotehead: ink,
+      defaultColorStem: ink,
+      defaultColorRest: ink,
+      defaultColorLabel: ink,
+      defaultColorTitle: ink,
     })
     osmdRef.current = osmd
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -75,7 +79,7 @@ export default function ScoreView({ xml }: { xml: string }) {
       }
       host.innerHTML = ''
     }
-  }, [xml])
+  }, [xml, resolved])
 
   useEffect(() => {
     zoomRef.current = ZOOMS[zoomIdx]

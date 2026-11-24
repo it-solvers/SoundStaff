@@ -48,6 +48,14 @@ export const ko = {
   },
 
   /** 음원(mp3, wav 등) 분석 — 기획서 8.5장 */
+  theme: {
+    label: '화면 색',
+    auto: '자동',
+    light: '밝게',
+    dark: '어둡게',
+    autoNote: (rise: string, set: string, now: string) => `인천 일출 ${rise} · 일몰 ${set} 기준, 지금은 ${now}`,
+  },
+
   colab: {
     question: '더 정확한 반주 제거 분석이 필요하신가요?',
     open: '고품질 변환(Colab) 열기',

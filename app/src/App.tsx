@@ -3,6 +3,7 @@ import { AnalysisCancelled, analyzeAudioFile } from './audio/analyze'
 import { isPhoneOrTablet, readDeviceEnv } from './audio/device'
 import { kindOfFile } from './audio/format'
 import AnalysisProgress, { type AnalysisState } from './components/AnalysisProgress'
+import ThemeToggle from './components/ThemeToggle'
 import AudioUpload, { AudioNotes } from './components/AudioUpload'
 import ChangeLog from './components/ChangeLog'
 import Notices from './components/Notices'
@@ -222,12 +223,15 @@ export default function App() {
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
       <header ref={headerRef}>
-        <h1 className="text-4xl font-semibold tracking-tight">
-          {t.appName}{' '}
-          <span className="text-[27px] font-normal text-slate-400" data-testid="app-version">
-            ({APP_VERSION})
-          </span>
-        </h1>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <h1 className="text-4xl font-semibold tracking-tight">
+            {t.appName}{' '}
+            <span className="text-[27px] font-normal text-slate-400" data-testid="app-version">
+              ({APP_VERSION})
+            </span>
+          </h1>
+          <ThemeToggle />
+        </div>
         <p className="mt-1 text-sm text-slate-300" data-testid="tagline">
           {phone ? t.taglineMidiOnly : t.tagline}
         </p>
