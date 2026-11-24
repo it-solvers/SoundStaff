@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.6.0',
+    date: '2026-11-24',
+    changes: [
+      '고품질 변환(Colab) 노트북 추가: 음원에서 반주를 제거하고(Demucs) MIDI로 바꾼(Basic Pitch) 파일을 내려받을 수 있음',
+      '[고품질 변환(Colab) 열기] 버튼이 켜짐 (저장소에 올라간 노트북을 새 탭에서 엶)',
+    ],
+  },
+  {
     version: '1.5.1',
     date: '2026-11-24',
     changes: [
