@@ -19,6 +19,7 @@ export default function ColabGuide({ disabled, onMidi }: Props) {
   const [opened, setOpened] = useState(false)
   const [back, setBack] = useState(false)
   const [popupOpen, setPopupOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const [dragging, setDragging] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -28,6 +29,7 @@ export default function ColabGuide({ disabled, onMidi }: Props) {
     let timer: ReturnType<typeof setInterval> | undefined
     const mark = (e: Event) => {
       setOpened(true)
+      setExpanded(true) // 다른 곳의 Colab 링크를 눌러도 안내판이 펼쳐져 있게 한다
       const win = (e as CustomEvent<ColabOpenedDetail>).detail?.win ?? null
       clearInterval(timer)
       if (!win) return
@@ -72,9 +74,17 @@ export default function ColabGuide({ disabled, onMidi }: Props) {
   const circle = 'flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs text-white'
 
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900 p-4" data-testid="colab-guide">
-      <h2 className="text-sm font-semibold">{t.colab.guide.heading}</h2>
-      <ol className="mt-3 space-y-3 text-sm text-slate-300">
+    <details
+      open={expanded}
+      onToggle={(e) => setExpanded(e.currentTarget.open)}
+      className="rounded-xl border border-slate-800 bg-slate-900 p-4"
+      data-testid="colab-guide"
+    >
+      <summary className="cursor-pointer text-sm font-semibold" data-testid="colab-summary">
+        {t.colab.guide.heading}
+        <span className="ml-2 text-xs font-normal text-slate-400">{t.colab.guide.optional}</span>
+      </summary>
+      <ol className="mt-4 space-y-3 text-sm text-slate-300">
         <li className="flex items-start gap-3">
           <span className={circle}>1</span>
           <div className="space-y-1.5">
@@ -138,6 +148,6 @@ export default function ColabGuide({ disabled, onMidi }: Props) {
           </div>
         </li>
       </ol>
-    </section>
+    </details>
   )
 }

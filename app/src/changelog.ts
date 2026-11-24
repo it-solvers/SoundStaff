@@ -12,6 +12,15 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.6.2',
+    date: '2026-11-24',
+    changes: [
+      'Colab 노트북을 코드 칸 하나·버튼 하나로 단순화: ▶ 한 번 누르고 파일만 고르면 MIDI가 자동으로 내려받아짐 (코드는 접혀 있음, 오류도 쉬운 한글 안내)',
+      '고품질 변환 안내판은 기본으로 접어 두고(선택 사항), 눌러서 펼치게 함. Colab 링크를 누르면 자동으로 펼쳐짐',
+      '안내 문구를 더 쉽게 고침',
+    ],
+  },
+  {
     version: '1.6.1',
     date: '2026-11-24',
     changes: [

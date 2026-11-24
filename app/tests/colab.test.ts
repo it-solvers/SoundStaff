@@ -29,21 +29,35 @@ describe('고품질 변환(Colab) 노트북', () => {
     for (const c of nb.cells.filter((x) => x.cell_type === 'code')) expect(c.outputs).toEqual([])
   })
 
+  it('사용자가 누를 코드 칸은 딱 하나이고, 코드는 접혀 있다 (코드를 몰라도 ▶ 한 번이면 끝)', () => {
+    const codeCells = nb.cells.filter((c) => c.cell_type === 'code') as unknown as { metadata: { cellView?: string } }[]
+    expect(codeCells).toHaveLength(1)
+    expect(codeCells[0].metadata.cellView).toBe('form')
+    expect(code[0]).toMatch(/^#@title ▶/)
+  })
+
   it('필요한 단계가 순서대로 들어 있다: 설치 → 올리기 → 반주 제거 → MIDI 변환 → 내려받기', () => {
-    const at = (re: RegExp) => code.findIndex((s) => re.test(s))
+    const all = code.join('\n')
     const order = [
       /pip install[^\n]*demucs/,
       /files\.upload\(/,
       /-m demucs[^\n]*--two-stems=vocals/,
       /predict_and_save\(/,
       /files\.download\(/,
-    ].map(at)
+    ].map((re) => all.search(re))
     expect(
       order.every((i) => i >= 0),
       `단계 누락: ${order.join(',')}`,
     ).toBe(true)
     expect([...order].sort((a, b) => a - b)).toEqual(order)
-    expect(code.join('\n')).toMatch(/pip install[^\n]*basic-pitch/)
+    expect(all).toMatch(/pip install[^\n]*basic-pitch/)
+  })
+
+  it('오류가 나도 파이썬 오류 목록 대신 쉬운 한글 안내가 나온다', () => {
+    const all = code.join('\n')
+    expect(all).toMatch(/except RuntimeError/)
+    expect(all).toMatch(/except Exception/)
+    expect(all).toMatch(/런타임 다시 시작/)
   })
 
   it('Colab의 !명령 {변수} 치환에 한글 변수 이름을 쓰지 않는다 (치환 실패 방지)', () => {
