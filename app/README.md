@@ -31,6 +31,22 @@ npm run check     # 타입 검사 + 코드 검사 + 자동 시험을 한 번에 
 
 `npm run build`가 만드는 `dist/` 폴더를 정적 호스팅(GitHub Pages, Netlify, 일반 웹서버 등)에 그대로 올리면 된다. 파일 경로가 상대 경로(`./assets/...`)라 **루트 주소든 하위 폴더 주소든** 동작한다(두 경우 모두 시험함). 서버 쪽 설정은 필요 없다. 단, 보안 규칙 때문에 `index.html`을 파일로 직접 열기(`file://`)는 지원하지 않으므로 간단히 확인할 때는 `npm run preview`나 `python3 -m http.server`처럼 웹서버로 띄운다. 방문 분석·광고 스크립트와 외부 글꼴은 쓰지 않는다(빌드 결과물에서 외부 요청 0건을 시험함).
 
+#### 현재 배포 (Cloudflare Workers, GitHub 연결)
+
+`main` 브랜치에 푸시하면 Cloudflare가 자동으로 빌드·배포한다. 주소는 https://soundstaff.itsolvers.co.kr 이다. 저장소에 설정 파일(`wrangler.jsonc`)은 없고, Cloudflare 대시보드(Compute → Workers & Pages → soundstaff → Settings → Builds)의 값으로 동작한다.
+
+| 항목 | 값 |
+|---|---|
+| 저장소 | `it-solvers/SoundStaff`, 브랜치 `main` |
+| Root directory | `app` (칸이 없으면 아래 두 명령 앞에 `cd app &&`를 붙인다) |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy --assets=./dist --name soundstaff --compatibility-date=2026-11-25` |
+| 미리보기 빌드 | 끔 (설정 파일이 없어 `main` 외 브랜치는 배포 명령이 맞지 않을 수 있음) |
+
+- `--name`은 Cloudflare 프로젝트 이름(`soundstaff`)과 같아야 한다. `--compatibility-date`는 Workers 실행 환경의 호환성 기준일이며 정적 파일만 올리는 이 앱의 동작에는 영향이 없다.
+- 커스텀 도메인은 Workers & Pages → soundstaff → Domains → Add Domain에서 `itsolvers.co.kr`을 고르고 하위 이름 `soundstaff`을 붙여 연결했다(DNS 기록은 Cloudflare가 자동 생성). 직접 CNAME을 만들지 않는다.
+- 푸시하기 전에 `data/`·`output/`(저작권 악보·음원, 개인 정보)가 커밋에 들어가지 않았는지 확인한다. 저장소가 공개이고 푸시가 곧 공개 배포이기 때문이다.
+
 Node.js 20 이상. 커밋 전에는 `npm run check`가 통과해야 한다 (기획서 10.1장).
 
 ## 버전 관리
