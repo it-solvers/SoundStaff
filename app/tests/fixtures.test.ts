@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { readMidiFile } from '../src/midi/readMidi'
-import { buildInstrumentScore, buildPianoScore, defaultSettings } from '../src/score/buildScore'
+import { buildInstrumentScore, defaultSettings } from '../src/score/buildScore'
 import { mergeFiles } from '../src/score/mergeFiles'
 import { buildPianoMidi } from '../src/score/exportPianoMidi'
 import type { MidiFileInfo } from '../src/midi/types'
@@ -24,15 +24,13 @@ describe('시험용 파일 전체 (tests/fixtures)', () => {
   it('시험 파일이 15개 있다', () => expect(names).toHaveLength(15))
 
   for (const name of names.filter((n) => !NO_SCORE.has(n))) {
-    it(`${name}: 악기별·피아노 두 방식 모두 올바른 MusicXML이 만들어진다`, async () => {
+    it(`${name}: 올바른 MusicXML이 만들어진다`, async () => {
       const info = await load(name)
-      for (const build of [buildInstrumentScore, buildPianoScore]) {
-        const res = build(info, defaultSettings(info)) // 마디 길이·붙임줄 검증은 만드는 도중에 이미 수행된다
-        const doc = new DOMParser().parseFromString(res.xml, 'application/xml').documentElement as unknown as Element
-        expect(doc.nodeName).toBe('score-partwise')
-        expect(res.report.measureCount).toBeGreaterThan(0)
-        expect(res.xml).not.toMatch(/undefined|NaN/)
-      }
+      const res = buildInstrumentScore(info, defaultSettings(info)) // 마디 길이·붙임줄 검증은 만드는 도중에 이미 수행된다
+      const doc = new DOMParser().parseFromString(res.xml, 'application/xml').documentElement as unknown as Element
+      expect(doc.nodeName).toBe('score-partwise')
+      expect(res.report.measureCount).toBeGreaterThan(0)
+      expect(res.xml).not.toMatch(/undefined|NaN/)
     })
 
     it(`${name}: 피아노 MIDI를 만들어 다시 읽으면 모두 음높이 악기다`, async () => {
@@ -48,7 +46,6 @@ describe('시험용 파일 전체 (tests/fixtures)', () => {
     it(`${name}: 악보를 만들 수 없다고 정해진 문구로 알린다`, async () => {
       const info = await load(name)
       expect(() => buildInstrumentScore(info, defaultSettings(info))).toThrow(message)
-      expect(() => buildPianoScore(info, defaultSettings(info))).toThrow(message)
     })
   }
 
@@ -67,11 +64,11 @@ describe('시험용 파일 전체 (tests/fixtures)', () => {
       ['01_멀티트랙_드럼_3박자_Eb장조.mid', '03_단일트랙_4박자_G장조.mid', '07_합창_4성부.mid'].map(load),
     )
     const merged = mergeFiles(files)
-    const res = buildPianoScore(merged.info, defaultSettings(merged.info))
+    const res = buildInstrumentScore(merged.info, defaultSettings(merged.info))
     const pitched = files
       .flatMap((f) => f.tracks.filter((t) => t.kind === 'pitched'))
       .reduce((a, t) => a + t.noteCount, 0)
-    expect(res.report.reduction!.input).toBe(pitched)
+    expect(res.report.parts.reduce((a, p) => a + p.noteCount, 0)).toBe(pitched)
     expect(merged.warnings.length).toBe(6)
   })
 

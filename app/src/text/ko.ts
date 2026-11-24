@@ -25,13 +25,16 @@ export const ko = {
         title: 'MIDI 또는 음원 첨부',
         desc: '파일을 끌어다 놓거나 [파일 선택]을 누릅니다. 음원(mp3, wav 등)은 PC에서 분석합니다.',
       },
-      { title: '방식 선택', desc: '악보를 하나로 합칠지 파일별로 만들지, 피아노로 합칠지 악기별로 만들지 고릅니다.' },
+      {
+        title: '출력 선택',
+        desc: '악보를 하나로 합칠지 파일별로 만들지 고릅니다. 악보는 악기(트랙)마다 한 줄씩 만들어집니다.',
+      },
       { title: '[악보 만들기]', desc: '필요하면 박자·템포·조성·제목을 고치고 버튼을 누르면 아래에 악보가 나타납니다.' },
       { title: '확인하고 저장', desc: '악보를 확대·축소해 보고 PDF, MusicXML, 피아노 MIDI로 저장합니다.' },
       { title: 'Finale에서 열기', desc: 'PC의 Finale에서 MusicXML을 열고 다른 이름으로 저장하면 .musx가 됩니다.' },
     ],
     /** 위쪽에 고정되는 단계 막대의 짧은 이름 (steps와 같은 순서) */
-    short: ['첨부', '방식', '만들기', '저장', 'Finale'],
+    short: ['첨부', '출력', '만들기', '저장', 'Finale'],
     barLabel: (current: number, total: number, title: string, desc: string) => `${current}/${total} ${title}: ${desc}`,
     footer:
       '폰·태블릿에서는 MIDI 변환만 쓸 수 있고, 음원 분석은 PC에서 이용해 주세요. Finale는 PC에서만 열 수 있어 폰에서 받은 파일은 PC로 옮겨야 합니다.',
@@ -63,8 +66,7 @@ export const ko = {
     warningMore: '자동 분석 결과는 오류가 있을 수 있습니다. 가능하면 MIDI를 사용하세요.',
     vocalHint: '보컬만 분리된 파일(보컬 스템)을 올리면 주 멜로디를 훨씬 정확하게 찾습니다.',
     phone: '음원 분석은 PC에서 이용해 주세요.',
-    separateNote:
-      '음원 분석 결과는 출력 단위·변환 방식과 상관없이 항상 주 멜로디 한 단 악보로, 파일마다 따로 만듭니다.',
+    separateNote: '음원 분석 결과는 출력 단위와 상관없이 항상 주 멜로디 한 단 악보로, 파일마다 따로 만듭니다.',
     trackName: 'Melody',
     estimated: '추정',
     stages: {
@@ -107,14 +109,6 @@ export const ko = {
       merged: { label: '합쳐서 악보 하나', desc: '첨부한 모든 파일을 한 곡으로 모아 악보 한 개를 만듭니다.' },
       separate: { label: '파일별로 각각 악보', desc: '파일마다 악보를 따로 만들고 PDF·MusicXML도 파일별로 받습니다.' },
     },
-    modeLegend: '변환 방식',
-    mode: {
-      piano: {
-        label: '피아노로 합치기',
-        desc: '모든 악기를 오른손·왼손 두 줄로 합칩니다. 한 손으로 칠 수 있게 일부 음은 빠집니다.',
-      },
-      instrument: { label: '악기별 악보', desc: '악기(트랙)마다 한 줄씩 악보를 만듭니다. 음은 빠지지 않습니다.' },
-    },
   },
 
   settings: {
@@ -142,19 +136,6 @@ export const ko = {
     partsSummary: (list: string, n: number) => `파트 ${n}개 (${list})`,
     partItem: (name: string, notes: number) => `${name} ${notes}음`,
     error: (msg: string) => `악보를 만들지 못했습니다: ${msg}`,
-    reduction: {
-      heading: '피아노로 합친 결과',
-      flow: (input: number, dup: number, right: number, left: number) => ({
-        before: `원본 음표 ${input}개 → 중복 ${dup}개 합침 → 한 손으로 칠 수 있게 `,
-        after: `개 제거 → 오른손 ${right}개 · 왼손 ${left}개`,
-      }),
-      removedDetail: (removed: number, pct: number, byCount: number, bySpan: number) =>
-        `제거한 음 ${removed}개 (${pct}%): 동시에 5개를 넘어서 ${byCount}개, 한 손 음 폭이 10도를 넘어서 ${bySpan}개`,
-      pinned: (list: string) => `경계(가온 도) 부근 선율이 끊기지 않게 한 손에 고정: ${list}`,
-      right: '오른손',
-      left: '왼손',
-      caveat: '자동으로 합친 피아노 악보는 사람이 편곡한 것만큼 연주하기 좋지 않습니다. Finale에서 손봐 주세요.',
-    },
   },
 
   /** 악보를 만드는 과정에서 나오는 경고 */

@@ -1,14 +1,13 @@
 import { layoutTrack } from '../midi/measures'
 import { buildMeasureGrid, enforceMonophonic, quantizeNotes, type MeasureGrid, type QNote } from '../midi/quantize'
 import type { MidiFileInfo, TrackInfo } from '../midi/types'
-import { reduceToPiano } from '../piano/reduce'
 import { t } from '../text/ko'
 import { UserError } from '../utils/errors'
 import { baseName as baseNameOf } from '../utils/fileName'
 import { materializeAudio } from './audioInfo'
 import { applySettings } from './settings'
 import { toMusicXml } from './toMusicXml'
-import type { BuildResult, ConvertMode, PartModel, PartReport, ScoreModel, ScoreSettings } from './types'
+import type { BuildResult, PartModel, PartReport, ScoreModel, ScoreSettings } from './types'
 import { validateModel, validateXmlWellFormed } from './validate'
 
 /** MIDI 파일에서 읽은 값으로 기본 설정을 만든다 (사용자가 바꾼 값이 있으면 applySettings를 쓴다) */
@@ -126,60 +125,10 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
     tempoByMeasure: p.tempoByMeasure,
     parts,
   }
-  return finish(model, { mode: 'instrument', parts: partReports, excludedDrums: p.excludedDrums, warnings })
+  return finish(model, { parts: partReports, excludedDrums: p.excludedDrums, warnings })
 }
 
-/** 피아노로 합치기: 모든 음높이 트랙을 오른손·왼손 두 보표로 합친다. (기획서 8.2) */
-export function buildPianoScore(info: MidiFileInfo, settings: ScoreSettings): BuildResult {
-  const p = prepare(info, settings)
-  const warnings = [...p.warnings]
-  const reduced = reduceToPiano(p.tracks.map(({ track, notes }) => ({ name: trackName(track), notes })))
-
-  const right = layoutTrack(reduced.right, p.grid.measures)
-  const left = layoutTrack(reduced.left, p.grid.measures)
-  warnings.push(
-    ...right.warnings.map((w) => t.warnings.hand(t.result.reduction.right, w)),
-    ...left.warnings.map((w) => t.warnings.hand(t.result.reduction.left, w)),
-  )
-  if (p.excludedDrums.length) warnings.push(t.warnings.drumsExcluded(p.excludedDrums.length))
-
-  const part: PartModel = {
-    id: 'P1',
-    name: 'Piano',
-    instrumentName: 'Acoustic Grand Piano',
-    channel: 1,
-    program: 0, // 기획서 8.2: Acoustic Grand Piano, MIDI 프로그램 번호 0
-    staves: [
-      { clef: 'G', layout: right.measures },
-      { clef: 'F', layout: left.measures },
-    ],
-  }
-  const model: ScoreModel = {
-    title: settings.title,
-    composer: settings.composer,
-    key: settings.key,
-    grid: p.grid.measures,
-    tempoByMeasure: p.tempoByMeasure,
-    parts: [part],
-  }
-  return finish(model, {
-    mode: 'piano',
-    reduction: reduced.report,
-    parts: [
-      {
-        name: 'Piano',
-        noteCount: reduced.report.right + reduced.report.left,
-        maxVoices: Math.max(1, ...right.measures.map((v) => v.length), ...left.measures.map((v) => v.length)),
-      },
-    ],
-    excludedDrums: p.excludedDrums,
-    warnings,
-  })
-}
-
-export function buildScore(info: MidiFileInfo, settings: ScoreSettings, mode: ConvertMode): BuildResult {
-  const resolved = materializeAudio(info, settings) // 음원 분석 결과는 지금 템포로 박 위치를 환산
-  // 음원 분석 결과는 주 멜로디 한 줄이라 출력 방식과 상관없이 한 단으로 만든다 (기획서 5장 7번)
-  if (resolved.source === 'audio') return buildInstrumentScore(resolved, settings)
-  return mode === 'piano' ? buildPianoScore(resolved, settings) : buildInstrumentScore(resolved, settings)
+export function buildScore(info: MidiFileInfo, settings: ScoreSettings): BuildResult {
+  // 음원 분석 결과는 지금 템포로 박 위치를 환산한 뒤, 악기(트랙)마다 한 단씩 악보를 만든다
+  return buildInstrumentScore(materializeAudio(info, settings), settings)
 }

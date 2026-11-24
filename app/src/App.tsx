@@ -20,7 +20,7 @@ import type { MidiFileInfo } from './midi/types'
 import { buildScore } from './score/buildScore'
 import { mergeFiles } from './score/mergeFiles'
 import { applySettings, type SettingsOverride } from './score/settings'
-import type { ConvertMode, OutputUnit } from './score/types'
+import type { OutputUnit } from './score/types'
 import { t } from './text/ko'
 import { checkBrowserSupport, reportError } from './utils/errors'
 import { baseName, safeFileName } from './utils/fileName'
@@ -47,9 +47,9 @@ function deriveItems(files: MidiFileInfo[], unit: OutputUnit): OutputItem[] {
   return [...midi.map((f) => ({ id: f.id, label: f.fileName, info: f, warnings: [] as string[] })), ...audioItems]
 }
 
-function buildState(item: OutputItem, override: SettingsOverride, mode: ConvertMode): ScoreState {
+function buildState(item: OutputItem, override: SettingsOverride): ScoreState {
   try {
-    const result = buildScore(item.info, applySettings(item.info, override), mode)
+    const result = buildScore(item.info, applySettings(item.info, override))
     if (item.warnings.length) result.report.warnings = [...item.warnings, ...result.report.warnings]
     return { status: 'ok', result }
   } catch (e) {
@@ -63,7 +63,6 @@ export default function App() {
   const [failed, setFailed] = useState<FailedFile[]>([])
   const [loading, setLoading] = useState(false)
   const [unit, setUnit] = useState<OutputUnit>('merged')
-  const [mode, setMode] = useState<ConvertMode>('piano')
   const [touched, setTouched] = useState(false)
   const [overrides, setOverrides] = useState<Record<string, SettingsOverride>>({})
   const [results, setResults] = useState<Record<string, ScoreState>>({})
@@ -130,7 +129,7 @@ export default function App() {
             setFiles((prev) => [...prev, info])
             // 분석이 끝나면 바로 주 멜로디 악보를 만들어 하단에 보여 준다 (기획서 5장 7번)
             const item: OutputItem = { id: info.id, label: info.fileName, info, warnings: [] }
-            setResults((prev) => ({ ...prev, [info.id]: buildState(item, {}, mode) }))
+            setResults((prev) => ({ ...prev, [info.id]: buildState(item, {}) }))
             setSelectedId(info.id)
           } catch (e) {
             if (e instanceof AnalysisCancelled) {
@@ -161,23 +160,17 @@ export default function App() {
   }
 
   /** 이미 만든 악보가 있는 항목만 새 설정으로 다시 만든다 ("값을 바꾸면 악보가 다시 만들어진다") */
-  function rebuild(list: OutputItem[], ov: Record<string, SettingsOverride>, m: ConvertMode, only: string[]) {
+  function rebuild(list: OutputItem[], ov: Record<string, SettingsOverride>, only: string[]) {
     setResults((prev) => {
       const next = { ...prev }
-      for (const item of list) if (only.includes(item.id)) next[item.id] = buildState(item, ov[item.id] ?? {}, m)
+      for (const item of list) if (only.includes(item.id)) next[item.id] = buildState(item, ov[item.id] ?? {})
       return next
     })
   }
 
   function build(item: OutputItem) {
-    setResults((prev) => ({ ...prev, [item.id]: buildState(item, overrides[item.id] ?? {}, mode) }))
+    setResults((prev) => ({ ...prev, [item.id]: buildState(item, overrides[item.id] ?? {}) }))
     setSelectedId(item.id)
-  }
-
-  function changeMode(next: ConvertMode) {
-    setMode(next)
-    setTouched(true)
-    rebuild(items, overrides, next, Object.keys(results))
   }
 
   function changeUnit(next: OutputUnit) {
@@ -188,7 +181,7 @@ export default function App() {
     setResults({}) // 악보를 만드는 단위가 바뀌므로 이전 결과는 지운다
     if (had) {
       const built: Record<string, ScoreState> = {}
-      for (const item of nextItems) built[item.id] = buildState(item, overrides[item.id] ?? {}, mode)
+      for (const item of nextItems) built[item.id] = buildState(item, overrides[item.id] ?? {})
       setResults(built)
       setSelectedId(nextItems[0]?.id ?? '')
     }
@@ -199,7 +192,7 @@ export default function App() {
     const nextOverrides = { ...overrides, [item.id]: merged }
     setOverrides(nextOverrides)
     setTouched(true)
-    if (results[item.id]) rebuild(items, nextOverrides, mode, [item.id])
+    if (results[item.id]) rebuild(items, nextOverrides, [item.id])
   }
 
   const panelItems: PanelItem[] = items.flatMap((item) => {
@@ -301,13 +294,7 @@ export default function App() {
 
               {/* 출력 단위·변환 방식은 MIDI에만 적용한다. 음원 분석 결과는 항상 주 멜로디 한 단이다. */}
               {files.some((f) => f.source !== 'audio') ? (
-                <OptionsPanel
-                  unit={unit}
-                  mode={mode}
-                  hasAudio={files.some((f) => f.source === 'audio')}
-                  onUnit={changeUnit}
-                  onMode={changeMode}
-                />
+                <OptionsPanel unit={unit} hasAudio={files.some((f) => f.source === 'audio')} onUnit={changeUnit} />
               ) : (
                 <p className="text-xs text-slate-400" data-testid="audio-separate-note">
                   {t.audio.separateNote}

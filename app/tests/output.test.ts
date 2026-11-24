@@ -3,7 +3,7 @@ import { DOMParser } from '@xmldom/xmldom'
 import { unzipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 import { readMidiFile } from '../src/midi/readMidi'
-import { buildInstrumentScore, buildPianoScore } from '../src/score/buildScore'
+import { buildInstrumentScore } from '../src/score/buildScore'
 import { buildPianoMidi } from '../src/score/exportPianoMidi'
 import { buildZip } from '../src/score/exportZip'
 import { mergeFiles } from '../src/score/mergeFiles'
@@ -103,7 +103,7 @@ describe('악보 설정 (applySettings)', () => {
   })
 
   it('작곡자가 비어 있으면 creator·composer credit을 만들지 않는다', () => {
-    const res = buildPianoScore(info([melody]), applySettings(info([melody])))
+    const res = buildInstrumentScore(info([melody]), applySettings(info([melody])))
     expect(res.xml).not.toContain('<creator')
     expect(res.xml).not.toContain('<credit-type>composer')
   })
@@ -157,8 +157,8 @@ describe('여러 파일 합치기 (mergeFiles)', () => {
 
   it('합친 파일로 악보를 만들면 모든 파일의 음표가 들어간다', () => {
     const r = mergeFiles([a, b])
-    const res = buildPianoScore(r.info, applySettings(r.info))
-    expect(res.report.reduction!.input).toBe(melody.noteCount + bass.noteCount)
+    const res = buildInstrumentScore(r.info, applySettings(r.info))
+    expect(res.report.parts.reduce((a, p) => a + p.noteCount, 0)).toBe(melody.noteCount + bass.noteCount)
   })
 })
 
@@ -262,7 +262,7 @@ describe('오류 안내 (기획서 11.3장)', () => {
     const empty = info([track(0, 'e', [], { kind: 'empty' })])
     expect(() => buildInstrumentScore(empty, applySettings(empty))).toThrow('음표가 없는 파일입니다.')
     const onlyDrums = info([drums])
-    expect(() => buildPianoScore(onlyDrums, applySettings(onlyDrums))).toThrow('음 높이가 있는 트랙이 없습니다.')
+    expect(() => buildInstrumentScore(onlyDrums, applySettings(onlyDrums))).toThrow('음 높이가 있는 트랙이 없습니다.')
   })
 })
 
@@ -279,7 +279,7 @@ describe('분리형 한글(NFD) 제목 처리', () => {
 
   it('분리형 파일 이름으로 만든 악보의 제목에 분리된 자모가 없다 (PDF·Finale 제목이 깨지지 않게)', () => {
     const src = info([melody], { fileName: '01_멀티트랙_드럼_3박자_Eb장조.mid'.normalize('NFC') })
-    const res = buildPianoScore(src, applySettings(src))
+    const res = buildInstrumentScore(src, applySettings(src))
     expect(jamo(res.xml)).toBe(0)
     expect(res.xml).toContain('<work-title>01_멀티트랙_드럼_3박자_Eb장조</work-title>')
   })

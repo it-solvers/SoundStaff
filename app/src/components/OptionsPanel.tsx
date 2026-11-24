@@ -1,13 +1,11 @@
 import { t } from '../text/ko'
-import type { ConvertMode, OutputUnit } from '../score/types'
+import type { OutputUnit } from '../score/types'
 
 interface Props {
   /** 음원 분석 결과가 있으면 합치지 않는다는 안내를 보여 준다 */
   hasAudio?: boolean
   unit: OutputUnit
-  mode: ConvertMode
   onUnit: (u: OutputUnit) => void
-  onMode: (m: ConvertMode) => void
 }
 
 function Choice<T extends string>(props: {
@@ -48,8 +46,8 @@ function Choice<T extends string>(props: {
   )
 }
 
-/** 출력 단위(합쳐서 하나 / 파일별)와 변환 방식(피아노 / 악기별) 선택 */
-export default function OptionsPanel({ unit, mode, hasAudio, onUnit, onMode }: Props) {
+/** 출력 단위(합쳐서 하나 / 파일별) 선택. 악보는 항상 악기(트랙)별로 한 단씩 만든다. */
+export default function OptionsPanel({ unit, hasAudio, onUnit }: Props) {
   return (
     <div className="grid gap-4" data-testid="options-panel">
       <Choice
@@ -67,16 +65,6 @@ export default function OptionsPanel({ unit, mode, hasAudio, onUnit, onMode }: P
           {t.audio.separateNote}
         </p>
       )}
-      <Choice
-        legend={t.options.modeLegend}
-        name="mode"
-        value={mode}
-        onChange={onMode}
-        options={[
-          { value: 'piano', ...t.options.mode.piano },
-          { value: 'instrument', ...t.options.mode.instrument },
-        ]}
-      />
     </div>
   )
 }

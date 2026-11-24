@@ -1,7 +1,8 @@
 import { DOMParser } from '@xmldom/xmldom'
 import { describe, expect, it } from 'vitest'
-import { buildInstrumentScore, buildPianoScore, defaultSettings } from '../src/score/buildScore'
-import { escapeXml } from '../src/score/toMusicXml'
+import { buildInstrumentScore, defaultSettings } from '../src/score/buildScore'
+import type { ScoreModel } from '../src/score/types'
+import { escapeXml, toMusicXml } from '../src/score/toMusicXml'
 import { G, info, track } from './helpers'
 
 type El = Element
@@ -121,10 +122,27 @@ describe('MusicXML 구조 — 악기별 악보', () => {
   })
 })
 
-describe('MusicXML 구조 — 피아노로 합친 악보', () => {
+describe('MusicXML 구조 — 한 파트에 보표 2개 (대보표) 지원', () => {
+  // 앱은 악기(트랙)마다 한 보표를 만들지만, MusicXML 생성기는 한 파트에 보표 여러 개도 올바르게 쓸 수 있어야 한다.
   const i = info([melody, bass, drums])
-  const res = buildPianoScore(i, defaultSettings(i))
-  const root = parse(res.xml)
+  const base = buildInstrumentScore(i, defaultSettings(i)).model
+  const src = base.parts[0]
+  const grand: ScoreModel = {
+    ...base,
+    parts: [
+      {
+        ...src,
+        name: 'Piano',
+        instrumentName: 'Acoustic Grand Piano',
+        program: 0,
+        staves: [
+          { clef: 'G', layout: src.staves[0].layout },
+          { clef: 'F', layout: src.staves[0].layout },
+        ],
+      },
+    ],
+  }
+  const root = parse(toMusicXml(grand))
 
   it('한 파트에 보표 2개 (높은음자리표 + 낮은음자리표)', () => {
     expect(all(root, 'score-part').length).toBe(1)
@@ -132,11 +150,6 @@ describe('MusicXML 구조 — 피아노로 합친 악보', () => {
     const clefs = all(root, 'clef').map((c) => `${c.getAttribute('number')}:${text(c, 'sign')}`)
     expect(clefs).toEqual(['1:G', '2:F'])
     expect(all(root, 'part-symbol')[0].textContent).toBe('brace')
-  })
-
-  it('악기는 Acoustic Grand Piano, MIDI 프로그램 번호는 1(=0번)이다', () => {
-    expect(all(root, 'instrument-name')[0].textContent).toBe('Acoustic Grand Piano')
-    expect(all(root, 'midi-program')[0].textContent).toBe('1')
   })
 
   it('모든 음·쉼표에 보표 번호가 있고 성부 번호가 보표마다 겹치지 않는다', () => {
@@ -157,17 +170,11 @@ describe('MusicXML 구조 — 피아노로 합친 악보', () => {
       for (const b of kids(m, 'backup')) expect(text(b, 'duration')).toBe('16')
     }
   })
-
-  it('합친 결과 보고서가 원본 음표 수와 맞다 (드럼 제외 7음)', () => {
-    expect(res.report.reduction).toMatchObject({ input: 7, duplicatesMerged: 0, removed: 0 })
-    expect(res.report.excludedDrums).toEqual(['Drums'])
-  })
 })
 
 describe('만들 수 없는 파일의 오류 안내', () => {
   it('드럼 트랙만 있으면 음높이 트랙이 없다고 알린다', () => {
     const i = info([drums])
     expect(() => buildInstrumentScore(i, defaultSettings(i))).toThrow('음 높이가 있는 트랙이 없습니다')
-    expect(() => buildPianoScore(i, defaultSettings(i))).toThrow('음 높이가 있는 트랙이 없습니다')
   })
 })

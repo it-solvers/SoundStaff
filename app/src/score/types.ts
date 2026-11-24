@@ -1,6 +1,5 @@
 import type { VoiceMeasure } from '../midi/measures'
 import type { MeasureSpec } from '../midi/quantize'
-import type { ReduceReport } from '../piano/types'
 import type { TempoChange, TimeSignatureChange } from '../midi/types'
 
 /** 악보를 만들 때 쓰는 설정. 기본값은 MIDI 파일에서 읽고, M5에서 사용자가 수정할 수 있게 된다. */
@@ -47,15 +46,10 @@ export interface PartReport {
   maxVoices: number
 }
 
-export type ConvertMode = 'instrument' | 'piano'
-
 /** merged: 첨부한 모든 파일을 악보 하나로 / separate: 파일별로 각각 악보 */
 export type OutputUnit = 'merged' | 'separate'
 
 export interface ScoreReport {
-  mode: ConvertMode
-  /** 피아노로 합친 경우에만 있음: 중복·제거된 음 수 등 */
-  reduction?: ReduceReport
   measureCount: number
   parts: PartReport[]
   excludedDrums: string[]

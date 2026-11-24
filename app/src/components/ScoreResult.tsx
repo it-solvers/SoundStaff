@@ -16,7 +16,6 @@ export default function ScoreResult({ state }: { state: ScoreState }) {
     )
   }
   const { report } = state.result
-  const rd = report.reduction
   const parts = t.result.partsSummary(
     report.parts.map((p) => t.result.partItem(p.name, p.noteCount)).join(', '),
     report.parts.length,
@@ -26,39 +25,6 @@ export default function ScoreResult({ state }: { state: ScoreState }) {
       <p className="text-sm font-medium text-emerald-200" data-testid="score-summary">
         {t.result.done(report.measureCount, parts)}
       </p>
-      {rd && (
-        <div
-          className="mt-3 rounded-lg border border-slate-700 bg-slate-800/60 p-3 text-sm"
-          data-testid="reduction-stats"
-        >
-          <p className="font-medium text-slate-100">{t.result.reduction.heading}</p>
-          <p className="mt-1 text-slate-200">
-            {t.result.reduction.flow(rd.input, rd.duplicatesMerged, rd.right, rd.left).before}
-            <b data-testid="removed-count">{rd.removed}</b>
-            {t.result.reduction.flow(rd.input, rd.duplicatesMerged, rd.right, rd.left).after}
-          </p>
-          {rd.removed > 0 && (
-            <p className="mt-1 text-amber-200" data-testid="removed-detail">
-              {t.result.reduction.removedDetail(
-                rd.removed,
-                Math.round((rd.removed / Math.max(1, rd.input - rd.duplicatesMerged)) * 100),
-                rd.removedByCount,
-                rd.removedBySpan,
-              )}
-            </p>
-          )}
-          {rd.pinnedTracks.length > 0 && (
-            <p className="mt-1 text-slate-300">
-              {t.result.reduction.pinned(
-                rd.pinnedTracks
-                  .map((p) => `${p.name} → ${p.hand === 'R' ? t.result.reduction.right : t.result.reduction.left}`)
-                  .join(', '),
-              )}
-            </p>
-          )}
-          <p className="mt-2 text-xs text-slate-400">{t.result.reduction.caveat}</p>
-        </div>
-      )}
       {report.warnings.length > 0 && (
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-200" data-testid="score-warnings">
           {report.warnings.map((w, i) => (

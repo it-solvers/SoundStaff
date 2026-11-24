@@ -14,7 +14,7 @@ function build(
     tempos: opts.tempos ?? [{ ticks: 0, bpm: opts.bpm ?? 120 }],
     timeSignatures: [{ ticks: 0, numerator: opts.ts?.[0] ?? 4, denominator: opts.ts?.[1] ?? 4 }],
   })
-  return buildScore(i, defaultSettings(i), 'instrument').model
+  return buildScore(i, defaultSettings(i)).model
 }
 
 describe('재생 시간표 (buildTimeline)', () => {

@@ -7,7 +7,7 @@ import { estimateBpmFromAudio, estimateBpmFromNotes } from '../src/audio/tempo'
 import { audioToInfo, toNoteEvents } from '../src/audio/toInfo'
 import type { AudioNote } from '../src/midi/types'
 import { materializeAudio } from '../src/score/audioInfo'
-import { buildPianoScore } from '../src/score/buildScore'
+import { buildInstrumentScore } from '../src/score/buildScore'
 import { buildPianoMidi } from '../src/score/exportPianoMidi'
 import { applySettings } from '../src/score/settings'
 import { info, track } from './helpers'
@@ -144,7 +144,7 @@ describe('템포에 따른 박 위치 환산 (materializeAudio)', () => {
   })
 
   it('추정 템포(120)에서는 0.5초 간격 음표가 4분음표로 악보가 된다', () => {
-    const res = buildPianoScore(materializeAudio(audio, applySettings(audio)), applySettings(audio))
+    const res = buildInstrumentScore(materializeAudio(audio, applySettings(audio)), applySettings(audio))
     const t = types(res.xml).filter((x) => x !== 'whole')
     expect(t.filter((x) => x === 'quarter').length).toBeGreaterThanOrEqual(8)
   })
@@ -153,7 +153,7 @@ describe('템포에 따른 박 위치 환산 (materializeAudio)', () => {
     const s = applySettings(audio, { tempo: 60 })
     const m = materializeAudio(audio, s)
     expect(m.tempos).toEqual([{ ticks: 0, bpm: 60 }])
-    const res = buildPianoScore(m, s)
+    const res = buildInstrumentScore(m, s)
     expect(types(res.xml)).toContain('eighth')
     expect(types(res.xml)).not.toContain('quarter')
     expect(res.xml).toContain('tempo="60"')

@@ -168,9 +168,9 @@ describe('음원 분석 결과 악보 (한 단, 파트 이름 Melody)', () => {
     new DOMParser().parseFromString(xml, 'application/xml').documentElement as unknown as Element
   const count = (el: Element, tag: string) => (el.getElementsByTagName(tag) as unknown as ArrayLike<Element>).length
 
-  for (const mode of ['piano', 'instrument'] as const) {
-    it(`변환 방식이 ${mode}여도 항상 높은음자리표 한 단, 화음·겹침 없는 한 줄이다 (파트 이름 Melody)`, () => {
-      const res = buildScore(info, applySettings(info), mode)
+  {
+    it('항상 높은음자리표 한 단, 화음·겹침 없는 한 줄이다 (파트 이름 Melody)', () => {
+      const res = buildScore(info, applySettings(info))
       const doc = parse(res.xml)
       expect(count(doc, 'score-part')).toBe(1)
       expect(doc.getElementsByTagName('part-name')[0].textContent).toBe('Melody')
@@ -178,7 +178,6 @@ describe('음원 분석 결과 악보 (한 단, 파트 이름 Melody)', () => {
       expect(doc.getElementsByTagName('sign')[0].textContent).toBe('G')
       expect(count(doc, 'chord')).toBe(0) // 동시에 두 음 이상 없음
       expect(count(doc, 'backup')).toBe(0) // 성부는 하나
-      expect(res.report.reduction).toBeUndefined() // 피아노 합치기는 적용하지 않는다
       expect(res.report.parts).toHaveLength(1)
     })
   }
@@ -197,7 +196,7 @@ describe('음원 분석 결과 악보 (한 단, 파트 이름 Melody)', () => {
       },
       notes: [n(0, 0.5, 48), n(0.6, 0.5, 50), n(1.2, 0.5, 52), n(1.8, 0.5, 50)],
     })
-    const doc = parse(buildScore(low, applySettings(low), 'piano').xml)
+    const doc = parse(buildScore(low, applySettings(low)).xml)
     expect(doc.getElementsByTagName('sign')[0].textContent).toBe('G')
   })
 })
@@ -218,7 +217,7 @@ describe('아주 가까운 음도 악보에서 겹치지 않는다 (실제 음�
       backend: 'cpu',
       elapsedMs: 1,
     })
-    return buildScore(info, applySettings(info), 'piano')
+    return buildScore(info, applySettings(info))
   })()
   it('화음(chord)도 2성부(backup)도 만들지 않는다', () => {
     expect(res.xml).not.toContain('<chord/>')
