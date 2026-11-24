@@ -91,8 +91,8 @@ function toChordEvents(notes: QNote[]): ChordEvent[] {
 }
 
 /** 겹치는 음을 성부로 나눈다. 이어 연주(레가토)로 1칸 이하만 겹친 음은 앞 음을 잘라 성부를 늘리지 않는다. */
-function assignVoices(events: ChordEvent[], warnings: string[]): ChordEvent[][] {
-  // 1) 1칸 이하 겹침은 앞 음을 다음 음 시작에서 끊는다
+function trimLegatoOverlap(events: ChordEvent[]): void {
+  // 1칸 이하 겹침은 앞 음을 다음 음 시작에서 끊는다
   for (let i = 0; i < events.length; i++) {
     for (let j = i + 1; j < events.length; j++) {
       const a = events[i]
@@ -101,6 +101,10 @@ function assignVoices(events: ChordEvent[], warnings: string[]): ChordEvent[][] 
       if (b.start > a.start && a.end - b.start <= 1) a.end = b.start
     }
   }
+}
+
+function assignVoices(events: ChordEvent[], warnings: string[], legatoTrim: boolean): ChordEvent[][] {
+  if (legatoTrim) trimLegatoOverlap(events)
 
   const voices: ChordEvent[][] = []
   let merged = 0
@@ -190,10 +194,14 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[]): Piece[][] {
   return perMeasure
 }
 
-/** 한 트랙(음높이 악기)의 음표를 마디·성부별 표기 조각으로 변환한다 */
-export function layoutTrack(notes: QNote[], grid: MeasureSpec[]): TrackLayout {
+/**
+ * 한 트랙(음높이 악기)의 음표를 마디·성부별 표기 조각으로 변환한다.
+ * legatoTrim: 1칸 이하로 겹친 음을 앞 음에서 끊을지 (기본 켬). 이미 그 정리를 마친 층(splitIntoLayers)은 끈다.
+ * 정리는 한 번만 해야 한다. 거듭 적용하면 시작이 2칸 간격으로 이어진 음의 길이가 칸마다 줄어든다.
+ */
+export function layoutTrack(notes: QNote[], grid: MeasureSpec[], opts: { legatoTrim?: boolean } = {}): TrackLayout {
   const warnings: string[] = []
-  const voices = notes.length ? assignVoices(toChordEvents(notes), warnings) : []
+  const voices = notes.length ? assignVoices(toChordEvents(notes), warnings, opts.legatoTrim ?? true) : []
   const voiceMeasures = voices.map((v) => layoutVoice(v, grid))
 
   const measures: VoiceMeasure[][] = grid.map((m, mi) => {
@@ -215,4 +223,31 @@ export function layoutTrack(notes: QNote[], grid: MeasureSpec[]): TrackLayout {
     return out
   })
   return { measures, warnings }
+}
+
+/**
+ * 음을 하나도 빼지 않으려고, 한 단(성부 4개 이하)에 다 못 담는 음을 여러 "층"으로 나눈다.
+ * 겹치는 음을 성부 수 제한 없이 나눠 본 뒤 maxVoices개씩 묶어 층 하나로 만든다. 각 층은 layoutTrack에 그대로 넘겨도
+ * 성부가 maxVoices를 넘지 않으므로 음을 합치거나 길이를 줄이는 일이 생기지 않는다.
+ * 음이 적으면 층은 하나다. 층은 위쪽 소리가 많이 든 순서(첫 성부들이 앞)다.
+ */
+export function splitIntoLayers(notes: QNote[], maxVoices = MAX_VOICES): QNote[][] {
+  if (!notes.length) return []
+  const events = toChordEvents(notes)
+  trimLegatoOverlap(events)
+  const voices: ChordEvent[][] = []
+  for (const ev of events) {
+    const v = voices.find((x) => x[x.length - 1].end <= ev.start)
+    if (v) v.push(ev)
+    else voices.push([ev])
+  }
+  const layers: QNote[][] = []
+  for (let i = 0; i < voices.length; i += maxVoices) {
+    const layer: QNote[] = []
+    for (const v of voices.slice(i, i + maxVoices)) {
+      for (const e of v) for (const midi of e.midis) layer.push({ start: e.start, end: e.end, midi, velocity: 0.7 })
+    }
+    layers.push(layer)
+  }
+  return layers
 }

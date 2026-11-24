@@ -1,13 +1,15 @@
 import { DOMParser } from '@xmldom/xmldom'
 import { describe, expect, it } from 'vitest'
+import { mergeRepeatedNotes } from '../src/audio/notes'
 import { audioTracks, audioToInfo, HAND_SPLIT } from '../src/audio/toInfo'
-import { simplifyToChords, type QNote } from '../src/midi/quantize'
+import { layoutTrack, splitIntoLayers } from '../src/midi/measures'
+import { buildMeasureGrid, simplifyToChords, type QNote } from '../src/midi/quantize'
 import type { AudioNote } from '../src/midi/types'
 import { buildScore } from '../src/score/buildScore'
 import { materializeAudio } from '../src/score/audioInfo'
 import { applySettings } from '../src/score/settings'
 import { buildTimeline } from '../src/play/timeline'
-import { rng, transcriptionCoverage } from './helpers'
+import { rng, soundingCoverage, transcriptionCoverage } from './helpers'
 
 const q = (start: number, end: number, midi: number, velocity = 0.7): QNote => ({ start, end, midi, velocity })
 const an = (startSec: number, durationSec: number, midi: number, velocity = 0.7): AudioNote => ({
@@ -156,7 +158,7 @@ describe('들리는 대로 악보 (기본 방식)', () => {
   })
 
   it('찾은 음이 모두 악보에 있다 (화음 정리로 빠지는 음은 없다: 이 곡은 4음 이하)', () => {
-    const res = buildScore(info(), applySettings(info()))
+    const res = buildScore(info(), applySettings(info(), { audioMerge: false }))
     const total = res.report.parts.reduce((a, p) => a + p.noteCount, 0)
     expect(total).toBe(mix().length)
   })
@@ -221,12 +223,12 @@ describe('읽기 쉽게 정리를 켜면 뺀 음을 알린다', () => {
       an(1, 1, 72),
       an(2, 1, 74),
     ]
-    const res = buildScore(mk(cluster), applySettings(mk(cluster), { audioSimplify: true }))
+    const res = buildScore(mk(cluster), applySettings(mk(cluster), { audioSimplify: true, audioMerge: false }))
     expect(res.report.warnings.some((w) => w.includes('2개') && w.includes('전체 8개'))).toBe(true)
   })
   it('빠진 음이 없으면 알림도 없다', () => {
     const calm = [an(0, 1, 72), an(1, 1, 74), an(2, 1, 76), an(3, 1, 77)]
-    const res = buildScore(mk(calm), applySettings(mk(calm), { audioSimplify: true }))
+    const res = buildScore(mk(calm), applySettings(mk(calm), { audioSimplify: true, audioMerge: false }))
     expect(res.report.warnings.some((w) => w.includes('뺐습니다'))).toBe(false)
   })
 })
@@ -250,7 +252,7 @@ describe('알림의 "뺀 음" 개수는 실제 악보와 정확히 맞는다', (
         backend: 'cpu',
         elapsedMs: 1,
       })
-      const res = buildScore(i, applySettings(i))
+      const res = buildScore(i, applySettings(i, { audioMerge: false }))
       const m = /음 (\d+)개\(전체 (\d+)개 중\)/.exec(res.report.warnings.join(' '))
       const removed = m ? Number(m[1]) : 0
       const inScore = (res.xml.match(/<pitch>/g) ?? []).length - (res.xml.match(/<tie type="stop"\/>/g) ?? []).length
@@ -259,7 +261,7 @@ describe('알림의 "뺀 음" 개수는 실제 악보와 정확히 맞는다', (
   })
 })
 
-describe('찾은 음은 100% 악보에 옮겨진다 (기본: 무손실)', () => {
+describe('찾은 음은 100% 악보에 옮겨진다 (이어 붙이기를 끄면 시작 위치까지, 켜면 울리는 구간까지)', () => {
   const mkInfo = (all: AudioNote[], bpm: number) =>
     audioToInfo({
       fileName: 'z.wav',
@@ -275,7 +277,7 @@ describe('찾은 음은 100% 악보에 옮겨진다 (기본: 무손실)', () => 
     })
   const coverage = (all: AudioNote[], bpm: number, over = {}) => {
     const info = mkInfo(all, bpm)
-    const res = buildScore(info, applySettings(info, over))
+    const res = buildScore(info, applySettings(info, { audioMerge: false, ...over })) // 시작 위치 기준 100%는 AI가 나눈 그대로 적을 때의 기준
     return { res, ...transcriptionCoverage(all, buildTimeline(res.model).notes, bpm) }
   }
 
@@ -315,5 +317,224 @@ describe('찾은 음은 100% 악보에 옮겨진다 (기본: 무손실)', () => 
     expect(off.matched).toBe(off.total)
     expect(on.matched).toBeLessThan(on.total)
     expect(on.res.report.warnings.some((w) => w.includes('뺐습니다'))).toBe(true)
+  })
+})
+
+describe('같은 높이로 이어진 음을 하나로 (mergeRepeatedNotes)', () => {
+  it('붙어 있는 같은 높이의 음은 하나의 긴 음이 된다', () => {
+    const out = mergeRepeatedNotes([an(0, 1, 60), an(1, 1, 60), an(2, 1, 60)])
+    expect(out).toHaveLength(1)
+    expect(out[0]).toMatchObject({ startSec: 0, midi: 60 })
+    expect(out[0].durationSec).toBeCloseTo(3, 6)
+  })
+  it('50ms 이내의 작은 틈도 이어 붙이고, 그보다 벌어지면 따로 둔다', () => {
+    expect(mergeRepeatedNotes([an(0, 1, 60), an(1.04, 1, 60)])).toHaveLength(1)
+    expect(mergeRepeatedNotes([an(0, 1, 60), an(1.06, 1, 60)])).toHaveLength(2)
+  })
+  it('겹친 같은 높이의 음도 하나로 합치고 가장 늦게 끝나는 쪽까지 늘린다', () => {
+    const out = mergeRepeatedNotes([an(0, 3, 60), an(1, 1, 60)]) // 안에 포함된 음
+    expect(out).toHaveLength(1)
+    expect(out[0].durationSec).toBeCloseTo(3, 6)
+  })
+  it('다른 높이는 서로 합치지 않는다', () => {
+    expect(mergeRepeatedNotes([an(0, 1, 60), an(1, 1, 62), an(2, 1, 60)])).toHaveLength(3)
+  })
+  it('합친 음의 세기는 센 쪽, 결과는 시작 순서(같은 시작이면 높은 음 먼저)다', () => {
+    const out = mergeRepeatedNotes([an(0, 1, 60, 0.4), an(1, 1, 60, 0.9), an(0, 1, 64, 0.5)])
+    expect(out.map((n) => n.midi)).toEqual([64, 60])
+    expect(out[1].velocity).toBe(0.9)
+  })
+  it('빈 입력, 원본은 바뀌지 않는다', () => {
+    expect(mergeRepeatedNotes([])).toEqual([])
+    const src = [an(0, 1, 60), an(1, 1, 60)]
+    mergeRepeatedNotes(src)
+    expect(src[0].durationSec).toBe(1)
+  })
+  it('무작위 입력에서도 같은 높이의 결과 음은 서로 50ms보다 떨어져 있고, 울리는 구간은 하나도 줄지 않는다', () => {
+    const r = rng(41)
+    for (let trial = 0; trial < 30; trial++) {
+      const notes = Array.from({ length: 150 }, () => an(r() * 20, 0.05 + r() * 1.5, 40 + Math.floor(r() * 12)))
+      const out = mergeRepeatedNotes(notes)
+      const byPitch = new Map<number, AudioNote[]>()
+      for (const n of out) (byPitch.get(n.midi) ?? byPitch.set(n.midi, []).get(n.midi)!).push(n)
+      for (const list of byPitch.values()) {
+        list.sort((a, b) => a.startSec - b.startSec)
+        for (let i = 1; i < list.length; i++)
+          expect(list[i].startSec - (list[i - 1].startSec + list[i - 1].durationSec)).toBeGreaterThan(0.05 - 1e-9)
+      }
+      for (const n of notes)
+        expect(
+          out.some(
+            (m) =>
+              m.midi === n.midi &&
+              m.startSec <= n.startSec + 1e-9 &&
+              m.startSec + m.durationSec >= n.startSec + n.durationSec - 1e-9,
+          ),
+        ).toBe(true)
+    }
+  })
+})
+
+describe('악보에서 이어 붙이기 (기본 켬)', () => {
+  const repeated = [...Array.from({ length: 8 }, (_, i) => an(i * 0.5, 0.5, 72)), an(0, 4, 48)] // 8번 붙어 있는 같은 높이 + 긴 낮은 음
+  const mk = (all: AudioNote[]) =>
+    audioToInfo({
+      fileName: 'r.wav',
+      size: 1,
+      durationSec: 4,
+      notes: all.slice(0, 3),
+      allNotes: all,
+      detectedCount: all.length,
+      bpm: { value: 120, confidence: 0.5 },
+      key: { value: { fifths: 0, mode: 'major' }, confidence: 0.5 },
+      backend: 'cpu',
+      elapsedMs: 1,
+    })
+
+  it('설정을 따로 주지 않으면 이어 붙인다', () => expect(applySettings(mk(repeated)).audioMerge).toBe(true))
+
+  it('붙어 있는 같은 음 8개가 하나의 긴 음표(붙임줄)로 적힌다', () => {
+    const res = buildScore(mk(repeated), applySettings(mk(repeated)))
+    const tl = buildTimeline(res.model)
+    const high = tl.notes.filter((n) => n.midi === 72)
+    expect(high).toHaveLength(1)
+    expect(high[0].duration).toBeCloseTo(4, 1)
+  })
+
+  it('끄면 AI가 나눈 그대로 8개로 적힌다', () => {
+    const res = buildScore(mk(repeated), applySettings(mk(repeated), { audioMerge: false }))
+    expect(buildTimeline(res.model).notes.filter((n) => n.midi === 72)).toHaveLength(8)
+  })
+
+  it('합친 개수가 알림에 나온다 (8개 → 1개이므로 7개)', () => {
+    const res = buildScore(mk(repeated), applySettings(mk(repeated)))
+    expect(res.report.warnings.some((w) => w.includes('이어진 음 7개') && w.includes('9개 중'))).toBe(true)
+    const off = buildScore(mk(repeated), applySettings(mk(repeated), { audioMerge: false }))
+    expect(off.report.warnings.some((w) => w.includes('이어 붙여'))).toBe(false)
+  })
+
+  it('음표 수가 줄어든다 (악보가 덜 쪼개진다)', () => {
+    const on = buildScore(mk(repeated), applySettings(mk(repeated))).report.parts.reduce((a, p) => a + p.noteCount, 0)
+    const off = buildScore(mk(repeated), applySettings(mk(repeated), { audioMerge: false })).report.parts.reduce(
+      (a, p) => a + p.noteCount,
+      0,
+    )
+    expect(on).toBe(2)
+    expect(off).toBe(9)
+  })
+
+  it('멜로디만 방식에는 영향이 없다 (알림 없음)', () => {
+    const res = buildScore(mk(repeated), applySettings(mk(repeated), { audioMode: 'melody' }))
+    expect(res.report.warnings.some((w) => w.includes('이어 붙여'))).toBe(false)
+  })
+
+  it('이어 붙여도 찾은 음이 울리는 구간은 악보에서 하나도 빠지지 않는다 (무작위 12가지, 같은 높이 · 시작 오차 1칸)', () => {
+    const r = rng(53)
+    for (let trial = 0; trial < 12; trial++) {
+      const notes = Array.from({ length: 140 }, () =>
+        an(r() * 30, 0.1 + r() * 0.8, 40 + Math.floor(r() * 40), 0.3 + r() * 0.7),
+      )
+      const info = mk(notes)
+      const bpm = 90 + trial * 6
+      info.tempos = [{ ticks: 0, bpm }]
+      const res = buildScore(info, applySettings(info))
+      const c = soundingCoverage(notes, buildTimeline(res.model).notes, bpm)
+      expect(c.matched, `시도 ${trial}: ${JSON.stringify(c.missing.slice(0, 3))}`).toBe(c.total)
+    }
+  })
+})
+
+describe('4성부를 넘는 음은 추가 단으로 (splitIntoLayers)', () => {
+  const grid = buildMeasureGrid([{ ticks: 0, numerator: 4, denominator: 4 }], 480, 200)
+  const dense = (seed: number, n = 160): QNote[] => {
+    const r = rng(seed)
+    return Array.from({ length: n }, () => {
+      const start = Math.floor(r() * 120)
+      return q(start, start + 1 + Math.floor(r() * 30), 50 + Math.floor(r() * 30))
+    })
+  }
+  it('음이 적으면 층은 하나이고, 빈 입력은 층이 없다', () => {
+    expect(splitIntoLayers([q(0, 4, 60), q(4, 8, 62)])).toHaveLength(1)
+    expect(splitIntoLayers([])).toEqual([])
+  })
+  it('빽빽한 음은 여러 층으로 나뉘고, 각 층은 성부 4개 이하로 경고·길이 줄임 없이 배치된다', () => {
+    for (let seed = 1; seed <= 15; seed++) {
+      const layers = splitIntoLayers(dense(seed))
+      expect(layers.length, `시드 ${seed}`).toBeGreaterThan(1)
+      for (const layer of layers) {
+        const lay = layoutTrack(layer, grid.measures, { legatoTrim: false })
+        expect(lay.warnings).toEqual([])
+        expect(Math.max(1, ...lay.measures.map((v) => v.length))).toBeLessThanOrEqual(4)
+      }
+    }
+  })
+  it('층으로 나눠도 음이 하나도 사라지거나 늘지 않고 길이도 그대로다 (이미 정리된 만큼만 다르다)', () => {
+    for (let seed = 1; seed <= 15; seed++) {
+      const src = dense(seed)
+      const out = splitIntoLayers(src).flat()
+      // 시작·높이 단위로 보존된다 (1칸 이하 겹침의 레가토 정리 외에는 길이가 바뀌지 않는다)
+      const starts = (list: QNote[]) => new Set(list.map((n) => `${n.start}:${n.midi}`))
+      expect(starts(out)).toEqual(starts(src))
+      for (const n of out) {
+        // 시작·높이가 같은 원래 음 중에 끝이 같거나 1칸 이내로만 줄어든 것이 있어야 한다
+        expect(
+          src.some((o) => o.start === n.start && o.midi === n.midi && o.end - n.end >= 0 && o.end - n.end <= 1),
+        ).toBe(true)
+      }
+    }
+  })
+  it('같은 정리를 두 번 적용하지 않는다: 시작이 2칸 간격으로 이어진 음이 칸마다 줄어들지 않는다', () => {
+    // 91-95 → 다음 음이 93에서 시작 → 한 번만 정리되면 끝은 94 (거듭 정리하면 93으로 더 줄어든다)
+    const src = [q(91, 95, 64), q(93, 99, 60), q(95, 101, 62)]
+    const [layer] = splitIntoLayers(src)
+    expect(layer.find((n) => n.midi === 64)!.end).toBeGreaterThanOrEqual(94)
+    const lay = layoutTrack(layer, grid.measures, { legatoTrim: false })
+    expect(lay.warnings).toEqual([])
+  })
+  it('악보에서는 "오른손 (높은 음) 2"처럼 추가 단이 만들어지고 소리 끄기·빼기는 같은 악기의 모든 층에 적용된다', () => {
+    const r = rng(77)
+    const notes = Array.from({ length: 260 }, () => an(r() * 30, 0.4 + r() * 2.5, 62 + Math.floor(r() * 24), 0.5))
+    const i = audioToInfo({
+      fileName: 'l.wav',
+      size: 1,
+      durationSec: 30,
+      notes: notes.slice(0, 20),
+      allNotes: notes,
+      detectedCount: notes.length,
+      bpm: { value: 100, confidence: 0.5 },
+      key: { value: { fifths: 0, mode: 'major' }, confidence: 0.5 },
+      backend: 'cpu',
+      elapsedMs: 1,
+    })
+    const res = buildScore(i, applySettings(i, { audioMerge: false }))
+    const names = res.report.parts.map((p) => p.name)
+    expect(names[0]).toBe('Piano')
+    expect(names.length).toBeGreaterThan(1)
+    expect(names.slice(1)).toEqual(names.slice(1).map((_, k) => `Piano ${k + 2}`))
+    expect(res.model.parts.every((p) => (p.staves[0].clef = p.staves[0].clef) !== undefined)).toBe(true)
+    const muted = buildScore(i, applySettings(i, { audioMerge: false, mutedTracks: [0] }))
+    expect(muted.model.parts.every((p) => p.muted)).toBe(true)
+    expect(buildTimeline(muted.model).notes).toEqual([])
+    expect(() => buildScore(i, applySettings(i, { audioMerge: false, excludedTracks: [0] }))).toThrow(
+      '악보에 넣을 악기가 없습니다',
+    )
+  })
+  it('빽빽한 입력에서 길이를 줄이거나 음을 합쳤다는 알림이 나오지 않는다', () => {
+    const r = rng(88)
+    const notes = Array.from({ length: 300 }, () => an(r() * 25, 0.3 + r() * 3, 40 + Math.floor(r() * 60), 0.5))
+    const i = audioToInfo({
+      fileName: 'z.wav',
+      size: 1,
+      durationSec: 25,
+      notes: notes.slice(0, 20),
+      allNotes: notes,
+      detectedCount: notes.length,
+      bpm: { value: 100, confidence: 0.5 },
+      key: { value: { fifths: 0, mode: 'major' }, confidence: 0.5 },
+      backend: 'cpu',
+      elapsedMs: 1,
+    })
+    const res = buildScore(i, applySettings(i))
+    expect(res.report.warnings.some((w) => w.includes('성부가 4개를 넘어'))).toBe(false)
   })
 })

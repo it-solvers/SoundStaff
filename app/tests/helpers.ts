@@ -97,3 +97,25 @@ export function transcriptionCoverage(
   }
   return { matched, total: found.length, missing }
 }
+
+/**
+ * "찾은 음이 울리는 구간이 악보에 있는가"를 재는 도구 (같은 높이의 이어진 음을 하나로 합친 악보용).
+ * 찾은 음의 시작이, 악보에서 같은 높이인 음이 울리는 구간(앞뒤 1칸 여유) 안에 있으면 옮겨졌다고 센다.
+ */
+export function soundingCoverage(
+  found: { startSec: number; durationSec: number; midi: number }[],
+  scoreNotes: { midi: number; start: number; duration: number }[],
+  bpm: number,
+): { matched: number; total: number; missing: { startSec: number; midi: number }[] } {
+  const slack = 60 / bpm / 4
+  let matched = 0
+  const missing: { startSec: number; midi: number }[] = []
+  for (const f of found) {
+    const ok = scoreNotes.some(
+      (s) => s.midi === f.midi && f.startSec >= s.start - slack && f.startSec <= s.start + s.duration + slack,
+    )
+    if (ok) matched++
+    else missing.push({ startSec: f.startSec, midi: f.midi })
+  }
+  return { matched, total: found.length, missing }
+}

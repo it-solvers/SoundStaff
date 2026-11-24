@@ -16,6 +16,8 @@ export interface SettingsOverride {
   audioMode?: AudioMode
   /** 읽기 쉽게 정리 (일부 음이 빠질 수 있음) */
   audioSimplify?: boolean
+  /** 같은 높이로 이어진 음 합치기 */
+  audioMerge?: boolean
   /** 악기(트랙) 단 순서 (트랙 번호 목록) */
   trackOrder?: number[]
   /** 악보에서 뺄 악기(트랙 번호) */
@@ -61,6 +63,7 @@ export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): Sco
     composer: o.composer?.normalize('NFC').trim() ?? '',
     audioMode: o.audioMode ?? 'full',
     audioSimplify: o.audioSimplify ?? false,
+    audioMerge: o.audioMerge ?? true,
     trackOrder: o.trackOrder,
     excludedTracks: o.excludedTracks,
     mutedTracks: o.mutedTracks,

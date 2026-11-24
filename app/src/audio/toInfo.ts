@@ -3,6 +3,7 @@ import type { AudioNote, MidiFileInfo, TrackInfo } from '../midi/types'
 import type { AudioMode } from '../score/types'
 import { t } from '../text/ko'
 import type { KeyGuess } from './key'
+import { mergeRepeatedNotes } from './notes'
 import type { Estimate } from './types'
 
 export const AUDIO_PPQ = 480
@@ -65,9 +66,11 @@ export function audioTracks(
   audio: { notes: AudioNote[]; allNotes?: AudioNote[] },
   mode: AudioMode,
   bpm: number,
+  merge = true,
 ): TrackInfo[] {
   if (mode === 'melody') return [makeTrack(0, t.audio.trackName, audio.notes, bpm, { clef: 'G' })]
-  const all = audio.allNotes ?? audio.notes
+  const found = audio.allNotes ?? audio.notes
+  const all = merge ? mergeRepeatedNotes(found) : found // 같은 높이로 이어진 음은 하나로 (끄면 AI가 나눈 그대로)
   const right = all.filter((n) => n.midi >= HAND_SPLIT)
   const left = all.filter((n) => n.midi < HAND_SPLIT)
   const both = right.length > 0 && left.length > 0
@@ -104,7 +107,7 @@ export function audioToInfo(r: AudioResult): MidiFileInfo {
         tonic: tonicName(r.key.value.fifths, r.key.value.mode),
       },
     ],
-    tracks: audioTracks(r, 'full', r.bpm.value),
+    tracks: audioTracks(r, 'full', r.bpm.value, true),
     audio: {
       notes: r.notes,
       allNotes: r.allNotes ?? r.notes,

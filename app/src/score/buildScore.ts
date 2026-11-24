@@ -1,4 +1,4 @@
-import { layoutTrack } from '../midi/measures'
+import { layoutTrack, splitIntoLayers } from '../midi/measures'
 import {
   buildMeasureGrid,
   enforceMonophonic,
@@ -75,6 +75,8 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
     if (t.chords) trimmed += t.notes.length - notes.length
     return { track: t, notes }
   })
+  const mergedCount = info.audio?.mergedCount ?? 0
+  if (mergedCount > 0) warnings.push(t.warnings.notesMerged(mergedCount, info.audio?.allNotes.length ?? 0))
   if (trimmed > 0) {
     warnings.push(
       settings.audioSimplify
@@ -129,22 +131,28 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
 
   const muted = new Set(settings.mutedTracks ?? [])
   // 사용자가 정한 순서가 있으면 그 순서로 단을 쌓는다
-  orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes }, i) => {
-    const layout = layoutTrack(notes, p.grid.measures)
-    warnings.push(...layout.warnings.map((w) => t.warnings.track(trackName(track), w)))
-    parts.push({
-      id: `P${i + 1}`,
-      name: trackName(track),
-      instrumentName: track.instrumentName || 'piano',
-      channel: track.channel,
-      program: track.instrumentNumber,
-      staves: [{ clef: track.clef ?? pickClef(notes), layout: layout.measures }],
-      muted: muted.has(track.index),
-    })
-    partReports.push({
-      name: trackName(track),
-      noteCount: track.noteCount,
-      maxVoices: Math.max(1, ...layout.measures.map((vs) => vs.length)),
+  orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes }) => {
+    // 음원 "들리는 대로": 한 단에 4성부가 넘는 음은 줄이지 않고 같은 음자리표의 추가 단("오른손 2" 등)으로 나눈다
+    const layered = info.source === 'audio' && !!track.chords && !settings.audioSimplify
+    const layers = layered ? splitIntoLayers(notes) : [notes]
+    layers.forEach((layerNotes, l) => {
+      const name = l === 0 ? trackName(track) : `${trackName(track)} ${l + 1}`
+      const layout = layoutTrack(layerNotes, p.grid.measures, { legatoTrim: !layered }) // 층은 이미 정리를 마쳤으므로 다시 하지 않는다
+      warnings.push(...layout.warnings.map((w) => t.warnings.track(name, w)))
+      parts.push({
+        id: `P${parts.length + 1}`,
+        name,
+        instrumentName: track.instrumentName || 'piano',
+        channel: track.channel,
+        program: track.instrumentNumber,
+        staves: [{ clef: track.clef ?? pickClef(layerNotes), layout: layout.measures }],
+        muted: muted.has(track.index),
+      })
+      partReports.push({
+        name,
+        noteCount: layers.length > 1 ? layerNotes.length : track.noteCount,
+        maxVoices: Math.max(1, ...layout.measures.map((vs) => vs.length)),
+      })
     })
   })
   if (p.excludedDrums.length) warnings.push(t.warnings.drumsExcluded(p.excludedDrums.length))

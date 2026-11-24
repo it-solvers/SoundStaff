@@ -19,6 +19,8 @@ export interface ScoreSettings {
   audioMode?: AudioMode
   /** 들리는 대로 악보에서 읽기 쉽게 정리할지 (같은 때 4음 넘는 음 등 일부를 뺀다). 기본은 정리하지 않아 찾은 음을 모두 적는다 */
   audioSimplify?: boolean
+  /** 같은 높이로 이어진 음을 하나로 합칠지 (기본 켬). 끄면 AI가 나눈 그대로 적는다 */
+  audioMerge?: boolean
   trackOrder?: number[]
   /** 악보에서 뺄 트랙 번호 목록 (악보·재생·PDF·MusicXML에서 모두 빠진다) */
   excludedTracks?: number[]

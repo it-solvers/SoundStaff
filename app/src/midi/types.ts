@@ -69,6 +69,8 @@ export interface AudioSourceInfo {
   /** 연산 백엔드(webgl, cpu)와 걸린 시간 */
   backend: string
   elapsedMs: number
+  /** 같은 높이로 이어진 음을 합쳐서 줄어든 음표 수 (악보를 만들 때 정해짐, 알림용) */
+  mergedCount?: number
 }
 
 export interface MidiFileInfo {
