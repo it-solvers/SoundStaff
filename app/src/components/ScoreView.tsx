@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
 import { formatClock, ScorePlayer, type PlayState } from '../play/player'
+import { DEFAULT_TIMBRE, TIMBRE_IDS, type TimbreId } from '../play/synth'
 import { buildTimeline } from '../play/timeline'
 import type { ScoreModel } from '../score/types'
 import { wrapTitle } from '../score/wrapTitle'
@@ -12,6 +13,24 @@ const INK = { dark: '#e2e8f0', light: '#0f172a' } as const
 const ZOOMS = [0.6, 0.8, 1, 1.25, 1.5, 2]
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5]
+
+/** 고른 소리를 이 브라우저에 기억한다 (저장소를 못 쓰는 환경에서는 기억하지 않고 기본 소리를 쓴다) */
+const TIMBRE_KEY = 'soundstaff.timbre'
+function loadTimbre(): TimbreId {
+  try {
+    const v = localStorage.getItem(TIMBRE_KEY)
+    return TIMBRE_IDS.includes(v as TimbreId) ? (v as TimbreId) : DEFAULT_TIMBRE
+  } catch {
+    return DEFAULT_TIMBRE
+  }
+}
+function saveTimbre(id: TimbreId) {
+  try {
+    localStorage.setItem(TIMBRE_KEY, id)
+  } catch {
+    // 저장하지 못해도 재생에는 영향이 없다
+  }
+}
 /** 재생 커서 색 (밝은 배경·어두운 배경 모두에서 보이는 초록, 반투명) */
 const CURSOR = { type: 0, color: '#16a34a', alpha: 0.45, follow: false }
 
@@ -64,6 +83,8 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
   const [playState, setPlayState] = useState<PlayState>('stopped')
   const [pos, setPos] = useState(0)
   const [speed, setSpeed] = useState(1)
+  const [timbre, setTimbre] = useState<TimbreId>(loadTimbre)
+  const [notice, setNotice] = useState('')
 
   /** 지금 재생 위치에 맞는 악보 칸으로 커서를 옮기고, 화면 밖이면 스크롤한다 */
   function moveCursor(sec: number) {
@@ -140,12 +161,16 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
     const p = playerRef.current
     if (p && p.state === 'playing') void p.pause()
     else if (p && p.state === 'paused') void p.resume()
+    else if (p && p.state === 'loading')
+      return // 소리를 불러오는 중에는 다시 누를 수 없다
     else {
+      setNotice('')
       const next = new ScorePlayer(timeline, {
         onTick: (s) => {
           setPos(s)
           moveCursor(s)
         },
+        onFallback: () => setNotice(t.panel.fallback),
         onState: (s) => {
           setPlayState(s)
           if (s === 'stopped') hideCursor()
@@ -153,7 +178,7 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
       })
       playerRef.current = next
       showCursor()
-      void next.play(speed)
+      void next.play(speed, timbre)
     }
   }
 
@@ -237,16 +262,18 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
         <button
           type="button"
           onClick={togglePlay}
-          disabled={status !== 'ready' || !timeline.notes.length}
+          disabled={status !== 'ready' || !timeline.notes.length || playState === 'loading'}
           className="rounded bg-sky-600 px-3 py-1 font-medium text-white hover:bg-sky-700 disabled:opacity-40"
           data-testid="play-toggle"
           data-state={playState}
         >
-          {playState === 'playing'
-            ? `⏸ ${t.panel.pause}`
-            : playState === 'paused'
-              ? `▶ ${t.panel.resume}`
-              : `▶ ${t.panel.play}`}
+          {playState === 'loading'
+            ? t.panel.loading
+            : playState === 'playing'
+              ? `⏸ ${t.panel.pause}`
+              : playState === 'paused'
+                ? `▶ ${t.panel.resume}`
+                : `▶ ${t.panel.play}`}
         </button>
         <button
           type="button"
@@ -269,6 +296,26 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
             {SPEEDS.map((v) => (
               <option key={v} value={v}>
                 {v}×
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-1 text-xs text-slate-400">
+          {t.panel.timbre}
+          <select
+            value={timbre}
+            onChange={(e) => {
+              const next = e.target.value as TimbreId
+              setTimbre(next)
+              saveTimbre(next)
+            }}
+            disabled={playState !== 'stopped'}
+            className="rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-sm text-slate-100 disabled:opacity-50"
+            data-testid="play-timbre"
+          >
+            {TIMBRE_IDS.map((id) => (
+              <option key={id} value={id}>
+                {t.panel.timbres[id]}
               </option>
             ))}
           </select>
@@ -302,6 +349,11 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
         </button>
         {status === 'loading' && <span className="text-slate-400">{t.panel.drawing}</span>}
       </div>
+      {notice && (
+        <p className="mb-2 text-xs text-amber-300" role="status" data-testid="play-notice">
+          {notice}
+        </p>
+      )}
       {status === 'error' && (
         <p className="rounded-lg bg-rose-950/60 px-3 py-2 text-sm text-rose-200" role="alert" data-testid="view-error">
           {t.errors.viewFailed(error)}

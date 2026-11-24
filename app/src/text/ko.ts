@@ -241,7 +241,20 @@ export const ko = {
     resume: '이어서 재생',
     stop: '정지',
     speed: '속도',
-    playHint: '악보에 표시된 음을 피아노 소리로 들려줍니다 (표시된 템포 기준).',
+    timbre: '소리',
+    timbres: {
+      grandPiano: '실제 피아노',
+      piano: '합성 피아노',
+      organ: '오르간',
+      strings: '현악',
+      flute: '플루트',
+      bell: '종',
+      harpsichord: '하프시코드',
+    },
+    playHint:
+      '악보에 표시된 음을 고른 소리로 들려줍니다 (표시된 템포 기준). [실제 피아노]는 녹음한 피아노 소리이고, 나머지는 컴퓨터가 만든 소리라서 진짜 악기와는 다릅니다.',
+    loading: '피아노 소리 불러오는 중…',
+    fallback: '실제 피아노 소리를 불러오지 못해 합성 피아노로 재생합니다.',
     zoomIn: '확대',
     zoomOut: '축소',
     drawing: '악보를 그리는 중…',
@@ -258,7 +271,11 @@ export const ko = {
   changelog: { title: '변경 이력' },
 
   /** 화면 맨 아래 저작권 표시 (LICENSE의 표기와 같게) */
-  footer: { copyright: '© 2026 아이티해결단', license: 'MIT 라이선스' },
+  footer: {
+    copyright: '© 2026 아이티해결단',
+    license: 'MIT 라이선스',
+    credit: '피아노 소리: Salamander Grand Piano (Alexander Holm, CC BY 3.0)',
+  },
 
   /** 기획서 11.3장 오류 처리 목록 */
   errors: {

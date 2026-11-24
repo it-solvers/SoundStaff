@@ -328,7 +328,7 @@ export default function App() {
         className="mt-auto border-t border-slate-800 pt-4 pb-2 text-center text-xs text-slate-500"
         data-testid="footer"
       >
-        {t.footer.copyright} · {t.footer.license}
+        {t.footer.copyright} · {t.footer.license} · {t.footer.credit}
       </footer>
     </div>
   )

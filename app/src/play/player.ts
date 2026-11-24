@@ -1,12 +1,24 @@
-import { createMaster, createWave, scheduleNote } from './synth'
+import { loadPianoSamples, scheduleSample } from './pianoSamples'
+import {
+  createMaster,
+  createWave,
+  DEFAULT_TIMBRE,
+  isSampled,
+  scheduleNote,
+  TIMBRES,
+  type SynthTimbreId,
+  type TimbreId,
+} from './synth'
 import type { Timeline } from './timeline'
 
-export type PlayState = 'stopped' | 'playing' | 'paused'
+export type PlayState = 'stopped' | 'loading' | 'playing' | 'paused'
 
 interface Callbacks {
   /** 재생 위치(초, 배속과 상관없는 악보 기준 시간)가 바뀔 때마다 */
   onTick: (posSec: number) => void
   onState: (state: PlayState) => void
+  /** 실제 피아노 소리를 불러오지 못해 합성 피아노로 바꿔 재생할 때 */
+  onFallback?: () => void
 }
 
 /** 앞으로 이 시간(초) 안에 시작하는 음만 미리 예약한다. 긴 곡도 한꺼번에 예약하지 않아 가볍다. */
@@ -15,7 +27,7 @@ const SCHEDULE_EVERY_MS = 80
 const START_DELAY = 0.12
 
 /**
- * 시간표를 Web Audio로 재생한다 (외부 음원 파일·네트워크 없음).
+ * 시간표를 Web Audio로 재생한다. 소리는 실제 피아노(앱에 포함된 샘플, 외부 서버 요청 없음) 또는 합성음이다.
  * 재생·일시정지·이어서 재생·정지를 지원하며, 위치는 소리 시계(AudioContext.currentTime)를 따라 정확히 맞는다.
  */
 export class ScorePlayer {
@@ -23,6 +35,8 @@ export class ScorePlayer {
   private ctx: AudioContext | null = null
   private dest: AudioNode | null = null
   private wave: PeriodicWave | null = null
+  private timbreId: SynthTimbreId = 'piano'
+  private samples: Map<string, AudioBuffer> | null = null
   private t0 = 0
   private speed = 1
   private idx = 0
@@ -43,17 +57,36 @@ export class ScorePlayer {
   }
 
   /** 처음부터 재생한다. 소리 장치는 사용자가 누른 순간(클릭 처리 중)에 열어야 브라우저가 허용한다. */
-  async play(speed = 1) {
+  async play(speed = 1, timbre: TimbreId = DEFAULT_TIMBRE) {
     this.stop()
     const Ctor =
       window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     const ctx = new Ctor()
     this.ctx = ctx
     this.dest = createMaster(ctx)
-    this.wave = createWave(ctx)
     this.speed = speed
     this.idx = 0
+    this.samples = null
     if (ctx.state === 'suspended') await ctx.resume()
+
+    if (isSampled(timbre)) {
+      // 실제 피아노: 곡에서 쓰는 음역의 샘플을 불러온 뒤 시작한다. 불러오는 동안 정지를 누르면 그만둔다.
+      this.set('loading')
+      try {
+        const samples = await loadPianoSamples(ctx, new Set(this.timeline.notes.map((n) => n.midi)))
+        if (this.ctx !== ctx) return // 불러오는 사이에 정지했다
+        this.samples = samples
+      } catch (err) {
+        if (this.ctx !== ctx) return
+        console.error(err)
+        this.cb.onFallback?.() // 합성 피아노로 대신 들려준다
+        this.timbreId = 'piano'
+        this.wave = createWave(ctx, TIMBRES.piano)
+      }
+    } else {
+      this.timbreId = timbre
+      this.wave = createWave(ctx, TIMBRES[timbre])
+    }
     this.t0 = ctx.currentTime + START_DELAY
     this.set('playing')
     this.pump()
@@ -64,20 +97,17 @@ export class ScorePlayer {
   /** 곧 시작할 음을 예약한다 */
   private pump() {
     const ctx = this.ctx
-    if (!ctx || !this.dest || !this.wave) return
+    if (!ctx || !this.dest || (!this.wave && !this.samples)) return
     const horizon = ctx.currentTime + LOOKAHEAD
     const notes = this.timeline.notes
     while (this.idx < notes.length) {
       const n = notes[this.idx]
       const when = this.t0 + n.start / this.speed
       if (when > horizon) break
-      scheduleNote(
-        ctx,
-        this.dest,
-        this.wave,
-        { midi: n.midi, duration: n.duration / this.speed },
-        Math.max(when, ctx.currentTime),
-      )
+      const note = { midi: n.midi, duration: n.duration / this.speed }
+      const at = Math.max(when, ctx.currentTime)
+      if (this.samples) scheduleSample(ctx, this.dest, this.samples, note, at)
+      else if (this.wave) scheduleNote(ctx, this.dest, this.wave, note, at, TIMBRES[this.timbreId])
       this.idx++
     }
   }
@@ -120,6 +150,7 @@ export class ScorePlayer {
     this.ctx = null
     this.dest = null
     this.wave = null
+    this.samples = null
     if (ctx) void ctx.close().catch(() => {})
     if (this.state !== 'stopped') {
       this.set('stopped')
