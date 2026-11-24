@@ -113,6 +113,8 @@ export const ko = {
     cancelled: '분석을 취소했습니다.',
     summary: (found: number, all: number, melody: number, backend: string, sec: number) =>
       `AI가 음표 ${found}개를 찾았고, 거른 ${all}개를 악보에 옮겼습니다. (멜로디만 고르면 ${melody}개) (${backend}, ${sec}초)`,
+    refined: (added: number, removed: number) =>
+      `소리의 주파수를 다시 살펴 AI가 놓친 음 ${added}개를 채우고 근거 없는 음 ${removed}개를 뺐습니다. 채운 음은 세기를 낮게 줘서 대개 회색(덜 주된 음)이 됩니다.`,
     guessed: '템포·박자·조성은 추정값입니다. 틀리면 [악보 설정]에서 고치세요.',
   },
 

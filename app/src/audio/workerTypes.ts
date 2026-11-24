@@ -16,6 +16,9 @@ export type AnalyzeResponse =
       notes: AudioNote[]
       allNotes: AudioNote[]
       detectedCount: number
+      /** 주파수 분석 보정으로 새로 넣은 음·뺀 음 수 */
+      refinedAdded: number
+      refinedRemoved: number
       bpm: Estimate<number>
       key: Estimate<KeyGuess>
       backend: string

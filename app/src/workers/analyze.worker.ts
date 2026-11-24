@@ -4,6 +4,7 @@ import { estimateKey } from '../audio/key'
 import { detectNotes } from '../audio/noteDetect'
 import { MIN_MELODY_NOTES, selectMelody } from '../audio/melody'
 import { filterNotes } from '../audio/notes'
+import { refineNotes } from '../audio/spectrum'
 import { estimateBpmFromAudio, estimateBpmFromNotes } from '../audio/tempo'
 import type { AnalyzeRequest, AnalyzeResponse } from '../audio/workerTypes'
 
@@ -17,7 +18,19 @@ self.onmessage = async (e: MessageEvent<AnalyzeRequest>) => {
     const { raw, backend } = await detectNotes(pcm, modelUrl, (percent) => post({ type: 'progress', percent }))
     post({ type: 'stage', stage: 'finish' })
     // 기획서 8.5장: 거르기(3번). 거른 모든 음표는 "들리는 대로" 악보에, 그중 고른 한 줄 선율은 "멜로디만" 악보에 쓴다.
-    const allNotes = filterNotes(raw)
+    // 소리의 주파수 분석으로 AI가 놓친 음은 채우고 근거 없는 음은 뺀다. 실패해도 AI 결과를 그대로 쓴다.
+    const filtered = filterNotes(raw)
+    let allNotes = filtered
+    let refinedAdded = 0
+    let refinedRemoved = 0
+    try {
+      const refined = refineNotes(pcm, sampleRate, filtered)
+      allNotes = refined.notes
+      refinedAdded = refined.added
+      refinedRemoved = refined.removed
+    } catch (err) {
+      console.error(err)
+    }
     const notes = selectMelody(allNotes)
     if (allNotes.length < MIN_MELODY_NOTES) return post({ type: 'error', code: 'noNotes' })
 
@@ -35,6 +48,8 @@ self.onmessage = async (e: MessageEvent<AnalyzeRequest>) => {
       notes,
       allNotes,
       detectedCount: raw.length,
+      refinedAdded,
+      refinedRemoved,
       bpm,
       key: estimateKey(allNotes), // 모든 음으로 추정해야 멜로디 한 줄보다 조성이 안정적이다
       backend,

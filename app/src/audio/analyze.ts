@@ -101,6 +101,8 @@ export async function analyzeAudioFile(
     notes: r.notes,
     allNotes: r.allNotes,
     detectedCount: r.detectedCount,
+    refinedAdded: r.refinedAdded,
+    refinedRemoved: r.refinedRemoved,
     bpm: r.bpm,
     key: r.key,
     backend: r.backend,

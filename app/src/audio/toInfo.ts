@@ -19,6 +19,8 @@ export interface AudioResult {
   /** 거르기를 마친 모든 음표 (없으면 멜로디와 같다) */
   allNotes?: AudioNote[]
   detectedCount: number
+  refinedAdded?: number
+  refinedRemoved?: number
   bpm: Estimate<number>
   key: Estimate<KeyGuess>
   backend: string
@@ -115,6 +117,8 @@ export function audioToInfo(r: AudioResult): MidiFileInfo {
       notes: r.notes,
       allNotes: r.allNotes ?? r.notes,
       detectedCount: r.detectedCount,
+      refinedAdded: r.refinedAdded ?? 0,
+      refinedRemoved: r.refinedRemoved ?? 0,
       bpmConfidence: r.bpm.confidence,
       keyConfidence: r.key.confidence,
       backend: r.backend,

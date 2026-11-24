@@ -67,6 +67,9 @@ export interface AudioSourceInfo {
   allNotes: AudioNote[]
   /** 거르기 전에 AI가 찾은 음표 수 */
   detectedCount: number
+  /** 주파수 분석 보정으로 새로 넣은 음·뺀 음 수 */
+  refinedAdded?: number
+  refinedRemoved?: number
   /** 추정 확신도 0~1 (확률이 아니라 상대적인 값) */
   bpmConfidence: number
   keyConfidence: number

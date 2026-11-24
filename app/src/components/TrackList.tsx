@@ -54,6 +54,11 @@ export default function TrackList({ info }: { info: MidiFileInfo }) {
               Math.round(info.audio.elapsedMs / 1000),
             )}
           </p>
+          {((info.audio.refinedAdded ?? 0) > 0 || (info.audio.refinedRemoved ?? 0) > 0) && (
+            <p data-testid="audio-refined">
+              {t.audio.refined(info.audio.refinedAdded ?? 0, info.audio.refinedRemoved ?? 0)}
+            </p>
+          )}
           <p data-testid="audio-vocal-hint">{t.audio.vocalHint}</p>
           <p>{t.audio.guessed}</p>
         </div>
