@@ -144,13 +144,16 @@ describe('템포에 따른 박 위치 환산 (materializeAudio)', () => {
   })
 
   it('추정 템포(120)에서는 0.5초 간격 음표가 4분음표로 악보가 된다', () => {
-    const res = buildInstrumentScore(materializeAudio(audio, applySettings(audio)), applySettings(audio))
+    const res = buildInstrumentScore(
+      materializeAudio(audio, applySettings(audio, { audioEdit: false })),
+      applySettings(audio, { audioEdit: false }),
+    )
     const t = types(res.xml).filter((x) => x !== 'whole')
     expect(t.filter((x) => x === 'quarter').length).toBeGreaterThanOrEqual(8)
   })
 
   it('사용자가 템포를 60으로 고치면 같은 음표가 8분음표로 바뀐다 (박 구조가 템포에 맞게 다시 만들어진다)', () => {
-    const s = applySettings(audio, { tempo: 60 })
+    const s = applySettings(audio, { tempo: 60, audioEdit: false })
     const m = materializeAudio(audio, s)
     expect(m.tempos).toEqual([{ ticks: 0, bpm: 60 }])
     const res = buildInstrumentScore(m, s)

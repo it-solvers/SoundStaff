@@ -1,4 +1,5 @@
 import type { AudioNote } from '../midi/types'
+import { DEFAULT_EDIT_TUNING } from './editTuning'
 
 /** 기획서 8.5장 3번: 너무 짧거나 신뢰도가 낮은 음표는 지운다. 값은 시험하며 조정한다. */
 export const MIN_NOTE_SECONDS = 0.08
@@ -16,6 +17,9 @@ export function filterNotes(raw: AudioNote[]): AudioNote[] {
  * 기획서 8.5장의 레가토 병합은 50ms지만, 떨림(트레몰로·비브라토)으로 소리 크기가 출렁이면 AI가 50~100ms 틈으로 끊어 내는 조각이 더 있어서(시험곡 21개) 100ms로 넓혔다.
  */
 export const MERGE_GAP_SECONDS = 0.1
+
+/** 고치기 쉽게(편집용) 정리할 때는 같은 음을 더 넓은 틈까지 이어 붙인다. 합창·찬송처럼 음이 길게 이어지는 곡에서 같은 음이 쪼개져 보이는 것을 줄인다 */
+export const MERGE_GAP_EDIT_SECONDS = DEFAULT_EDIT_TUNING.mergeGapSec
 
 /**
  * 같은 높이로 이어지거나 겹친 음을 하나로 합친다.
@@ -53,8 +57,42 @@ export function mergeRepeatedNotes(notes: AudioNote[], maxGap = MERGE_GAP_SECOND
 /** 덜 주된 음으로 볼 비율: 중요도가 아래쪽 이 비율인 음 (작고 짧은 음) */
 export const MINOR_SHARE = 0.4
 
+/** 편집용 정리에서 "뒤에 깔리는 음"으로 보고 빼는 비율: 소리가 작고 짧은 쪽 이 비율 (시험하며 조정한다) */
+export const EDIT_DROP_SHARE = DEFAULT_EDIT_TUNING.dropShare
+
 /** 음의 중요도: 소리가 크고(세기) 오래 이어질수록(길이) 크다 */
 export const importance = (n: AudioNote) => n.velocity * Math.sqrt(n.durationSec)
+
+/**
+ * 배음(한 옥타브 위의 울림)으로 보이는 음을 뺀다.
+ * 낮은 음이 울리면 그 한 옥타브 위에도 약한 소리가 생겨서, 음원 분석이 이것을 별도의 음으로 찾는 일이 많다.
+ * 한 옥타브(또는 두 옥타브) 아래에, 이 음이 울리는 시간의 minOverlap 이상 같이 울리는 음이 있고,
+ * 이 음의 세기가 그 음의 세기 × ratio보다 작으면 배음으로 본다. ratio가 0이면 아무것도 빼지 않는다.
+ */
+export function dropOctaveHarmonics(notes: AudioNote[], ratio: number, minOverlap = 0.7): AudioNote[] {
+  if (ratio <= 0) return notes
+  const byMidi = new Map<number, AudioNote[]>()
+  for (const n of notes) {
+    const l = byMidi.get(n.midi)
+    if (l) l.push(n)
+    else byMidi.set(n.midi, [n])
+  }
+  const overlap = (a: AudioNote, b: AudioNote) =>
+    Math.max(0, Math.min(a.startSec + a.durationSec, b.startSec + b.durationSec) - Math.max(a.startSec, b.startSec))
+  return notes.filter((n) => {
+    for (const gap of [12, 24]) {
+      for (const lower of byMidi.get(n.midi - gap) ?? []) {
+        if (overlap(n, lower) >= minOverlap * n.durationSec && n.velocity < lower.velocity * ratio) return false
+      }
+    }
+    return true
+  })
+}
+
+/** 편집용: 중요도가 낮은 뒷받침 음을 뺀다. 음이 너무 적으면(5개 미만) 그대로 둔다 */
+export function dropBackgroundNotes(notes: AudioNote[], share = EDIT_DROP_SHARE): AudioNote[] {
+  return markMinorNotes(notes, share).filter((n) => !n.minor)
+}
 
 /**
  * 소리가 작고 짧은 음을 "덜 주된 음"(minor)으로 표시한다 (악보에서 회색으로 그려 주된 음이 돋보이게 한다).

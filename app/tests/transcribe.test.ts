@@ -1,9 +1,31 @@
 import { DOMParser } from '@xmldom/xmldom'
 import { describe, expect, it } from 'vitest'
-import { MERGE_GAP_SECONDS, importance, markMinorNotes, mergeRepeatedNotes } from '../src/audio/notes'
+import {
+  MERGE_GAP_SECONDS,
+  dropBackgroundNotes,
+  dropOctaveHarmonics,
+  importance,
+  markMinorNotes,
+  mergeRepeatedNotes,
+} from '../src/audio/notes'
 import { audioTracks, audioToInfo, HAND_SPLIT } from '../src/audio/toInfo'
-import { fitMinorToVoices, layoutTrack, MAIN_VOICES, selectMainNotes, splitIntoLayers } from '../src/midi/measures'
-import { buildMeasureGrid, simplifyToChords, type QNote } from '../src/midi/quantize'
+import {
+  decompose,
+  fitMinorToVoices,
+  layoutTrack,
+  MAIN_VOICES,
+  selectMainNotes,
+  splitIntoLayers,
+} from '../src/midi/measures'
+import {
+  buildMeasureGrid,
+  chordifyByBeat,
+  chordifyByOnset,
+  snapToBeatOrEighth,
+  simplifyToChords,
+  tidyForEditing,
+  type QNote,
+} from '../src/midi/quantize'
 import type { AudioNote } from '../src/midi/types'
 import { buildScore } from '../src/score/buildScore'
 import { materializeAudio } from '../src/score/audioInfo'
@@ -18,6 +40,7 @@ const an = (startSec: number, durationSec: number, midi: number, velocity = 0.7)
   midi,
   velocity,
 })
+const colored = (xml: string) => (xml.match(/<note color="#8a8a8a"/g) ?? []).length
 const parse = (xml: string) =>
   new DOMParser().parseFromString(xml, 'application/xml').documentElement as unknown as Element
 const count = (el: Element, tag: string) => (el.getElementsByTagName(tag) as unknown as ArrayLike<Element>).length
@@ -169,7 +192,7 @@ describe('들리는 대로 악보 (기본 방식)', () => {
   })
 
   it('찾은 음이 모두 악보에 있다 (정리로 빠지는 음은 없다: 이 곡은 4음 이하)', () => {
-    const res = buildScore(info(), applySettings(info(), { audioMerge: false }))
+    const res = buildScore(info(), applySettings(info(), { audioMerge: false, audioEdit: false }))
     const total = res.report.parts.reduce((a, p) => a + p.noteCount, 0)
     expect(total).toBe(mix().length)
   })
@@ -238,7 +261,7 @@ describe('읽기 쉽게 정리를 켜면 뺀 음을 알린다', () => {
     ]
     const res = buildScore(
       mk(cluster),
-      applySettings(mk(cluster), { audioSimplify: true, audioMerge: false, audioEmphasis: false }),
+      applySettings(mk(cluster), { audioSimplify: true, audioMerge: false, audioEmphasis: false, audioEdit: false }),
     )
     expect(res.report.warnings.some((w) => w.includes('2개') && w.includes('전체 8개'))).toBe(true)
   })
@@ -271,7 +294,7 @@ describe('알림의 "뺀 음" 개수는 실제 악보와 정확히 맞는다', (
         backend: 'cpu',
         elapsedMs: 1,
       })
-      const res = buildScore(i, applySettings(i, { audioMerge: false }))
+      const res = buildScore(i, applySettings(i, { audioMerge: false, audioEdit: false }))
       const m = /음 (\d+)개\(전체 (\d+)개 중\)/.exec(res.report.warnings.join(' '))
       const removed = m ? Number(m[1]) : 0
       const inScore = (res.xml.match(/<pitch>/g) ?? []).length - (res.xml.match(/<tie type="stop"\/>/g) ?? []).length
@@ -424,7 +447,7 @@ describe('악보에서 이어 붙이기 (기본 켬)', () => {
   })
 
   it('끄면 AI가 나눈 그대로 8개로 적힌다', () => {
-    const res = buildScore(mk(repeated), applySettings(mk(repeated), { audioMerge: false }))
+    const res = buildScore(mk(repeated), applySettings(mk(repeated), { audioMerge: false, audioEdit: false }))
     expect(buildTimeline(res.model).notes.filter((n) => n.midi === 72)).toHaveLength(8)
   })
 
@@ -436,11 +459,14 @@ describe('악보에서 이어 붙이기 (기본 켬)', () => {
   })
 
   it('음표 수가 줄어든다 (악보가 덜 쪼개진다)', () => {
-    const on = buildScore(mk(repeated), applySettings(mk(repeated))).report.parts.reduce((a, p) => a + p.noteCount, 0)
-    const off = buildScore(mk(repeated), applySettings(mk(repeated), { audioMerge: false })).report.parts.reduce(
+    const on = buildScore(mk(repeated), applySettings(mk(repeated), { audioEdit: false })).report.parts.reduce(
       (a, p) => a + p.noteCount,
       0,
     )
+    const off = buildScore(
+      mk(repeated),
+      applySettings(mk(repeated), { audioMerge: false, audioEdit: false }),
+    ).report.parts.reduce((a, p) => a + p.noteCount, 0)
     expect(on).toBe(2)
     expect(off).toBe(9)
   })
@@ -620,9 +646,8 @@ describe('악보에서 덜 주된 음은 회색(color 속성)으로 그려진다
       backend: 'cpu',
       elapsedMs: 1,
     })
-  const colored = (xml: string) => (xml.match(/<note color="#8a8a8a"/g) ?? []).length
   it('기본: 작고 짧은 음에 회색이 입혀지고, 크고 긴 음은 검은색(색 속성 없음)이다', () => {
-    const xml = buildScore(mk(), applySettings(mk())).xml
+    const xml = buildScore(mk(), applySettings(mk(), { audioEdit: false })).xml
     expect(colored(xml)).toBeGreaterThan(0)
     expect(colored(xml)).toBeLessThan((xml.match(/<note[ >]/g) ?? []).length * 0.6)
   })
@@ -771,5 +796,218 @@ describe('악보 기본(대보표·정리·돋보이기): 주된 음 길이를 �
     expect(midis.length).toBeGreaterThan(0)
     expect(midis.every((m) => m < 60)).toBe(true)
     expect(buildTimeline(buildScore(info, applySettings(info, { mutedTracks: [0, 1] })).model).notes).toEqual([])
+  })
+})
+
+describe('고치기 쉽게 (Finale 편집용, tidyForEditing)', () => {
+  it('8분음표 이내로 끊긴 같은 음은 하나로 이어진다', () => {
+    const out = tidyForEditing([q(0, 4, 60), q(6, 12, 60)])
+    expect(out).toEqual([expect.objectContaining({ start: 0, end: 12, midi: 60 })])
+  })
+  it('멀리 떨어진 같은 음은 따로 남는다', () => {
+    expect(tidyForEditing([q(0, 4, 60), q(8, 12, 60)])).toHaveLength(2)
+  })
+  it('16분음표 하나짜리 잔 조각은 빠진다 (전부 그런 경우는 남긴다)', () => {
+    expect(tidyForEditing([q(0, 4, 60), q(0, 1, 64)]).map((n) => n.midi)).toEqual([60])
+    expect(tidyForEditing([q(0, 1, 64)])).toHaveLength(1)
+  })
+  it('결과는 겹치지 않는 한 성부이고, 바로 이어진 같은 화음은 하나로 합친다', () => {
+    const out = tidyForEditing([q(0, 4, 60), q(0, 4, 64), q(4, 8, 60), q(4, 8, 64), q(8, 12, 62)])
+    expect(overlaps(out)).toBe(false)
+    expect(out.filter((n) => n.midi === 60)).toEqual([expect.objectContaining({ start: 0, end: 8 })])
+  })
+  it('join=false면 끊긴 음을 이어 붙이지 않는다', () => {
+    expect(tidyForEditing([q(0, 4, 60), q(5, 8, 60)], false)).toHaveLength(2)
+  })
+  it('악보: 편집용은 한 보표에 한 성부, 추가 보표 없이 같은 음은 이어서 적힌다', () => {
+    const info = audioToInfo({
+      fileName: 'e.wav',
+      size: 1,
+      durationSec: 6,
+      notes: [],
+      allNotes: [an(0, 2, 72), an(2.2, 2, 72), an(0, 4, 48), an(1, 0.5, 76), an(2, 0.5, 79)],
+      detectedCount: 5,
+      bpm: { value: 120, confidence: 0.5 },
+      key: { value: { fifths: 0, mode: 'major' }, confidence: 0.5 },
+      backend: 'cpu',
+      elapsedMs: 1,
+    })
+    const res = buildScore(info, applySettings(info))
+    expect(res.report.parts).toHaveLength(1)
+    expect(res.report.parts[0].maxVoices).toBe(1)
+    expect(colored(res.xml)).toBe(0)
+    // 8분음표 칸에 맞춰 적으므로 16분음표 길이(1칸)나 16분쉼표 조각이 없다
+    const durations = [...res.xml.matchAll(/<duration>(\d+)<\/duration>/g)].map((m) => Number(m[1]))
+    expect(durations.length).toBeGreaterThan(0)
+    expect(durations.every((d) => d % 2 === 0)).toBe(true)
+  })
+})
+
+describe('편집용: 오래 끄는 음 살리기와 뒷받침 음 빼기', () => {
+  it('chordifyByOnset: 오래 끄는 음은 다음 음이 시작해도 화음에 남는다', () => {
+    const out = chordifyByOnset([q(0, 8, 48), q(0, 2, 72), q(2, 4, 74), q(4, 6, 76)])
+    expect(out.filter((n) => n.start === 2).map((n) => n.midi)).toEqual([48, 74])
+    expect(out.filter((n) => n.start === 4).map((n) => n.midi)).toEqual([48, 76])
+    expect(overlaps(out)).toBe(false)
+  })
+  it('chordifyByOnset: 한 화음은 4음까지, 가장 낮은 음·높은 음·센 음이 남는다', () => {
+    const out = chordifyByOnset([
+      q(0, 4, 40, 0.3),
+      q(0, 4, 50, 0.9),
+      q(0, 4, 55, 0.2),
+      q(0, 4, 60, 0.8),
+      q(0, 4, 70, 0.1),
+    ])
+    expect(out.map((n) => n.midi)).toEqual([40, 50, 60, 70])
+  })
+  it('dropBackgroundNotes: 소리가 작고 짧은 음을 정한 비율(기본 50%)만큼 뺀다 (5개 미만이면 그대로)', () => {
+    const notes = Array.from({ length: 20 }, (_, i) => an(i, 0.5 + i * 0.1, 60 + (i % 12), 0.3 + i * 0.03))
+    expect(dropBackgroundNotes(notes)).toHaveLength(10)
+    expect(dropBackgroundNotes(notes, 0.35)).toHaveLength(13)
+    expect(dropBackgroundNotes(notes.slice(0, 4))).toHaveLength(4)
+  })
+  it('decompose(relaxed): 8분음표 자리에서 시작하는 4분음표를 붙임줄 없이 한 음표로', () => {
+    expect(decompose(2, 4, 4)).toEqual([2, 2])
+    expect(decompose(2, 4, 4, true)).toEqual([4])
+  })
+})
+
+describe('편집용: 박 단위 화음 (chordifyByBeat)', () => {
+  it('박 사이에서 시작한 짧은 음(아르페지오)은 새 화음을 만들지 않고, 긴 화음이 쪼개지지 않는다', () => {
+    const pad = [q(0, 16, 48), q(0, 16, 64), q(0, 16, 67)] // 한 마디 내내 울리는 화음
+    const arpeggio = [q(2, 4, 72), q(6, 8, 76), q(10, 12, 79), q(14, 16, 76)] // 8분음표 아르페지오
+    const out = chordifyByBeat([...pad, ...arpeggio])
+    expect(new Set(out.map((n) => n.start)).size).toBeLessThanOrEqual(4) // 박마다 최대 4번 (8분음표 8번이 아님)
+    expect(out.every((n) => n.start % 4 === 0)).toBe(true)
+    expect(overlaps(out)).toBe(false)
+  })
+  it('박 사이에서 시작해도 한 박 이상 이어지는 음은 새 화음의 경계가 된다', () => {
+    const out = chordifyByBeat([q(0, 2, 60), q(2, 8, 62)])
+    expect(out.some((n) => n.start === 2 && n.midi === 62)).toBe(true)
+  })
+  it('같은 화음이 이어지면 하나로 합친다', () => {
+    const out = chordifyByBeat([q(0, 16, 60), q(0, 16, 64)])
+    expect(out).toEqual([
+      expect.objectContaining({ start: 0, end: 16 }),
+      expect.objectContaining({ start: 0, end: 16 }),
+    ])
+  })
+  it('snapToBeatOrEighth: 박 1칸 이내는 박으로, 나머지는 8분음표 칸으로', () => {
+    expect([0, 1, 2, 3, 4, 5, 6, 7].map((v) => snapToBeatOrEighth(v))).toEqual([0, 0, 2, 4, 4, 4, 6, 8])
+  })
+})
+
+describe('편집용: 계속 울리는 음은 다시 치지 않고 붙임줄로 이어서 적는다', () => {
+  const grid = buildMeasureGrid([], 4, 16).measures
+  const chords = [q(0, 8, 60), q(0, 4, 64), q(4, 8, 67)] // 도는 계속, 위의 음만 바뀐다
+  it('layoutTrack(relaxed): 화음 중 이어지는 음(도)에만 붙임줄이 붙는다', () => {
+    const [m1] = layoutTrack(chordifyByBeat(chords), grid, { relaxed: true }).measures[0]
+    expect(m1.pieces.slice(0, 2)).toHaveLength(2)
+    expect(m1.pieces[0].tieStartMidis).toEqual([60])
+    expect(m1.pieces[1].tieStopMidis).toEqual([60])
+    expect(m1.pieces[0].tieStart).toBe(false)
+  })
+  it('relaxed가 아니면 예전처럼 붙임줄을 만들지 않는다', () => {
+    const [m1] = layoutTrack(chordifyByBeat(chords), grid).measures[0]
+    expect(m1.pieces.some((p) => p.tieStartMidis || p.tieStopMidis)).toBe(false)
+  })
+  it('MusicXML에는 이어지는 음에만 tie가 적히고 재생에서는 한 음으로 합쳐진다', () => {
+    const info = audioToInfo({
+      fileName: 't.wav',
+      size: 1,
+      durationSec: 6,
+      notes: [],
+      allNotes: [an(0, 2, 60), an(0, 1, 64), an(1, 1, 67)],
+      detectedCount: 3,
+      bpm: { value: 120, confidence: 0.5 },
+      key: { value: { fifths: 0, mode: 'major' }, confidence: 0.5 },
+      backend: 'cpu',
+      elapsedMs: 1,
+    })
+    const res = buildScore(info, applySettings(info))
+    const doc = parse(res.xml)
+    const notes = Array.from(doc.getElementsByTagName('note') as unknown as ArrayLike<Element>).filter(
+      (n) => n.getElementsByTagName('pitch').length,
+    )
+    const tiedPitches = notes
+      .filter((n) => n.getElementsByTagName('tie').length)
+      .map((n) => n.getElementsByTagName('step')[0].textContent)
+    expect(tiedPitches.length).toBeGreaterThan(0)
+    expect(tiedPitches.every((s) => s === 'C')).toBe(true) // 위의 음(E, G)에는 붙임줄이 없다
+    expect(buildTimeline(res.model).notes.filter((n) => n.midi === 60)).toHaveLength(1)
+  })
+})
+
+describe('편집용: 계속 울리는 음이 끊기지 않게 (chordifyByBeat)', () => {
+  it('한 화음에 5음이 있어 하나를 빼야 하면 앞 화음에서 이어져 온 음을 남긴다', () => {
+    // 첫 박: 40·50·60·70 / 둘째 박: 40·50·60·70에 센 음 80이 더해지고 이어져 온 음은 약하다
+    const out = chordifyByBeat([
+      q(0, 8, 40, 0.5),
+      q(0, 8, 50, 0.5),
+      q(0, 8, 60, 0.2),
+      q(0, 8, 70, 0.5),
+      q(4, 8, 55, 0.9),
+    ])
+    // 이어져 온 60이 남아 첫 화음과 같아지므로 한 화음(0~8)으로 합쳐지고, 새로 들어온 55는 빠진다
+    expect(out.map((n) => n.midi).sort((a, b) => a - b)).toEqual([40, 50, 60, 70])
+    expect(out.every((n) => n.start === 0 && n.end === 8)).toBe(true)
+  })
+  it('앞뒤 화음에는 있는데 가운데 화음에서만 자리가 없어 빠진 음은 채워 넣는다', () => {
+    const out = chordifyByBeat([
+      q(0, 12, 60, 0.3),
+      q(0, 12, 40),
+      q(0, 12, 80),
+      q(4, 8, 50),
+      q(4, 8, 55),
+      q(4, 8, 70, 0.9),
+    ])
+    // 가운데 박(4~8)에 60이 있어야 앞(0~4)·뒤(8~12)와 이어진다
+    const middle = out.filter((n) => n.start <= 4 && n.end > 4).map((n) => n.midi)
+    expect(middle).toContain(60)
+  })
+})
+
+describe('편집용: 배음(한 옥타브 위 울림) 거르기 (dropOctaveHarmonics)', () => {
+  const low = an(0, 2, 60, 0.8)
+  it('한 옥타브 아래의 더 센 음과 같이 울리는 약한 음은 뺀다', () => {
+    const out = dropOctaveHarmonics([low, an(0, 2, 72, 0.3)], 0.5)
+    expect(out.map((n) => n.midi)).toEqual([60])
+  })
+  it('세기가 비슷하거나 센 옥타브 겹침(실제 악보의 겹침)은 남긴다', () => {
+    expect(dropOctaveHarmonics([low, an(0, 2, 72, 0.6)], 0.5)).toHaveLength(2)
+    expect(dropOctaveHarmonics([low, an(0, 2, 72, 0.9)], 0.5)).toHaveLength(2)
+  })
+  it('같이 울리지 않는 음(겹침이 70% 미만)은 남기고, ratio가 0이면 아무것도 빼지 않는다', () => {
+    expect(dropOctaveHarmonics([low, an(1.5, 2, 72, 0.1)], 0.5)).toHaveLength(2)
+    expect(dropOctaveHarmonics([low, an(0, 2, 72, 0.1)], 0)).toHaveLength(2)
+  })
+  it('두 옥타브 아래의 더 센 음도 기준이 된다', () => {
+    expect(dropOctaveHarmonics([an(0, 2, 48, 0.9), an(0, 2, 72, 0.2)], 0.5)).toHaveLength(1)
+  })
+})
+
+describe('편집용: 짧은 화음 변화 합치기 (smoothSteps)', () => {
+  // 한 마디 내내 도·미·솔이 울리고, 둘째 박에서만 위의 음 하나가 잠깐 바뀐다 (스쳐 지나가는 음)
+  const notes = [q(0, 16, 48), q(0, 16, 64), q(0, 4, 67), q(4, 8, 69), q(8, 16, 67)]
+  it('끄면(0) 박마다 화음이 바뀐다', () => {
+    const out = chordifyByBeat(notes, 4, 5, true, { steps: 0, similarity: 0.6 })
+    expect(new Set(out.map((n) => n.start)).size).toBe(3)
+  })
+  it('켜면 앞 화음과 비슷하고 가장 낮은 음이 같은 짧은 변화는 앞 화음에 합쳐진다', () => {
+    const out = chordifyByBeat(notes, 4, 5, true, { steps: 4, similarity: 0.5 })
+    expect(new Set(out.map((n) => n.start)).size).toBeLessThan(3)
+    expect(overlaps(out)).toBe(false)
+  })
+  it('가장 낮은 음이 바뀌는 변화는 합치지 않는다 (화음의 뿌리가 바뀐 것)', () => {
+    const out = chordifyByBeat(
+      [q(0, 8, 48), q(0, 8, 64), q(4, 8, 40), q(4, 8, 64)]
+        .filter((n) => n.midi !== 48 || n.start === 0)
+        .map((n) => (n.midi === 48 && n.end === 8 ? { ...n, end: 4 } : n)),
+      4,
+      5,
+      true,
+      { steps: 4, similarity: 0.1 },
+    )
+    expect(out.some((n) => n.start === 4 && n.midi === 40)).toBe(true)
   })
 })

@@ -65,6 +65,8 @@ export interface AudioSourceInfo {
   notes: AudioNote[]
   /** 거르기를 마친 AI가 찾은 모든 음표 (들리는 대로 악보의 재료) */
   allNotes: AudioNote[]
+  /** 추적한 박의 시각(초). 있으면 연주의 느려짐·빨라짐을 따라 박 위치를 정한다 (일정한 템포면 없다) */
+  beatTimes?: number[]
   /** 거르기 전에 AI가 찾은 음표 수 */
   detectedCount: number
   /** 주파수 분석 보정으로 새로 넣은 음·뺀 음 수 */

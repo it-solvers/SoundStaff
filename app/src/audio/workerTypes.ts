@@ -10,7 +10,8 @@ export interface AnalyzeRequest {
 
 export type AnalyzeResponse =
   | { type: 'progress'; percent: number }
-  | { type: 'stage'; stage: 'finish' }
+  /** 음표 정리 단계 시작·진행 (percent 0~100) */
+  | { type: 'stage'; stage: 'finish'; percent: number }
   | {
       type: 'result'
       notes: AudioNote[]
@@ -20,6 +21,8 @@ export type AnalyzeResponse =
       refinedAdded: number
       refinedRemoved: number
       bpm: Estimate<number>
+      /** 연주의 느려짐·빨라짐을 따라간 박 시각(초). 템포가 일정하면 없다 */
+      beatTimes?: number[]
       key: Estimate<KeyGuess>
       backend: string
       elapsedMs: number

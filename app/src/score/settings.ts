@@ -1,3 +1,4 @@
+import type { EditTuning } from '../audio/editTuning'
 import { MAJOR_BY_FIFTHS, accidentalsLabel, prettyTonic, tonicName, type KeyMode } from '../midi/keys'
 import type { MidiFileInfo } from '../midi/types'
 import { baseName } from '../utils/fileName'
@@ -18,6 +19,10 @@ export interface SettingsOverride {
   audioSimplify?: boolean
   /** 같은 높이로 이어진 음 합치기 */
   audioMerge?: boolean
+  /** 고치기 쉽게(Finale 편집용) 정리 */
+  audioEdit?: boolean
+  /** 편집용 정리의 조정값 (시험·조정용) */
+  editTuning?: Partial<EditTuning>
   /** 주된 음 돋보이기 (작고 짧은 음을 회색으로) */
   audioEmphasis?: boolean
   /** 악기(트랙) 단 순서 (트랙 번호 목록) */
@@ -66,6 +71,8 @@ export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): Sco
     audioMode: o.audioMode ?? 'full',
     audioSimplify: o.audioSimplify ?? true,
     audioMerge: o.audioMerge ?? true,
+    audioEdit: o.audioEdit ?? true,
+    editTuning: o.editTuning,
     audioEmphasis: o.audioEmphasis ?? true,
     trackOrder: o.trackOrder,
     excludedTracks: o.excludedTracks,

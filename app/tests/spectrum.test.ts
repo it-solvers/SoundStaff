@@ -85,3 +85,15 @@ describe('주파수 분석 보정 (refineNotes)', () => {
     expect(g!.startSec).toBeGreaterThan(1.5)
   })
 })
+
+describe('주파수 분석 진행률 알림', () => {
+  it('computeSalience는 0에서 1 사이로 늘어나는 진행률을 알려 준다', async () => {
+    const { computeSalience, FFT_SIZE, HOP_SIZE } = await import('../src/audio/spectrum')
+    const pcm = new Float32Array(FFT_SIZE + HOP_SIZE * 120)
+    const seen: number[] = []
+    computeSalience(pcm, 22050, (f) => seen.push(f))
+    expect(seen.length).toBeGreaterThan(1)
+    expect(seen[0]).toBe(0)
+    expect(seen.every((v, i) => v >= 0 && v <= 1 && (i === 0 || v >= seen[i - 1]))).toBe(true)
+  })
+})

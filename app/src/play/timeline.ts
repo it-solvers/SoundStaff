@@ -1,3 +1,4 @@
+import { startsTie, stopsTie } from '../midi/measures'
 import type { ScoreModel } from '../score/types'
 
 /** 재생할 음 하나. start·duration은 초 단위(배속 1배 기준) */
@@ -83,13 +84,13 @@ export function buildTimeline(model: ScoreModel): Timeline {
             for (const midi of piece.midis) {
               const key = `${part.id}|${si}|${v.voice}|${midi}`
               const cur = open.get(key)
-              if (piece.tieStop && cur && cur.startStep + cur.steps === pos) {
+              if (stopsTie(piece, midi) && cur && cur.startStep + cur.steps === pos) {
                 cur.steps += piece.duration
               } else {
                 if (cur) done.push(cur)
                 open.set(key, { startStep: pos, steps: piece.duration, midi })
               }
-              if (!piece.tieStart) {
+              if (!startsTie(piece, midi)) {
                 const fin = open.get(key)
                 if (fin) done.push(fin)
                 open.delete(key)

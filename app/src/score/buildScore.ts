@@ -4,6 +4,7 @@ import {
   enforceMonophonic,
   quantizeNotes,
   simplifyToChords,
+  tidyForEditing,
   type MeasureGrid,
   type QNote,
 } from '../midi/quantize'
@@ -69,16 +70,18 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
         ? q.notes
         : t.chords
           ? settings.audioSimplify
-            ? settings.audioEmphasis === false
-              ? simplifyToChords(q.notes)
-              : // 주된 음은 길이를 지키고(겹치면 성부로 나눠 적는다) 덜 주된 음(회색)만 한 성부 화음으로 단순화한다: 주된 음이 돋보인다
-                (() => {
-                  const marked = selectMainNotes(q.notes) // 주된 음을 성부 3개 안에 자리 잡아 주고 나머지는 회색으로
-                  return fitMinorToVoices([
-                    ...marked.filter((n) => !n.minor),
-                    ...simplifyToChords(marked.filter((n) => n.minor)),
-                  ])
-                })()
+            ? settings.audioEdit
+              ? tidyForEditing(q.notes, settings.audioMerge !== false, settings.editTuning) // 편집용: 같은 음은 이어 붙이고 한 보표에 한 성부(화음)로 단순하게
+              : settings.audioEmphasis === false
+                ? simplifyToChords(q.notes)
+                : // 주된 음은 길이를 지키고(겹치면 성부로 나눠 적는다) 덜 주된 음(회색)만 한 성부 화음으로 단순화한다: 주된 음이 돋보인다
+                  (() => {
+                    const marked = selectMainNotes(q.notes) // 주된 음을 성부 3개 안에 자리 잡아 주고 나머지는 회색으로
+                    return fitMinorToVoices([
+                      ...marked.filter((n) => !n.minor),
+                      ...simplifyToChords(marked.filter((n) => n.minor)),
+                    ])
+                  })()
             : q.notes
           : enforceMonophonic(q.notes)
     if (t.chords) trimmed += t.notes.length - notes.length
@@ -151,7 +154,7 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
     let noteCount = 0
     let maxVoices = 1
     for (const { track, notes } of hands) {
-      const layout = layoutTrack(notes, p.grid.measures)
+      const layout = layoutTrack(notes, p.grid.measures, { relaxed: !!settings.audioEdit })
       warnings.push(...layout.warnings.map((w) => t.warnings.track(trackName(track), w)))
       staves.push({ clef: track.clef ?? pickClef(notes), layout: layout.measures, muted: muted.has(track.index) })
       noteCount += track.noteCount

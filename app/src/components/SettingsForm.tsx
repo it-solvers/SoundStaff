@@ -91,21 +91,37 @@ export default function SettingsForm({ info, override, onChange }: Props) {
               )
             })}
           </div>
-          {(override.audioMode ?? 'full') === 'full' && (
-            <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-emphasis-label">
+          {(override.audioMode ?? 'full') === 'full' && (override.audioSimplify ?? true) && (
+            <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-edit-label">
               <input
                 type="checkbox"
                 className="mt-1"
-                checked={override.audioEmphasis ?? true}
-                onChange={(e) => onChange({ audioEmphasis: e.target.checked ? undefined : false })}
-                data-testid="audio-emphasis"
+                checked={override.audioEdit ?? true}
+                onChange={(e) => onChange({ audioEdit: e.target.checked ? undefined : false })}
+                data-testid="audio-edit"
               />
               <span>
-                <span className="font-medium">{t.audio.emphasis.label}</span>
-                <span className="ml-1 text-xs text-slate-300">{t.audio.emphasis.desc}</span>
+                <span className="font-medium">{t.audio.edit.label}</span>
+                <span className="ml-1 text-xs text-slate-300">{t.audio.edit.desc}</span>
               </span>
             </label>
           )}
+          {(override.audioMode ?? 'full') === 'full' &&
+            !((override.audioEdit ?? true) && (override.audioSimplify ?? true)) && (
+              <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-emphasis-label">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={override.audioEmphasis ?? true}
+                  onChange={(e) => onChange({ audioEmphasis: e.target.checked ? undefined : false })}
+                  data-testid="audio-emphasis"
+                />
+                <span>
+                  <span className="font-medium">{t.audio.emphasis.label}</span>
+                  <span className="ml-1 text-xs text-slate-300">{t.audio.emphasis.desc}</span>
+                </span>
+              </label>
+            )}
           {(override.audioMode ?? 'full') === 'full' && (
             <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-merge-label">
               <input

@@ -19,8 +19,12 @@ export interface ScoreSettings {
   audioMode?: AudioMode
   /** 들리는 대로 악보에서 읽기 쉽게 정리할지 (같은 때 4음 넘는 음 등 일부를 뺀다). 기본은 켬: 피아노 대보표(한 파트, 한 보표에 한 성부)로 읽기 쉽게 만든다. 끄면 찾은 음을 모두 적는다 */
   audioSimplify?: boolean
+  /** 편집용 정리의 조정값 (시험·조정용. 없으면 기본값) */
+  editTuning?: Partial<import('../audio/editTuning').EditTuning>
   /** 같은 높이로 이어진 음을 하나로 합칠지 (기본 켬). 끄면 AI가 나눈 그대로 적는다 */
   audioMerge?: boolean
+  /** 고치기 쉽게(편집용) 정리할지 (기본 켬, 읽기 쉽게 정리하기가 켜져 있을 때만): 같은 음을 더 넓게 이어 붙이고 한 보표에 한 성부로 단순하게 만들어 Finale에서 수정하기 쉽게 한다 */
+  audioEdit?: boolean
   /** 주된 음이 돋보이게 작고 짧은 음을 회색으로 표시할지 (기본 켬). 음은 지우지 않는다 */
   audioEmphasis?: boolean
   trackOrder?: number[]

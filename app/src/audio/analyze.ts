@@ -31,7 +31,7 @@ async function preflight(file: File): Promise<number> {
 function runWorker(
   pcm: Float32Array,
   onProgress: (percent: number) => void,
-  onFinish: () => void,
+  onFinish: (percent: number) => void,
   signal: AbortSignal,
 ): Promise<Extract<AnalyzeResponse, { type: 'result' }>> {
   return new Promise((resolve, reject) => {
@@ -48,7 +48,7 @@ function runWorker(
     worker.onmessage = (e: MessageEvent<AnalyzeResponse>) => {
       const m = e.data
       if (m.type === 'progress') onProgress(m.percent)
-      else if (m.type === 'stage') onFinish()
+      else if (m.type === 'stage') onFinish(m.percent)
       else if (m.type === 'result') {
         end()
         resolve(m)
@@ -91,7 +91,7 @@ export async function analyzeAudioFile(
   const r = await runWorker(
     pcm,
     (p) => onStage('ai', p),
-    () => onStage('finish'),
+    (p) => onStage('finish', p),
     signal,
   )
   return audioToInfo({
@@ -104,6 +104,7 @@ export async function analyzeAudioFile(
     refinedAdded: r.refinedAdded,
     refinedRemoved: r.refinedRemoved,
     bpm: r.bpm,
+    beatTimes: r.beatTimes,
     key: r.key,
     backend: r.backend,
     elapsedMs: r.elapsedMs,

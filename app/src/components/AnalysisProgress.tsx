@@ -4,7 +4,7 @@ import { t } from '../text/ko'
 export interface AnalysisState {
   fileName: string
   stage: AnalysisStage
-  /** AI 단계에서만 알 수 있는 실제 진행률 (0~100). 다른 단계는 임의의 숫자를 보이지 않고 단계 이름만 보인다. */
+  /** AI 단계와 음표 정리 단계에서 알 수 있는 실제 진행률 (0~100). 다른 단계는 임의의 숫자를 보이지 않고 단계 이름만 보인다. */
   percent?: number
 }
 
@@ -40,11 +40,11 @@ export default function AnalysisProgress({ state, onCancel }: { state: AnalysisS
           >
             {i < current ? '✓ ' : i === current ? '▶ ' : '· '}
             {t.audio.stages[s]}
-            {s === 'ai' && i === current && state.percent !== undefined ? ` ${state.percent}%` : ''}
+            {(s === 'ai' || s === 'finish') && i === current && state.percent !== undefined ? ` ${state.percent}%` : ''}
           </li>
         ))}
       </ol>
-      {state.stage === 'ai' && (
+      {(state.stage === 'ai' || state.stage === 'finish') && (
         <progress className="mt-3 h-2 w-full" max={100} value={state.percent ?? 0} data-testid="analysis-bar" />
       )}
     </section>

@@ -1,4 +1,4 @@
-import type { Piece } from '../midi/measures'
+import { startsTie, stopsTie, type Piece } from '../midi/measures'
 import type { PartModel, ScoreModel } from './types'
 
 const SHARP_NAMES: [string, number][] = [
@@ -79,16 +79,19 @@ function noteXml(
     return `<note${hiddenRest ? ' print-object="no"' : ''}><rest/><duration>${p.duration}</duration><voice>${voice}</voice>${typeXml}${staffXml}</note>`
   }
   const names = fifths < 0 ? FLAT_NAMES : SHARP_NAMES
-  const ties = (p.tieStop ? '<tie type="stop"/>' : '') + (p.tieStart ? '<tie type="start"/>' : '')
-  const tied =
-    p.tieStart || p.tieStop
-      ? `<notations>${p.tieStop ? '<tied type="stop"/>' : ''}${p.tieStart ? '<tied type="start"/>' : ''}</notations>`
-      : ''
   return p.midis
     .map((midi, i) => {
       const [step, alter] = names[midi % 12]
       const octave = Math.floor(midi / 12) - 1
       // 덜 주된 음은 회색으로 (MusicXML note의 color 속성. 악보 미리보기·PDF에서 보인다)
+      // 붙임줄은 음마다 따로 적는다 (화음 중 계속 울리는 음만 이어질 수 있다)
+      const stop = stopsTie(p, midi)
+      const start = startsTie(p, midi)
+      const ties = (stop ? '<tie type="stop"/>' : '') + (start ? '<tie type="start"/>' : '')
+      const tied =
+        start || stop
+          ? `<notations>${stop ? '<tied type="stop"/>' : ''}${start ? '<tied type="start"/>' : ''}</notations>`
+          : ''
       const color = p.minor?.includes(midi) ? ` color="${MINOR_COLOR}"` : ''
       return (
         `<note${color}>${i > 0 ? '<chord/>' : ''}<pitch><step>${step}</step>${alter ? `<alter>${alter}</alter>` : ''}<octave>${octave}</octave></pitch>` +

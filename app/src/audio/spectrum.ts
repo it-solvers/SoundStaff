@@ -66,7 +66,11 @@ function fft(re: Float64Array, im: Float64Array): void {
 export const midiToHz = (m: number) => 440 * 2 ** ((m - 69) / 12)
 
 /** 소리를 짧은 구간으로 나눠 음 높이마다 얼마나 센지 잰다. */
-export function computeSalience(pcm: Float32Array, sampleRate: number): Salience {
+export function computeSalience(
+  pcm: Float32Array,
+  sampleRate: number,
+  onProgress?: (fraction: number) => void,
+): Salience {
   const hann = Float64Array.from(
     { length: FFT_SIZE },
     (_, i) => 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (FFT_SIZE - 1)),
@@ -83,7 +87,9 @@ export function computeSalience(pcm: Float32Array, sampleRate: number): Salience
   const max: number[] = []
   const re = new Float64Array(FFT_SIZE)
   const im = new Float64Array(FFT_SIZE)
+  const total = Math.max(1, Math.floor((pcm.length - FFT_SIZE) / HOP_SIZE) + 1)
   for (let s0 = 0; s0 + FFT_SIZE <= pcm.length; s0 += HOP_SIZE) {
+    if (onProgress && mag.length % 50 === 0) onProgress(Math.min(1, mag.length / total))
     for (let i = 0; i < FFT_SIZE; i++) {
       re[i] = pcm[s0 + i] * hann[i]
       im[i] = 0
@@ -140,8 +146,13 @@ export interface RefineResult {
  * ② 빠진 음 넣기: 같은 높이가 MIN_ADD_FRAMES 프레임 이상 이어서 실제로 들리는데 찾은 음이 없으면 낮은 세기(ADDED_VELOCITY)로 넣는다.
  * 찾은 음의 시작·길이는 바꾸지 않는다. 한 프레임 건너뛴 짧은 끊김은 이어진 것으로 본다.
  */
-export function refineNotes(pcm: Float32Array, sampleRate: number, notes: AudioNote[]): RefineResult {
-  const s = computeSalience(pcm, sampleRate)
+export function refineNotes(
+  pcm: Float32Array,
+  sampleRate: number,
+  notes: AudioNote[],
+  onProgress?: (fraction: number) => void,
+): RefineResult {
+  const s = computeSalience(pcm, sampleRate, onProgress)
   const frames = s.times.length
   if (!frames) return { notes, added: 0, removed: 0, extended: 0 }
   const hop = HOP_SIZE / sampleRate

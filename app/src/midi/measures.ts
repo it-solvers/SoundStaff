@@ -9,7 +9,16 @@ export interface Piece {
   tieStop: boolean
   /** 이 조각의 음 중 덜 주된 음(회색)의 높이 */
   minor?: number[]
+  /** 화음 중 이 높이의 음만 다음 조각으로 붙임줄로 이어진다 (tieStart가 거짓일 때). 화음이 바뀌어도 계속 울리는 음을 다시 치지 않고 이어서 적는다 */
+  tieStartMidis?: number[]
+  /** 화음 중 이 높이의 음만 앞 조각에서 붙임줄로 이어져 온다 (tieStop이 거짓일 때) */
+  tieStopMidis?: number[]
 }
+
+/** 이 조각에서 이 높이의 음이 다음 조각으로 붙임줄을 시작하는가 */
+export const startsTie = (p: Piece, midi: number): boolean => p.tieStart || !!p.tieStartMidis?.includes(midi)
+/** 이 조각에서 이 높이의 음이 앞 조각에서 붙임줄로 이어져 오는가 */
+export const stopsTie = (p: Piece, midi: number): boolean => p.tieStop || !!p.tieStopMidis?.includes(midi)
 
 export interface VoiceMeasure {
   voice: number
@@ -33,7 +42,11 @@ export const MAX_VOICES = 4
 const DURATIONS = [32, 24, 16, 12, 8, 6, 4, 3, 2, 1]
 
 /** 길이 d의 음표를 마디 안 위치 p에서 시작해도 박 구조가 자연스러운가 */
-function allowedAt(d: number, p: number, beat: number): boolean {
+function allowedAt(d: number, p: number, beat: number, relaxed = false): boolean {
+  if (relaxed) {
+    // 편집용: 8분음표 자리에서 시작하는 4분·점4분·2분·점2분음표도 붙임줄로 나누지 않고 한 음표로 적는다
+    if (d === 4 || d === 6 || d === 8 || d === 12) return p % 2 === 0
+  }
   switch (d) {
     case 1:
       return true
@@ -59,12 +72,12 @@ function allowedAt(d: number, p: number, beat: number): boolean {
  * 음이 이어져야 하면(나눈 뒤에도 남는 길이가 있으면) 박 위치에서 끝나는 조각을 우선한다.
  * 예) 4/4의 둘째 박에서 시작하는 2분음표는 점4분+8분이 아니라 4분+4분으로 나눈다.
  */
-export function decompose(pos: number, len: number, beat: number): number[] {
+export function decompose(pos: number, len: number, beat: number, relaxed = false): number[] {
   const out: number[] = []
   let p = pos
   let left = len
   while (left > 0) {
-    const fits = DURATIONS.filter((c) => c <= left && allowedAt(c, p, beat))
+    const fits = DURATIONS.filter((c) => c <= left && allowedAt(c, p, beat, relaxed))
     const d = fits.find((c) => c === left || (p + c) % beat === 0) ?? fits[0] ?? 1
     out.push(d)
     p += d
@@ -163,7 +176,7 @@ function assignVoices(events: ChordEvent[], warnings: string[], legatoTrim: bool
 }
 
 /** 성부 하나의 음·쉼표 시간선을 마디별 표기 조각(붙임줄 포함)으로 만든다 */
-function layoutVoice(events: ChordEvent[], grid: MeasureSpec[]): Piece[][] {
+function layoutVoice(events: ChordEvent[], grid: MeasureSpec[], relaxed = false, tieCommon = false): Piece[][] {
   type Seg = { start: number; end: number; midis: number[]; minor?: Set<number> }
   const segs: Seg[] = []
   const total = grid[grid.length - 1].startStep + grid[grid.length - 1].length
@@ -179,6 +192,7 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[]): Piece[][] {
   if (cursor < total) segs.push({ start: cursor, end: total, midis: [] })
 
   const perMeasure: Piece[][] = grid.map(() => [])
+  const segPieces: { seg: Seg; first: Piece; last: Piece }[] = []
   let mi = 0
   for (const seg of segs) {
     // 이 구간이 걸치는 마디들로 자르기
@@ -197,20 +211,36 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[]): Piece[][] {
     for (const part of parts) {
       const m = grid[part.m]
       let p = part.start - m.startStep
-      for (const d of decompose(p, part.end - part.start, beatSteps(m.numerator, m.denominator))) {
+      for (const d of decompose(p, part.end - part.start, beatSteps(m.numerator, m.denominator), relaxed)) {
         pieces.push({ m: part.m, len: d, posInMeasure: p })
         p += d
       }
     }
+    const made: Piece[] = []
     pieces.forEach((pc, i) => {
-      perMeasure[pc.m].push({
+      const piece: Piece = {
         duration: pc.len,
         midis: seg.midis,
         tieStart: isNote && i < pieces.length - 1,
         tieStop: isNote && i > 0,
         minor: seg.minor && seg.minor.size ? seg.midis.filter((x) => seg.minor!.has(x)) : undefined,
-      })
+      }
+      perMeasure[pc.m].push(piece)
+      made.push(piece)
     })
+    segPieces.push({ seg, first: made[0], last: made[made.length - 1] })
+  }
+  // 화음이 바뀌어도 계속 울리는 음은 다시 치지 않고 그 음만 붙임줄로 이어서 적는다
+  if (tieCommon) {
+    for (let k = 0; k + 1 < segPieces.length; k++) {
+      const a = segPieces[k]
+      const b = segPieces[k + 1]
+      if (a.seg.end !== b.seg.start || !a.seg.midis.length || !b.seg.midis.length) continue
+      const common = a.seg.midis.filter((x) => b.seg.midis.includes(x))
+      if (!common.length) continue
+      a.last.tieStartMidis = common
+      b.first.tieStopMidis = common
+    }
   }
   return perMeasure
 }
@@ -218,12 +248,17 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[]): Piece[][] {
 /**
  * 한 트랙(음높이 악기)의 음표를 마디·성부별 표기 조각으로 변환한다.
  * legatoTrim: 1칸 이하로 겹친 음을 앞 음에서 끊을지 (기본 켬). 이미 그 정리를 마친 층(splitIntoLayers)은 끈다.
+ * relaxed: 박 경계에서 붙임줄로 나누지 않고 한 음표로 적는다 (편집용).
  * 정리는 한 번만 해야 한다. 거듭 적용하면 시작이 2칸 간격으로 이어진 음의 길이가 칸마다 줄어든다.
  */
-export function layoutTrack(notes: QNote[], grid: MeasureSpec[], opts: { legatoTrim?: boolean } = {}): TrackLayout {
+export function layoutTrack(
+  notes: QNote[],
+  grid: MeasureSpec[],
+  opts: { legatoTrim?: boolean; relaxed?: boolean } = {},
+): TrackLayout {
   const warnings: string[] = []
   const voices = notes.length ? assignVoices(toChordEvents(notes), warnings, opts.legatoTrim ?? true) : []
-  const voiceMeasures = voices.map((v) => layoutVoice(v, grid))
+  const voiceMeasures = voices.map((v) => layoutVoice(v, grid, opts.relaxed, opts.relaxed))
 
   const measures: VoiceMeasure[][] = grid.map((m, mi) => {
     const out: VoiceMeasure[] = []
