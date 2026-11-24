@@ -306,7 +306,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={clearAll}
-                    className="text-sm text-slate-400 underline hover:text-slate-100"
+                    className="inline-flex min-h-9 items-center px-1 text-sm text-slate-400 underline hover:text-slate-100"
                   >
                     {t.files.clearAll}
                   </button>

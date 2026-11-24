@@ -40,8 +40,16 @@ let snapshot: Snapshot = { mode: 'auto', resolved: 'dark', sun: null }
 const listeners = new Set<() => void>()
 let started = false
 
+/** 브라우저 주소창·상태 표시줄 색 (모바일) */
+const THEME_COLOR: Record<ResolvedTheme, string> = { dark: '#020617', light: '#f8fafc' }
+
+function paint(resolved: ResolvedTheme) {
+  document.documentElement.dataset.theme = resolved
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLOR[resolved])
+}
+
 function apply(next: Snapshot) {
-  document.documentElement.dataset.theme = next.resolved
+  paint(next.resolved)
   if (
     next.mode !== snapshot.mode ||
     next.resolved !== snapshot.resolved ||
@@ -62,7 +70,7 @@ export function initTheme() {
   started = true
   const mode = readMode()
   snapshot = build(mode, new Date())
-  document.documentElement.dataset.theme = snapshot.resolved
+  paint(snapshot.resolved)
   setInterval(refresh, 30_000)
 }
 

@@ -42,7 +42,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
         <h4 className="text-sm font-semibold">{t.settings.heading}</h4>
         <button
           type="button"
-          className="text-xs text-slate-400 underline hover:text-slate-100"
+          className="inline-flex min-h-9 items-center px-1 text-xs text-slate-400 underline hover:text-slate-100"
           data-testid="reset-settings"
           onClick={() => {
             setTempoText('')

@@ -66,7 +66,7 @@ export default function StepBar({ current, showTitle }: { current: 1 | 2 | 3 | 4
         <button
           type="button"
           onClick={openGuide}
-          className="shrink-0 text-xs text-slate-400 underline hover:text-slate-100 sm:text-sm"
+          className="inline-flex min-h-9 shrink-0 items-center px-1 text-xs text-slate-400 underline hover:text-slate-100 sm:text-sm"
           data-testid="step-bar-open"
         >
           {t.guide.openGuide}

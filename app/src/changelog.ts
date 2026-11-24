@@ -12,6 +12,15 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.5.1',
+    date: '2026-11-24',
+    changes: [
+      '배포 점검: 파일 경로를 상대 경로로 바꿔 어느 주소(루트든 하위 폴더든)에 올려도 동작함',
+      '폰·태블릿에서 [자세히], [모두 지우기], [MIDI 값으로 되돌리기] 같은 글자형 버튼의 누르는 영역을 키움',
+      '밝은 모드에서 브라우저 상단 색(theme-color)도 화면 색에 맞춰 바뀜',
+    ],
+  },
+  {
     version: '1.5.0',
     date: '2026-11-24',
     changes: [
