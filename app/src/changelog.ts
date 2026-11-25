@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.35.0',
+    date: '2026-11-25',
+    changes: [
+      '[피아노] 양손 나누기를 가온 도 기준에서 손의 흐름 기준으로 바꿈: 한 손이 닿는 폭과 손의 이동을 보고 왼손·오른손을 정함(MIDI에 손 정보가 없어 추정)',
+      '[피아노] 아주 높거나 낮은 마디에는 8va·15ma(위), 8vb·15mb(아래) 점선을 붙여 덧줄을 줄임. 소리 높이는 그대로',
+    ],
+  },
+  {
     version: '1.34.0',
     date: '2026-11-25',
     changes: [

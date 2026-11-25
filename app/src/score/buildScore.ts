@@ -25,7 +25,18 @@ import { findTripletBeats, snapThird, tripletsAllowed } from '../midi/triplets'
 import { materializeAudio } from './audioInfo'
 import { groupDrums } from './drumStaves'
 import { isAcousticGuitar, splitThumb } from './guitar'
-import { SPLIT_MIDI, needsTwoStaves, ottavaFor, pickClef, staffClef, type StaffClef } from './notation'
+import { splitHands } from './hands'
+import {
+  SPLIT_MIDI,
+  isKeyboard,
+  measureOttava,
+  needsTwoStaves,
+  ottavaFor,
+  pickClef,
+  staffClef,
+  type Ottava,
+  type StaffClef,
+} from './notation'
 import { applySettings } from './settings'
 import { orderBy } from './trackOrder'
 import { toMusicXml } from './toMusicXml'
@@ -40,6 +51,17 @@ export const baseName = baseNameOf
 function trackName(track: TrackInfo): string {
   if (track.kind === 'drum') return track.name || t.files.drum
   return track.name || track.instrumentName || t.files.trackNumber(track.index + 1)
+}
+
+/** 두 보표로 나누기: 건반악기는 손의 흐름을 따라, 그 밖(합주 현악 등)은 가운데 도에서 */
+function twoStaves(program: number, notes: QNote[]): (StaffClef & { notes: QNote[] })[] {
+  const { left, right } = isKeyboard(program)
+    ? splitHands(notes)
+    : { left: notes.filter((n) => n.midi < SPLIT_MIDI), right: notes.filter((n) => n.midi >= SPLIT_MIDI) }
+  return [
+    { clef: 'G', octave: 0, notes: right },
+    { clef: 'F', octave: 0, notes: left },
+  ]
 }
 
 interface Prepared {
@@ -248,10 +270,7 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
         const name = trackName(track)
         const program = track.instrumentNumber
         const hands: (StaffClef & { notes: typeof notes })[] = needsTwoStaves(program, notes)
-          ? [
-              { clef: 'G', octave: 0, notes: notes.filter((n) => n.midi >= SPLIT_MIDI) },
-              { clef: 'F', octave: 0, notes: notes.filter((n) => n.midi < SPLIT_MIDI) },
-            ]
+          ? twoStaves(program, notes)
           : [{ ...staffClef(program, notes), notes }]
         const tidy = settings.midiTidy !== false
         let maxVoices = 1
@@ -266,11 +285,17 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
               : layoutTrack(hand.notes, p.grid.measures, { triplets })
           warnings.push(...layout.warnings.map((w) => t.warnings.track(name, w)))
           maxVoices = Math.max(maxVoices, ...layout.measures.map((vs) => vs.length))
-          const ottava = hands.length === 1 ? ottavaFor(hand.notes, hand) : 0
+          // 옥타브 점선: 건반악기의 두 보표는 마디마다, 한 보표 악기는 아주 높은 악기만 곡 전체에 붙인다
+          const whole = hands.length === 1 ? ottavaFor(hand.notes, hand) : 0
+          const ottava: Ottava[] = layout.measures.map((voices) => {
+            const midis = voices.flatMap((v) => v.pieces.flatMap((x) => x.midis))
+            if (!midis.length) return 0
+            return hands.length > 1 && isKeyboard(program) ? measureOttava(midis, hand.clef) : whole
+          })
           return {
             clef: hand.clef,
             clefOctave: hand.octave,
-            ...(ottava ? { ottava } : {}),
+            ...(ottava.some(Boolean) ? { ottava } : {}),
             layout: layout.measures,
           }
         })

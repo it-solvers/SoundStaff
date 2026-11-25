@@ -167,17 +167,10 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean, scale
         `<per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`
       : ''
 
-    // 옥타브 점선(8va·15ma): 음이 있는 마디가 이어지는 구간마다 시작과 끝을 적는다. MusicXML의 음높이는 소리 나는 높이 그대로다
-    const { ottava } = part.staves[0]
-    const sounding = (i: number) => !!part.staves[0].layout[i]?.some((v) => v.pieces.some((p) => p.midis.length))
-    const shift = (type: 'down' | 'stop') =>
-      `<direction placement="above"><direction-type><octave-shift type="${type}" size="${ottava === 2 ? 15 : 8}"/></direction-type></direction>`
-    const shiftStart = ottava && sounding(mi) && !sounding(mi - 1) ? shift('down') : ''
-    const shiftStop = ottava && sounding(mi) && !sounding(mi + 1) ? shift('stop') : ''
-
     // 보표 → 성부 순서로 이어 쓰고, 각 성부 사이는 <backup>으로 마디 처음으로 되돌린다
     const chunks: string[] = []
     part.staves.forEach((staff, si) => {
+      const first = chunks.length
       const voices = staff.layout[mi]
       const stemmed = voices.length > 1 || !!part.percussion
       const staffNo = multi ? si + 1 : null
@@ -199,13 +192,21 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean, scale
           )
         }
       }
+      // 옥타브 점선: 같은 표시가 이어지는 마디들의 처음과 끝에 적는다. MusicXML의 음높이는 소리 나는 높이 그대로다
+      const here = staff.ottava?.[mi] ?? 0
+      if (here && chunks.length > first) {
+        const shift = (type: string) =>
+          `<direction placement="${here > 0 ? 'above' : 'below'}"><direction-type><octave-shift type="${type}" size="${Math.abs(here) === 2 ? 15 : 8}"/></direction-type>${multi ? `<staff>${si + 1}</staff>` : ''}</direction>`
+        if (staff.ottava![mi - 1] !== here) chunks[first] = shift(here > 0 ? 'down' : 'up') + chunks[first]
+        if (staff.ottava![mi + 1] !== here) chunks[chunks.length - 1] += shift('stop')
+      }
     })
     // 곡 끝에는 마침 세로줄(가는 줄 + 굵은 줄)
     const finalBar =
       mi === model.grid.length - 1 ? '<barline location="right"><bar-style>light-heavy</bar-style></barline>' : ''
     // 한 줄에 4마디: 첫 파트에 줄바꿈 위치를 적는다 (줄바꿈은 악보 전체에 적용된다)
     const lineBreak = isFirstPart && mi > 0 && mi % MEASURES_PER_LINE === 0 ? '<print new-system="yes"/>' : ''
-    return `<measure number="${mi + 1}">${lineBreak}${attrs}${tempo}${shiftStart}${chunks.join(`<backup><duration>${spec.length * scale}</duration></backup>`)}${shiftStop}${finalBar}</measure>`
+    return `<measure number="${mi + 1}">${lineBreak}${attrs}${tempo}${chunks.join(`<backup><duration>${spec.length * scale}</duration></backup>`)}${finalBar}</measure>`
   })
   return `<part id="${part.id}">\n${measures.join('\n')}\n</part>`
 }

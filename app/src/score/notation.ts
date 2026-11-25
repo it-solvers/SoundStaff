@@ -16,7 +16,7 @@ export const SPLIT_MIDI = 60
 const isGuitar = (program: number) => program >= 24 && program <= 31
 const isLowStrings = (program: number) => (program >= 32 && program <= 39) || program === 43 // 베이스 기타, 더블베이스
 /** 두 보표로 적는 것이 관례인 악기: 피아노·하프시코드 계열(0~7), 마림바(12), 오르간(16~20), 하프(46) */
-const isKeyboard = (program: number) =>
+export const isKeyboard = (program: number) =>
   program <= 7 || program === 12 || (program >= 16 && program <= 20) || program === 46
 
 /** 여러 사람의 소리를 한 트랙에 담는 악기: 합주 현악·합창(48~54), 신스 패드·효과음(88~103) */
@@ -76,6 +76,23 @@ export function ottavaFor(notes: QNote[], c: StaffClef): 0 | 1 | 2 {
   if (sorted[Math.floor(sorted.length / 2)] < 84) return 0
   const cost = (k: number) => notes.reduce((a, n) => a + ledgerLines(n.midi - 12 * k, c) ** 2 + k * 0.5, 0)
   return ([0, 1, 2] as const).reduce<0 | 1 | 2>((best, k) => (cost(k) < cost(best) ? k : best), 0)
+}
+
+/** 두 보표 건반악기: 마디마다의 옥타브 점선 (양수: 8va·15ma, 음수: 8vb·15mb, 0: 없음) */
+export type Ottava = -2 | -1 | 0 | 1 | 2
+
+/**
+ * 한 마디의 음을 보표(octave 표시 없는 음자리표)에 적을 때 몇 옥타브 옮길지.
+ * 덧줄이 3개 이상 필요한 음이 있을 때만 옮기고, 오른손은 위로만(8va), 왼손은 아래로만(8vb) 쓴다.
+ */
+export function measureOttava(pitches: number[], clef: 'G' | 'F'): Ottava {
+  const c: StaffClef = { clef, octave: 0 }
+  const outside = (m: number) => ledgerLines(m, c) >= 3 && (clef === 'G' ? m > 72 : m < 48)
+  if (!pitches.some(outside)) return 0
+  const sign = clef === 'G' ? 1 : -1
+  const cost = (k: number) => pitches.reduce((a, m) => a + ledgerLines(m - 12 * sign * k, c) ** 2 + k * 0.5, 0)
+  const best = [0, 1, 2].reduce((a, k) => (cost(k) < cost(a) ? k : a), 0)
+  return (best * sign) as Ottava
 }
 
 /** 덧줄이 3개 이상 필요한 음의 비율 */
