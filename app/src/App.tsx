@@ -197,39 +197,45 @@ export default function App() {
   const step = panelItems.length > 0 ? 3 : files.length > 0 ? 2 : 1
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <TopBar step={step} showSteps={!unsupported} />
-      <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
-        <div>
-          <p className="text-sm text-slate-300" data-testid="tagline">
-            {phone ? t.taglineMidiOnly : t.tagline}
-          </p>
-          {!phone && (
-            <p className="mt-1 text-xs text-slate-400" data-testid="tagline-note">
-              {t.taglineNote}
+
+      {/* 처음 화면에서는 여기(알림)까지가 머리말처럼 보인다. 고정되는 것은 TopBar뿐이라 스크롤하면 올라간다 */}
+      <div className="border-b border-slate-800" data-testid="intro">
+        <div className="mx-auto flex max-w-5xl flex-col gap-5 px-4 pt-3 pb-6 sm:px-6">
+          <div>
+            <p className="text-sm text-slate-300" data-testid="tagline">
+              {phone ? t.taglineMidiOnly : t.tagline}
             </p>
-          )}
-          {!phone && (
-            <section
-              className="mt-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
-              data-testid="fit-guide"
-            >
-              <h2 className="text-xs font-semibold text-slate-300">{t.fitGuide.heading}</h2>
-              <ul className="mt-1 space-y-1 text-xs text-slate-400">
-                {t.fitGuide.items.map((it) => (
-                  <li key={it.label}>
-                    <span className="mr-1.5 inline-block min-w-[3.5rem] font-medium text-slate-200">{it.label}</span>
-                    {it.text}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-1 text-xs text-slate-500">{t.fitGuide.note}</p>
-            </section>
-          )}
+            {!phone && (
+              <p className="mt-1 text-xs text-slate-400" data-testid="tagline-note">
+                {t.taglineNote}
+              </p>
+            )}
+            {!phone && (
+              <section
+                className="mt-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
+                data-testid="fit-guide"
+              >
+                <h2 className="text-xs font-semibold text-slate-300">{t.fitGuide.heading}</h2>
+                <ul className="mt-1 space-y-1 text-xs text-slate-400">
+                  {t.fitGuide.items.map((it) => (
+                    <li key={it.label}>
+                      <span className="mr-1.5 inline-block min-w-[3.5rem] font-medium text-slate-200">{it.label}</span>
+                      {it.text}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1 text-xs text-slate-500">{t.fitGuide.note}</p>
+              </section>
+            )}
+          </div>
+
+          <Notices />
         </div>
+      </div>
 
-        <Notices />
-
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6">
         {unsupported ? (
           <p
             className="rounded-xl border border-rose-900 bg-rose-950/60 p-4 text-rose-200"
@@ -327,6 +333,6 @@ export default function App() {
           {t.footer.copyright} · {t.footer.license} · {t.footer.credit}
         </footer>
       </div>
-    </>
+    </div>
   )
 }
