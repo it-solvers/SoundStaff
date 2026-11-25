@@ -70,20 +70,6 @@ export default function App() {
   const [phone, setPhone] = useState(() => isPhoneOrTablet(readDeviceEnv()))
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null)
   const abortRef = useRef<AbortController | null>(null)
-  const headerRef = useRef<HTMLElement>(null)
-  const [headerVisible, setHeaderVisible] = useState(true)
-
-  // 맨 위 큰 제목이 (고정 막대에 가려질 만큼) 스크롤되어 사라졌는지 지켜본다
-  useEffect(() => {
-    const el = headerRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver(([e]) => setHeaderVisible(e.isIntersecting), {
-      rootMargin: '-60px 0px 0px 0px',
-    })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
-
   // 화면 크기가 바뀌면 폰·태블릿 판별을 다시 한다 (기획서 6.1장)
   useEffect(() => {
     const onResize = () => setPhone(isPhoneOrTablet(readDeviceEnv()))
@@ -215,20 +201,28 @@ export default function App() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
-      <header ref={headerRef}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <h1 className="text-4xl font-semibold tracking-tight">
+      {/* 제목과 단계 막대를 한 덩어리로 위에 붙인다: 스크롤해도 제목 아래에 단계가 그대로 따라와, 나타나거나 밀리는 움직임이 없다 */}
+      <div
+        className="sticky top-0 z-30 -mx-4 -mt-6 border-b border-slate-800 bg-slate-950 px-4 pt-3 pb-2 sm:-mx-6 sm:px-6"
+        data-testid="top-bar"
+      >
+        <header className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          <h1 className="text-xl font-semibold tracking-tight whitespace-nowrap sm:text-3xl">
             {t.appName}{' '}
-            <span className="text-[27px] font-normal text-slate-400" data-testid="app-version">
+            <span className="text-sm font-normal text-slate-400 sm:text-[22px]" data-testid="app-version">
               ({APP_VERSION})
             </span>
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3">
             <LanguageLink />
             <ThemeToggle />
           </div>
-        </div>
-        <p className="mt-1 text-sm text-slate-300" data-testid="tagline">
+        </header>
+        {!unsupported && <StepBar current={step} />}
+      </div>
+
+      <div>
+        <p className="text-sm text-slate-300" data-testid="tagline">
           {phone ? t.taglineMidiOnly : t.tagline}
         </p>
         {!phone && (
@@ -253,9 +247,7 @@ export default function App() {
             <p className="mt-1 text-xs text-slate-500">{t.fitGuide.note}</p>
           </section>
         )}
-      </header>
-
-      {!unsupported && <StepBar current={step} showTitle={!headerVisible} />}
+      </div>
 
       <Notices />
 

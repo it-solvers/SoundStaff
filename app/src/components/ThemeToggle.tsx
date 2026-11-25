@@ -19,7 +19,7 @@ export default function ThemeToggle() {
             type="button"
             aria-pressed={mode === m}
             onClick={() => setThemeMode(m)}
-            className={`px-3 py-1.5 text-xs font-medium ${
+            className={`px-2 py-1.5 text-xs font-medium sm:px-3 ${
               mode === m ? 'bg-sky-600 text-white' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
             }`}
             data-testid={`theme-${m}`}

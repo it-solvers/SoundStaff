@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.40.0',
+    date: '2026-11-25',
+    changes: [
+      '[화면] 단계 막대를 제목 바로 아래로 옮기고 제목과 함께 화면 위에 고정함. 스크롤할 때 제목이 끼어들며 단계가 밀리던 움직임을 없앰. 안내 문구는 그 아래에 둠',
+    ],
+  },
+  {
     version: '1.39.1',
     date: '2026-11-25',
     changes: ['[드럼] 롤의 마지막 타격이 다음 박 머리에 닿을 때 그 타격이 빠지던 문제를 고침'],
