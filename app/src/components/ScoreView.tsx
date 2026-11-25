@@ -3,6 +3,8 @@ import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
 import { formatClock, ScorePlayer, type PlayState } from '../play/player'
 import { DEFAULT_TIMBRE, TIMBRE_IDS, type TimbreId } from '../play/synth'
 import { buildTimeline } from '../play/timeline'
+import { fitZoom, OVERFLOW_FILL } from '../score/fitPage'
+import { applyFourPerLine, linesOverflow } from '../score/measureLayout'
 import type { ScoreModel } from '../score/types'
 import { wrapTitle } from '../score/wrapTitle'
 import { t } from '../text'
@@ -36,12 +38,39 @@ function saveTimbre(id: TimbreId) {
 /** 재생 커서 색 (밝은 배경·어두운 배경 모두에서 보이는 초록, 반투명) */
 const CURSOR = { type: 0, color: '#16a34a', alpha: 0.45, follow: false }
 
+/** 100%에서 4마디가 한 줄에 들어가는 그리기 크기. 화면 폭이 달라지면 다시 구한다 */
+interface Fit {
+  width: number
+  zoom: number
+}
+
+/**
+ * 한 줄에 4마디로 그린다. 100%는 4마디가 화면 폭에 딱 맞는 크기이고, 확대·축소하면 폭과 크기를 같은 비율로
+ * 바꿔 줄 나눔을 그대로 둔다 (100%보다 크면 가로로 넘겨 본다).
+ */
+function renderFourPerLine(osmd: OpenSheetMusicDisplay, xml: string, userZoom: number, fit: { current: Fit | null }) {
+  const el = (osmd as unknown as { container: HTMLElement }).container
+  el.style.width = '100%'
+  const width = el.offsetWidth
+  if (fit.current?.width !== width) {
+    const zoom = fitZoom(1, (z) => {
+      osmd.zoom = z
+      osmd.render()
+      return linesOverflow(osmd, xml) ? OVERFLOW_FILL : 0
+    })
+    fit.current = { width, zoom }
+  }
+  el.style.width = `${userZoom * 100}%`
+  osmd.zoom = fit.current.zoom * userZoom
+  osmd.render()
+}
+
 /**
  * 악보를 그린 뒤 긴 곡 제목을 쪽 폭에 맞춰 여러 줄로 나누고, 재생 커서가 멈추는 위치(16분음표 칸)를 모은다.
  * 제목을 나누면 악보 내용이 아래로 내려가므로 커서도 같은 만큼 내린다.
  */
-function draw(osmd: OpenSheetMusicDisplay): number[] {
-  osmd.render()
+function draw(osmd: OpenSheetMusicDisplay, xml: string, userZoom: number, fit: { current: Fit | null }): number[] {
+  renderFourPerLine(osmd, xml, userZoom, fit)
   const el = (osmd as unknown as { container?: HTMLElement }).container
   let extra = 0
   el?.querySelectorAll<SVGSVGElement>('svg').forEach((svg) => {
@@ -75,6 +104,7 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState('')
   const zoomRef = useRef(ZOOMS[DEFAULT_ZOOM_INDEX])
+  const fitRef = useRef<Fit | null>(null)
   const { resolved } = useTheme()
   const boxRef = useRef<HTMLDivElement>(null)
   const timeline = useMemo(() => buildTimeline(model), [model])
@@ -117,15 +147,21 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
     if (box && el) {
       const r = el.getBoundingClientRect()
       const b = box.getBoundingClientRect()
-      if (r.top < b.top + 20 || r.bottom > b.bottom - 20) {
-        box.scrollTo({ top: box.scrollTop + (r.top - b.top) - 60, behavior: 'smooth' })
+      const outY = r.top < b.top + 20 || r.bottom > b.bottom - 20
+      const outX = r.left < b.left || r.right > b.right - 20 // 확대해서 가로로 넘겨 보는 경우
+      if (outY || outX) {
+        box.scrollTo({
+          top: outY ? box.scrollTop + (r.top - b.top) - 60 : box.scrollTop,
+          left: outX ? box.scrollLeft + (r.left - b.left) - 60 : box.scrollLeft,
+          behavior: 'smooth',
+        })
       }
     }
   }
 
   /** 확대·축소나 창 크기 변화로 다시 그린 뒤, 재생 중이면 커서를 현재 위치로 복원한다 */
   function refresh(osmd: OpenSheetMusicDisplay) {
-    stepsRef.current = draw(osmd)
+    stepsRef.current = draw(osmd, xml, zoomRef.current, fitRef)
     cursorIdx.current = 0
     if (playerRef.current && playerRef.current.state !== 'stopped') {
       osmd.cursor.show()
@@ -213,6 +249,8 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
       defaultColorTitle: ink,
       cursorsOptions: [CURSOR],
     })
+    applyFourPerLine(osmd, xml)
+    fitRef.current = null
     osmdRef.current = osmd
     let timer: ReturnType<typeof setTimeout> | undefined
     const onResize = () => {
@@ -226,8 +264,7 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
       .load(xml)
       .then(() => {
         if (cancelled) return
-        osmd.zoom = zoomRef.current
-        stepsRef.current = draw(osmd)
+        stepsRef.current = draw(osmd, xml, zoomRef.current, fitRef)
         setStatus('ready')
       })
       .catch((e: unknown) => {
@@ -255,7 +292,6 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
     zoomRef.current = ZOOMS[zoomIdx]
     const osmd = osmdRef.current
     if (osmd && status === 'ready') {
-      osmd.zoom = ZOOMS[zoomIdx]
       api.current.refresh(osmd)
     }
   }, [zoomIdx, status])

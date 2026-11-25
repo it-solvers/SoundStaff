@@ -7,15 +7,14 @@ import { UserError } from '../utils/errors'
 import { wrapTitle } from './wrapTitle'
 import { fitZoom, OVERFLOW_FILL, pageBounds, pageFill, TOP_MARGIN_PT } from './fitPage'
 import { parseOutlineFont, textToPathData, textWidth, type OutlineFont, type TextAnchor } from './outlineText'
-import { ellipsize, measureCount, staffCount, workTitle } from './pageLayout'
-import { DEFAULT_PDF_SETTINGS, MEASURES_PER_LINE, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
+import { applyFourPerLine, linesOverflow } from './measureLayout'
+import { ellipsize, workTitle } from './pageLayout'
+import { DEFAULT_PDF_SETTINGS, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
 
 const FONT_FILE = 'SoundStaffKR-Regular.ttf'
 /** 기본 글꼴(Latin-1)로 그릴 수 없는 글자(한글 등)가 들어 있는지 */
 const NEEDS_CJK = /[\u0100-\uffff]/
 const SVG_NS = 'http://www.w3.org/2000/svg'
-/** 이 수 이상의 보표는 한 쪽에 한 줄만 들어간다고 본다 */
-const CROWDED_STAVES = 6
 const A4_PT = { short: 595.28, long: 841.89 }
 /** 쪽 아래에 남기는 여백 (쪽 높이에 대한 비율, 쪽 번호 자리) */
 const BOTTOM_MARGIN = 0.07
@@ -112,25 +111,12 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
     autoBeam: true,
     pageFormat: landscape ? 'A4 L' : 'A4 P',
     pageBackgroundColor: '#FFFFFF',
-    // 한 줄에 4마디: 쉬는 마디를 숫자로 묶지 않는다(묶으면 한 줄의 마디 수가 달라진다)
-    ...(settings.layout === 'four' ? { autoGenerateMultipleRestMeasuresFromRestMeasures: false } : {}),
   })
   const rules = osmd.EngravingRules
-  if (settings.layout === 'four') {
-    rules.RenderXMeasuresPerLineAkaSystem = MEASURES_PER_LINE
-    rules.StretchLastSystemLine = true // 마지막 줄도 쪽 폭을 채워 마침 세로줄이 오른쪽 끝에 오게 한다
-    // 보표가 많으면 악보가 지나치게 작아지지 않게 음표 사이를 좁힌다 (보표가 적을 때 좁히면 음표가 겹친다)
-    if (staffCount(xml) >= CROWDED_STAVES) {
-      rules.VoiceSpacingMultiplierVexflow = 0.7
-      rules.VoiceSpacingAddendVexflow = 2
-    }
-  }
+  if (settings.layout === 'four') applyFourPerLine(osmd, xml)
   try {
     await osmd.load(xml)
     const drawn = () => Array.from(container.querySelectorAll<SVGSVGElement>(':scope > div > svg, :scope > svg'))
-    // 한 줄에 4마디 배치에서 만들어져야 할 줄 수. 이보다 많으면 4마디가 한 줄에 못 들어간 것이다
-    const wanted = settings.layout === 'four' ? Math.ceil(measureCount(xml) / MEASURES_PER_LINE) : Infinity
-    const lines = () => osmd.GraphicSheet.MusicPages.reduce((a, p) => a + p.MusicSystems.length, 0)
     const landscapePage = settings.orientation === 'landscape'
     const pageHeightPt = landscapePage ? A4_PT.short : A4_PT.long
     const aspect = landscapePage ? A4_PT.short / A4_PT.long : A4_PT.long / A4_PT.short
@@ -142,7 +128,10 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
       rules.PageTopMargin = (TOP_MARGIN_PT.next / pageHeightPt) * pageUnits
       rules.PageBottomMargin = BOTTOM_MARGIN * pageUnits
       osmd.render()
-      return Math.max(pageFill(drawn(), TOP_MARGIN_PT.next / pageHeightPt), lines() > wanted ? OVERFLOW_FILL : 0)
+      return Math.max(
+        pageFill(drawn(), TOP_MARGIN_PT.next / pageHeightPt),
+        settings.layout === 'four' && linesOverflow(osmd, xml) ? OVERFLOW_FILL : 0,
+      )
     })
     const pages = drawn()
     if (!pages.length) throw new UserError(t.errors.pdfNoPages)

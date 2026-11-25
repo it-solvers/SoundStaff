@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.32.0',
+    date: '2026-11-25',
+    changes: [
+      '[악보 미리보기] 화면에서도 한 줄에 4마디로 보여 줌. 100%는 4마디가 화면 폭에 맞는 크기이고, 확대·축소해도 4마디 배치는 그대로(확대하면 가로로 넘겨 봄)',
+    ],
+  },
+  {
     version: '1.31.0',
     date: '2026-11-25',
     changes: [
