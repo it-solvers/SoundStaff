@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.34.0',
+    date: '2026-11-25',
+    changes: [
+      '[MIDI 악보] 3연음(셋잇단 8분·4분음표, 셔플 포함)을 인식해 3연음으로 적음. 화면·PDF·MusicXML·재생에 적용. 16분 셋잇단·5연음, 6/8 계열 박자, 음원 분석에는 적용하지 않음',
+    ],
+  },
+  {
     version: '1.33.0',
     date: '2026-11-25',
     changes: ['[MusicXML] 4마디마다 줄바꿈 표시를 넣어, 악보 프로그램에서 열 때도 한 줄에 4마디로 보이게 함'],

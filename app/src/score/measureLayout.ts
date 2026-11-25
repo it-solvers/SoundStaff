@@ -6,6 +6,11 @@ import { MEASURES_PER_LINE } from './pdfSettings'
 /** 이 수 이상의 보표는 총보처럼 빽빽하게 본다 */
 const CROWDED_STAVES = 6
 
+/** 연주자가 헷갈리지 않게 3연음 숫자는 되풀이되어도 모두 적는다 */
+export function showAllTupletNumbers(osmd: OpenSheetMusicDisplay) {
+  osmd.EngravingRules.TupletNumberLimitConsecutiveRepetitions = false
+}
+
 /** 악보를 읽기(load) 전에 부른다 */
 export function applyFourPerLine(osmd: OpenSheetMusicDisplay, xml: string) {
   const rules = osmd.EngravingRules

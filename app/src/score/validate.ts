@@ -21,7 +21,7 @@ export function validateModel(model: ScoreModel): Validation {
         const len = model.grid[mi].length
         for (const vm of voices) {
           const sum = vm.wholeRest ? len : vm.pieces.reduce((a, p) => a + p.duration, 0)
-          if (sum !== len) errors.push(t.errors.validation.length(where, mi + 1, vm.voice, sum, len))
+          if (Math.abs(sum - len) > 1e-6) errors.push(t.errors.validation.length(where, mi + 1, vm.voice, sum, len))
           if (!vm.wholeRest) {
             for (const p of vm.pieces) {
               const cur = open.get(vm.voice) ?? new Set<number>()

@@ -76,12 +76,26 @@ function noteXml(
   staff: number | null,
   /** 타악기 파트면 파트 id (음마다 어떤 타악기인지 가리킨다) */
   drumPart: string | null = null,
+  /** 16분음표 한 칸의 divisions (3연음이 있으면 3, 없으면 1) */
+  scale = 1,
 ): string {
-  const [type, dot] = TYPE_OF[p.duration]
-  const typeXml = `<type>${type}</type>${dot ? '<dot/>' : ''}`
+  // 3연음 조각: 셋잇단 8분음표(4/3칸)·4분음표(8/3칸)
+  const [type, dot] = p.triplet ? [p.duration > 2 ? 'quarter' : 'eighth', false] : TYPE_OF[p.duration]
+  const duration = Math.round(p.duration * scale)
+  const typeXml =
+    `<type>${type}</type>${dot ? '<dot/>' : ''}` +
+    (p.triplet
+      ? '<time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification>'
+      : '')
+  // 3연음 괄호의 시작·끝 (화음은 첫 음에만)
+  const bracket = p.triplet
+    ? (p.triplet.start ? `<tuplet type="start" bracket="${p.triplet.bracket ? 'yes' : 'no'}"/>` : '') +
+      (p.triplet.stop ? '<tuplet type="stop"/>' : '')
+    : ''
+  const notations = (inner: string) => (inner ? `<notations>${inner}</notations>` : '')
   const staffXml = staff ? `<staff>${staff}</staff>` : ''
   if (p.midis.length === 0) {
-    return `<note${hiddenRest ? ' print-object="no"' : ''}><rest/><duration>${p.duration}</duration><voice>${voice}</voice>${typeXml}${staffXml}</note>`
+    return `<note${hiddenRest ? ' print-object="no"' : ''}><rest/><duration>${duration}</duration><voice>${voice}</voice>${typeXml}${staffXml}${notations(bracket)}</note>`
   }
   if (drumPart) {
     return p.midis
@@ -90,7 +104,7 @@ function noteXml(
         const head = d.head === 'normal' ? '' : `<notehead>${d.head}</notehead>`
         return (
           `<note>${i > 0 ? '<chord/>' : ''}<unpitched><display-step>${d.step}</display-step><display-octave>${d.octave}</display-octave></unpitched>` +
-          `<duration>${p.duration}</duration><instrument id="${drumPart}-I${midi}"/><voice>${voice}</voice>${typeXml}${stem}${head}${staffXml}</note>`
+          `<duration>${duration}</duration><instrument id="${drumPart}-I${midi}"/><voice>${voice}</voice>${typeXml}${stem}${head}${staffXml}${notations(i === 0 ? bracket : '')}</note>`
         )
       })
       .join('')
@@ -105,14 +119,13 @@ function noteXml(
       const stop = stopsTie(p, midi)
       const start = startsTie(p, midi)
       const ties = (stop ? '<tie type="stop"/>' : '') + (start ? '<tie type="start"/>' : '')
-      const tied =
-        start || stop
-          ? `<notations>${stop ? '<tied type="stop"/>' : ''}${start ? '<tied type="start"/>' : ''}</notations>`
-          : ''
+      const tied = notations(
+        (stop ? '<tied type="stop"/>' : '') + (start ? '<tied type="start"/>' : '') + (i === 0 ? bracket : ''),
+      )
       const color = p.minor?.includes(midi) ? ` color="${MINOR_COLOR}"` : ''
       return (
         `<note${color}>${i > 0 ? '<chord/>' : ''}<pitch><step>${step}</step>${alter ? `<alter>${alter}</alter>` : ''}<octave>${octave}</octave></pitch>` +
-        `<duration>${p.duration}</duration>${ties}<voice>${voice}</voice>${typeXml}${stem}${staffXml}${tied}</note>`
+        `<duration>${duration}</duration>${ties}<voice>${voice}</voice>${typeXml}${stem}${staffXml}${tied}</note>`
       )
     })
     .join('')
@@ -121,7 +134,7 @@ function noteXml(
 /** 보표가 여러 개인 파트에서 보표마다 성부 번호가 겹치지 않도록 하는 간격 (MAX_VOICES와 같은 값) */
 const VOICES_PER_STAFF = 4
 
-function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): string {
+function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean, scale: number): string {
   const multi = part.staves.length > 1
   const measures = model.grid.map((spec, mi) => {
     const prev = model.grid[mi - 1]
@@ -137,7 +150,7 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
         )
         .join('')
       attrs =
-        `<attributes><divisions>4</divisions>` +
+        `<attributes><divisions>${4 * scale}</divisions>` +
         // 타악기 보표에는 조표를 적지 않는다
         (part.percussion ? '' : `<key><fifths>${model.key.fifths}</fifths><mode>${model.key.mode}</mode></key>`) +
         `<time><beats>${spec.numerator}</beats><beat-type>${spec.denominator}</beat-type></time>` +
@@ -174,13 +187,15 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
         const hidden = vm.voice > 1 || (!!part.percussion && vm.wholeRest && voices.length > 1)
         if (vm.wholeRest) {
           chunks.push(
-            `<note${hidden ? ' print-object="no"' : ''}><rest measure="yes"/><duration>${spec.length}</duration><voice>${voiceNo}</voice>${staffNo ? `<staff>${staffNo}</staff>` : ''}</note>`,
+            `<note${hidden ? ' print-object="no"' : ''}><rest measure="yes"/><duration>${spec.length * scale}</duration><voice>${voiceNo}</voice>${staffNo ? `<staff>${staffNo}</staff>` : ''}</note>`,
           )
         } else {
           const stem = stemmed ? `<stem>${vm.voice % 2 === 1 ? 'up' : 'down'}</stem>` : ''
           const drumPart = part.percussion ? part.id : null
           chunks.push(
-            vm.pieces.map((p) => noteXml(p, voiceNo, model.key.fifths, stem, hidden, staffNo, drumPart)).join(''),
+            vm.pieces
+              .map((p) => noteXml(p, voiceNo, model.key.fifths, stem, hidden, staffNo, drumPart, scale))
+              .join(''),
           )
         }
       }
@@ -190,7 +205,7 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
       mi === model.grid.length - 1 ? '<barline location="right"><bar-style>light-heavy</bar-style></barline>' : ''
     // 한 줄에 4마디: 첫 파트에 줄바꿈 위치를 적는다 (줄바꿈은 악보 전체에 적용된다)
     const lineBreak = isFirstPart && mi > 0 && mi % MEASURES_PER_LINE === 0 ? '<print new-system="yes"/>' : ''
-    return `<measure number="${mi + 1}">${lineBreak}${attrs}${tempo}${shiftStart}${chunks.join(`<backup><duration>${spec.length}</duration></backup>`)}${shiftStop}${finalBar}</measure>`
+    return `<measure number="${mi + 1}">${lineBreak}${attrs}${tempo}${shiftStart}${chunks.join(`<backup><duration>${spec.length * scale}</duration></backup>`)}${shiftStop}${finalBar}</measure>`
   })
   return `<part id="${part.id}">\n${measures.join('\n')}\n</part>`
 }
@@ -223,6 +238,11 @@ function drumScorePart(p: PartModel, abbr: string): string {
 /** 악보 모델 → MusicXML 3.1 (score-partwise) */
 export function toMusicXml(model: ScoreModel): string {
   const abbr = abbreviations(model.parts)
+  // 3연음이 있으면 4분음표를 12로 나눠야 길이가 정수가 된다
+  const hasTriplet = model.parts.some((p) =>
+    p.staves.some((s) => s.layout.some((vs) => vs.some((v) => v.pieces.some((x) => x.triplet)))),
+  )
+  const scale = hasTriplet ? 3 : 1
   const partList = model.parts
     .map((p, i) =>
       p.percussion
@@ -248,7 +268,7 @@ export function toMusicXml(model: ScoreModel): string {
         `<credit-words default-x="1115" default-y="1560" justify="right" valign="top" font-family="${TITLE_FONT}" font-size="12">${escapeXml(model.composer)}</credit-words></credit>`
       : '') +
     `<part-list>${partList}</part-list>\n` +
-    model.parts.map((p, i) => partXml(p, model, i === 0)).join('\n') +
+    model.parts.map((p, i) => partXml(p, model, i === 0, scale)).join('\n') +
     `\n</score-partwise>\n`
   )
 }

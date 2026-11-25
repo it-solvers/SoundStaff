@@ -4,7 +4,7 @@ import { formatClock, ScorePlayer, type PlayState } from '../play/player'
 import { DEFAULT_TIMBRE, TIMBRE_IDS, type TimbreId } from '../play/synth'
 import { buildTimeline } from '../play/timeline'
 import { fitZoom, OVERFLOW_FILL } from '../score/fitPage'
-import { applyFourPerLine, linesOverflow } from '../score/measureLayout'
+import { applyFourPerLine, linesOverflow, showAllTupletNumbers } from '../score/measureLayout'
 import type { ScoreModel } from '../score/types'
 import { wrapTitle } from '../score/wrapTitle'
 import { t } from '../text'
@@ -250,6 +250,7 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
       cursorsOptions: [CURSOR],
     })
     applyFourPerLine(osmd, xml)
+    showAllTupletNumbers(osmd)
     fitRef.current = null
     osmdRef.current = osmd
     let timer: ReturnType<typeof setTimeout> | undefined

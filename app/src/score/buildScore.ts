@@ -21,6 +21,7 @@ import type { MidiFileInfo, NoteEvent, TrackInfo } from '../midi/types'
 import { t } from '../text'
 import { UserError } from '../utils/errors'
 import { baseName as baseNameOf } from '../utils/fileName'
+import { findTripletBeats, snapThird, tripletsAllowed } from '../midi/triplets'
 import { materializeAudio } from './audioInfo'
 import { groupDrums } from './drumStaves'
 import { isAcousticGuitar, splitThumb } from './guitar'
@@ -44,7 +45,7 @@ function trackName(track: TrackInfo): string {
 interface Prepared {
   warnings: string[]
   /** silent: 타악기 보표에서 재생하지 않을 타격("칸:번호") */
-  tracks: { track: TrackInfo; notes: QNote[]; silent?: Set<string> }[]
+  tracks: { track: TrackInfo; notes: QNote[]; triplets: Set<number>; silent?: Set<string> }[]
   grid: MeasureGrid
   tempoByMeasure: Map<number, number>
 }
@@ -74,8 +75,14 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
   let offGrid = 0
   let noteTotal = 0
   let trimmed = 0 // 들리는 대로 악보에서 정리되어 악보에 남지 않은 음의 수 (칸에 맞추며 합친 음 + 화음 정리로 뺀 음)
+  // 3연음은 MIDI에서만 찾는다 (음원 분석의 박 위치는 3연음을 가릴 만큼 정확하지 않다)
+  const findTriplets = (notes: NoteEvent[]) =>
+    info.source !== 'audio' && tripletsAllowed(settings.timeSignatures)
+      ? findTripletBeats(notes, info.ppq)
+      : new Set<number>()
   const tracks = pitched.map((t) => {
-    const q = quantizeNotes(t.notes, info.ppq)
+    const triplets = findTriplets(t.notes)
+    const q = quantizeNotes(t.notes, info.ppq, triplets)
     offGrid += q.offGrid
     noteTotal += t.notes.length
     // 음원 분석 결과는 칸에 맞춘 뒤에도 읽기 쉽게 정리한다: 멜로디는 겹치는 음이 없는 한 줄, 들리는 대로 악보는 겹치지 않는 화음의 나열
@@ -100,12 +107,11 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
             : q.notes
           : enforceMonophonic(q.notes)
     if (t.chords) trimmed += t.notes.length - notes.length
-    return { track: t, notes, silent: undefined as Set<string> | undefined }
+    return { track: t, notes, triplets, silent: undefined as Set<string> | undefined }
   })
   // 타악기는 친 위치만 의미가 있다 (길이는 마디 배치에서 정한다)
-  const hits = (known: NoteEvent[]) => quantizeNotes(known, info.ppq)
   for (const { known } of drums) {
-    offGrid += hits(known).offGrid
+    offGrid += quantizeNotes(known, info.ppq, findTriplets(known)).offGrid
     noteTotal += known.length
   }
   const muted = new Set(settings.mutedTracks ?? [])
@@ -119,12 +125,16 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
     // 원본 트랙 하나가 통째로 한 보표가 되면 원래 이름을 쓴다
     const whole = sources.length === 1 && sources[0].known.length === original.known.length
     const name = whole || !group ? trackName(original.track) : group === 'kit' ? t.files.drumSet : t.files.percussion
+    // 3연음 박은 보표에 모인 타격 전체로 정하고, 트랙별로 나눠 볼 때도 같은 자리를 쓴다
+    const all = sources.flatMap((s) => s.known)
+    const triplets = findTriplets(all)
+    const hits = (known: NoteEvent[]) => quantizeNotes(known, info.ppq, triplets)
     // 소리 끄기는 원본 트랙 단위다: 끈 트랙만 친 타격은 재생하지 않는다
     const keysOf = (list: typeof sources) => list.flatMap((s) => hits(s.known).notes.map((n) => `${n.start}:${n.midi}`))
     const audible = new Set(keysOf(sources.filter((s) => !muted.has(s.track.index))))
     const silent = new Set(keysOf(sources).filter((k) => !audible.has(k)))
-    const notes = hits(sources.flatMap((s) => s.known)).notes.map((n) => ({ ...n, end: n.start + 1 }))
-    tracks.push({ track: { ...original.track, name }, notes, silent })
+    const notes = hits(all).notes.map((n) => ({ ...n, end: snapThird(n.start + 1) }))
+    tracks.push({ track: { ...original.track, name }, notes, triplets, silent })
   }
   const combined = drums.length - staves.length
   if (combined > 0) warnings.push(t.warnings.drumsCombined(drums.length, staves.length))
@@ -215,10 +225,10 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
   }
   // 사용자가 정한 순서가 있으면 그 순서로 단을 쌓는다
   if (!grand)
-    orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes, silent }) => {
+    orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes, triplets, silent }) => {
       if (track.kind === 'drum') {
         const name = trackName(track)
-        const layout = layoutPercussion(notes, p.grid.measures, (midi) => !!drumSound(midi)?.foot)
+        const layout = layoutPercussion(notes, p.grid.measures, (midi) => !!drumSound(midi)?.foot, triplets)
         parts.push({
           id: `P${parts.length + 1}`,
           name,
@@ -249,11 +259,11 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
           let layout: ReturnType<typeof layoutTrack>
           if (tidy && isAcousticGuitar(program)) {
             const { upper, lower } = splitThumb(hand.notes, p.grid.measures)
-            layout = { measures: layoutTwoVoices(upper, lower, p.grid.measures), warnings: [] }
+            layout = { measures: layoutTwoVoices(upper, lower, p.grid.measures, triplets), warnings: [] }
           } else
             layout = tidy
-              ? layoutTrack(toSingleVoice(hand.notes), p.grid.measures, { relaxed: true, tieCommon: false })
-              : layoutTrack(hand.notes, p.grid.measures)
+              ? layoutTrack(toSingleVoice(hand.notes), p.grid.measures, { relaxed: true, tieCommon: false, triplets })
+              : layoutTrack(hand.notes, p.grid.measures, { triplets })
           warnings.push(...layout.warnings.map((w) => t.warnings.track(name, w)))
           maxVoices = Math.max(maxVoices, ...layout.measures.map((vs) => vs.length))
           const ottava = hands.length === 1 ? ottavaFor(hand.notes, hand) : 0

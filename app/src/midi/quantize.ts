@@ -1,5 +1,6 @@
 import { resolveEditTuning, type EditTuning } from '../audio/editTuning'
 import { t } from '../text'
+import { BEAT_STEPS, TRIPLET_STEP, beatOf, snapThird } from './triplets'
 import type { NoteEvent, TimeSignatureChange } from './types'
 
 /** 1 step = 16분음표. 4분음표 = 4 step (MusicXML divisions = 4) */
@@ -24,19 +25,28 @@ export interface QuantizeResult {
 /** 16분음표 한 칸의 틱 수 */
 export const gridTicks = (ppq: number) => ppq / STEPS_PER_QUARTER
 
+/** 가장 가까운 칸: 3연음 박 안에서는 셋으로 나눈 자리, 그 밖에서는 16분음표 자리 */
+function snap(step: number, triplets?: ReadonlySet<number>): number {
+  const beat = Math.floor(step / BEAT_STEPS) * BEAT_STEPS
+  if (triplets?.has(beat)) return snapThird(beat + Math.round((step - beat) / TRIPLET_STEP) * TRIPLET_STEP)
+  return Math.round(step)
+}
+
 /**
  * 음표의 시작·끝을 16분음표 격자에 반올림한다. MIDI는 이미 박 단위 위치(틱)를 가지므로
  * PPQ(4분음표당 틱 수)만 있으면 템포와 무관하게 계산된다.
  */
-export function quantizeNotes(notes: NoteEvent[], ppq: number): QuantizeResult {
+export function quantizeNotes(notes: NoteEvent[], ppq: number, triplets?: ReadonlySet<number>): QuantizeResult {
   const g = gridTicks(ppq)
   let offGrid = 0
   const byKey = new Map<string, QNote>()
   for (const n of notes) {
     const s = n.ticks / g
     const e = (n.ticks + n.durationTicks) / g
-    const start = Math.round(s)
-    const end = Math.max(start + 1, Math.round(e)) // 아주 짧은 음도 최소 1칸
+    const start = snap(s, triplets)
+    // 아주 짧은 음도 최소 1칸 (3연음 박에서는 셋 중 한 칸)
+    const shortest = triplets?.has(beatOf(start)) ? TRIPLET_STEP : 1
+    const end = Math.max(snapThird(start + shortest), snap(e, triplets))
     // 격자 이탈은 시작 위치만 본다. 음을 끝까지 누르지 않고 살짝 떼는 것(스타카토·레가토)은 정상 연주이므로 제외.
     if (Math.abs(s - start) > 0.3) offGrid++
     // 같은 시작·같은 높이의 중복 음은 하나로 (더 긴 쪽 유지)

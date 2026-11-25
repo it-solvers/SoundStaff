@@ -77,10 +77,10 @@ describe('시험용 파일 전체 (tests/fixtures)', () => {
     expect(res.report.warnings.filter((w) => w.includes('격자'))).toEqual([])
   })
 
-  it('10 3연음 파일은 격자 이탈 경고를 낸다', async () => {
+  it('10 3연음 파일은 3연음으로 적고 격자 이탈 경고를 내지 않는다', async () => {
     const info = await load('10_3연음.mid')
-    expect(
-      buildInstrumentScore(info, defaultSettings(info)).report.warnings.some((w) => w.includes('16분음표 격자')),
-    ).toBe(true)
+    const res = buildInstrumentScore(info, defaultSettings(info))
+    expect(res.xml).toContain('<actual-notes>3</actual-notes>')
+    expect(res.report.warnings.filter((w) => w.includes('16분음표 격자'))).toEqual([])
   })
 })

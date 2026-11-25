@@ -7,7 +7,7 @@ import { UserError } from '../utils/errors'
 import { wrapTitle } from './wrapTitle'
 import { fitZoom, OVERFLOW_FILL, pageBounds, pageFill, TOP_MARGIN_PT } from './fitPage'
 import { parseOutlineFont, textToPathData, textWidth, type OutlineFont, type TextAnchor } from './outlineText'
-import { applyFourPerLine, linesOverflow } from './measureLayout'
+import { applyFourPerLine, linesOverflow, showAllTupletNumbers } from './measureLayout'
 import { ellipsize, workTitle } from './pageLayout'
 import { DEFAULT_PDF_SETTINGS, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
 
@@ -113,6 +113,7 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
     pageBackgroundColor: '#FFFFFF',
   })
   const rules = osmd.EngravingRules
+  showAllTupletNumbers(osmd)
   if (settings.layout === 'four') applyFourPerLine(osmd, xml)
   try {
     await osmd.load(xml)

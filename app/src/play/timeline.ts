@@ -1,4 +1,5 @@
 import { startsTie, stopsTie } from '../midi/measures'
+import { snapThird } from '../midi/triplets'
 import type { ScoreModel } from '../score/types'
 
 /** 재생할 음 하나. start·duration은 초 단위(배속 1배 기준) */
@@ -88,8 +89,8 @@ export function buildTimeline(model: ScoreModel): Timeline {
             for (const midi of piece.midis) {
               const key = `${part.id}|${si}|${v.voice}|${midi}`
               const cur = open.get(key)
-              if (stopsTie(piece, midi) && cur && cur.startStep + cur.steps === pos) {
-                cur.steps += piece.duration
+              if (stopsTie(piece, midi) && cur && Math.abs(cur.startStep + cur.steps - pos) < 1e-6) {
+                cur.steps = snapThird(cur.steps + piece.duration)
               } else {
                 if (cur) done.push(cur)
                 open.set(key, { startStep: pos, steps: piece.duration, midi })
@@ -100,7 +101,7 @@ export function buildTimeline(model: ScoreModel): Timeline {
                 open.delete(key)
               }
             }
-            pos += piece.duration
+            pos = snapThird(pos + piece.duration)
           }
         }
       })

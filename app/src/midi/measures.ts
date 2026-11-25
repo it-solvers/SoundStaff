@@ -1,5 +1,6 @@
 import { t } from '../text'
 import { beatSteps, type MeasureSpec, type QNote } from './quantize'
+import { BEAT_STEPS, beatOf, snapThird } from './triplets'
 
 /** 표기 가능한 한 덩어리 (음표·화음 또는 쉼표). midis가 비면 쉼표 */
 export interface Piece {
@@ -13,6 +14,8 @@ export interface Piece {
   tieStartMidis?: number[]
   /** 화음 중 이 높이의 음만 앞 조각에서 붙임줄로 이어져 온다 (tieStop이 거짓일 때) */
   tieStopMidis?: number[]
+  /** 3연음에 속한 조각 (길이는 4/3 또는 8/3칸). 묶음의 처음·끝 조각에는 표시가 있다 */
+  triplet?: { start: boolean; stop: boolean; bracket?: boolean }
 }
 
 /** 이 조각에서 이 높이의 음이 다음 조각으로 붙임줄을 시작하는가 */
@@ -175,8 +178,27 @@ function assignVoices(events: ChordEvent[], warnings: string[], legatoTrim: bool
   return voices
 }
 
+/** 빔(묶는 줄)으로 이어지는 8분음표 셋은 숫자 3만 적고, 쉼표나 4분음표가 섞인 묶음에는 괄호를 붙인다 */
+function markBrackets(pieces: Piece[]): void {
+  let group: Piece[] = []
+  for (const p of pieces) {
+    if (!p.triplet) continue
+    group.push(p)
+    if (!p.triplet.stop) continue
+    const bracket = !group.every((x) => x.midis.length > 0 && x.duration < 2)
+    for (const x of group) x.triplet = { ...x.triplet!, bracket }
+    group = []
+  }
+}
+
 /** 성부 하나의 음·쉼표 시간선을 마디별 표기 조각(붙임줄 포함)으로 만든다 */
-function layoutVoice(events: ChordEvent[], grid: MeasureSpec[], relaxed = false, tieCommon = false): Piece[][] {
+function layoutVoice(
+  events: ChordEvent[],
+  grid: MeasureSpec[],
+  relaxed = false,
+  tieCommon = false,
+  triplets: ReadonlySet<number> = new Set(),
+): Piece[][] {
   type Seg = { start: number; end: number; midis: number[]; minor?: Set<number> }
   const segs: Seg[] = []
   const total = grid[grid.length - 1].startStep + grid[grid.length - 1].length
@@ -207,13 +229,32 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[], relaxed = false,
       pos = end
     }
     const isNote = seg.midis.length > 0
-    const pieces: { m: number; len: number; posInMeasure: number }[] = []
+    const pieces: { m: number; len: number; triplet?: Piece['triplet'] }[] = []
     for (const part of parts) {
       const m = grid[part.m]
-      let p = part.start - m.startStep
-      for (const d of decompose(p, part.end - part.start, beatSteps(m.numerator, m.denominator), relaxed)) {
-        pieces.push({ m: part.m, len: d, posInMeasure: p })
-        p += d
+      let from = part.start
+      while (from < part.end) {
+        const beat = beatOf(from)
+        // 3연음 박의 일부만 차지하는 부분은 셋잇단 조각 하나로 적는다
+        if (triplets.has(beat) && !(from === beat && part.end >= beat + BEAT_STEPS)) {
+          const to = Math.min(part.end, beat + BEAT_STEPS)
+          pieces.push({
+            m: part.m,
+            len: snapThird(to - from),
+            triplet: { start: from === beat, stop: to === beat + BEAT_STEPS },
+          })
+          from = to
+          continue
+        }
+        // 그 밖의 부분은 일부만 걸치는 3연음 박(이 부분의 마지막 박)이 있으면 그 앞까지 보통 음표로 나눈다
+        const last = beatOf(part.end - 1 / 3)
+        const to = triplets.has(last) && last > from && part.end < last + BEAT_STEPS ? last : part.end
+        let p = from - m.startStep
+        for (const d of decompose(p, to - from, beatSteps(m.numerator, m.denominator), relaxed)) {
+          pieces.push({ m: part.m, len: d })
+          p += d
+        }
+        from = to
       }
     }
     const made: Piece[] = []
@@ -223,6 +264,7 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[], relaxed = false,
         midis: seg.midis,
         tieStart: isNote && i < pieces.length - 1,
         tieStop: isNote && i > 0,
+        ...(pc.triplet ? { triplet: pc.triplet } : {}),
         minor: seg.minor && seg.minor.size ? seg.midis.filter((x) => seg.minor!.has(x)) : undefined,
       }
       perMeasure[pc.m].push(piece)
@@ -230,6 +272,7 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[], relaxed = false,
     })
     segPieces.push({ seg, first: made[0], last: made[made.length - 1] })
   }
+  for (const pieces of perMeasure) markBrackets(pieces)
   // 화음이 바뀌어도 계속 울리는 음은 다시 치지 않고 그 음만 붙임줄로 이어서 적는다
   if (tieCommon) {
     for (let k = 0; k + 1 < segPieces.length; k++) {
@@ -254,11 +297,13 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[], relaxed = false,
 export function layoutTrack(
   notes: QNote[],
   grid: MeasureSpec[],
-  opts: { legatoTrim?: boolean; relaxed?: boolean; tieCommon?: boolean } = {},
+  opts: { legatoTrim?: boolean; relaxed?: boolean; tieCommon?: boolean; triplets?: ReadonlySet<number> } = {},
 ): TrackLayout {
   const warnings: string[] = []
   const voices = notes.length ? assignVoices(toChordEvents(notes), warnings, opts.legatoTrim ?? true) : []
-  const voiceMeasures = voices.map((v) => layoutVoice(v, grid, opts.relaxed, opts.tieCommon ?? opts.relaxed))
+  const voiceMeasures = voices.map((v) =>
+    layoutVoice(v, grid, opts.relaxed, opts.tieCommon ?? opts.relaxed, opts.triplets),
+  )
 
   const measures: VoiceMeasure[][] = grid.map((m, mi) => {
     const out: VoiceMeasure[] = []
@@ -285,8 +330,13 @@ export function layoutTrack(
  * 위 선율(1성부, 위 줄기)과 베이스(2성부, 아래 줄기)를 한 보표에 적는다 (핑거스타일 기타).
  * 두 목록은 각각 겹치지 않는 화음의 나열이어야 한다. 베이스가 없는 마디는 한 성부로 보인다.
  */
-export function layoutTwoVoices(upper: QNote[], lower: QNote[], grid: MeasureSpec[]): VoiceMeasure[][] {
-  const [top, bottom] = [upper, lower].map((notes) => layoutVoice(toChordEvents(notes), grid, true))
+export function layoutTwoVoices(
+  upper: QNote[],
+  lower: QNote[],
+  grid: MeasureSpec[],
+  triplets?: ReadonlySet<number>,
+): VoiceMeasure[][] {
+  const [top, bottom] = [upper, lower].map((notes) => layoutVoice(toChordEvents(notes), grid, true, false, triplets))
   return grid.map((_, mi) =>
     [top[mi], bottom[mi]].flatMap((pieces, vi) => {
       const wholeRest = pieces.every((p) => p.midis.length === 0)
@@ -304,6 +354,7 @@ export function layoutPercussion(
   hits: { start: number; midi: number }[],
   grid: MeasureSpec[],
   isFoot: (midi: number) => boolean,
+  triplets?: ReadonlySet<number>,
 ): VoiceMeasure[][] {
   /** 이 위치가 든 박의 끝 */
   const beatEnd = (step: number) => {
@@ -324,7 +375,7 @@ export function layoutPercussion(
       end: Math.min(starts[i + 1] ?? Infinity, beatEnd(start)),
       midis: [...byStart.get(start)!].sort((a, b) => a - b),
     }))
-    return layoutVoice(events, grid).map((pieces) =>
+    return layoutVoice(events, grid, false, false, triplets).map((pieces) =>
       pieces.map((p) => ({ ...p, midis: p.tieStop ? [] : p.midis, tieStart: false, tieStop: false })),
     )
   }

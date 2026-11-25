@@ -248,7 +248,7 @@ export const en: Messages = {
     chordsTrimmed: (n: number, total: number) =>
       `Simplifying removed ${n} of ${total} notes: duplicates in the same slot, notes beyond 4 at once, and gray notes with no free voice.`,
     offGrid: (pct: number) =>
-      `${pct}% of notes are far off the 16th-note grid. Triplets and the like are moved to the nearest 16th note, so rhythms may differ.`,
+      `${pct}% of notes are far off the 16th-note grid. Unsupported rhythms such as quintuplets or 16th-note triplets are moved to a nearby position, so they may differ.`,
     unsupportedTimeSignature:
       'An unsupported time signature (bottom number other than 1, 2, 4, 8 or 16) was treated as 4/4. You can change it in [Score settings].',
     snappedTempo: (n: number) =>
