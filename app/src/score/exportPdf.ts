@@ -5,6 +5,7 @@ import { svg2pdf } from 'svg2pdf.js'
 import { t } from '../text'
 import { UserError } from '../utils/errors'
 import { wrapTitle } from './wrapTitle'
+import { fitZoom, pageFill } from './fitPage'
 import { parseOutlineFont, textToPathData, textWidth, type OutlineFont, type TextAnchor } from './outlineText'
 import { DEFAULT_PDF_SETTINGS, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
 
@@ -95,9 +96,14 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
   })
   try {
     await osmd.load(xml)
-    osmd.zoom = SIZE_ZOOM[settings.size]
-    osmd.render()
-    const pages = Array.from(container.querySelectorAll<SVGSVGElement>(':scope > div > svg, :scope > svg'))
+    const drawn = () => Array.from(container.querySelectorAll<SVGSVGElement>(':scope > div > svg, :scope > svg'))
+    // 고른 크기로 그렸을 때 악기가 많아 쪽 아래가 잘리면, 한 쪽에 다 들어갈 때까지 작게 다시 그린다
+    fitZoom(SIZE_ZOOM[settings.size], (zoom) => {
+      osmd.zoom = zoom
+      osmd.render()
+      return pageFill(drawn())
+    })
+    const pages = drawn()
     if (!pages.length) throw new UserError(t.errors.pdfNoPages)
 
     const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: settings.orientation })

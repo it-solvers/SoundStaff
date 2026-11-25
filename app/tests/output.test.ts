@@ -1,3 +1,4 @@
+import { fitZoom, PAGE_FILL_LIMIT } from '../src/score/fitPage'
 import { Midi } from '@tonejs/midi'
 import { DOMParser } from '@xmldom/xmldom'
 import { unzipSync } from 'fflate'
@@ -301,5 +302,28 @@ describe('템포 절반·두 배 후보 (tempoAlternatives)', () => {
     expect(tempoAlternatives(30)).toEqual({ half: null, double: 60 })
     expect(tempoAlternatives(300)).toEqual({ half: 150, double: null })
     expect(tempoAlternatives(NaN)).toEqual({ half: null, double: null })
+  })
+})
+
+describe('PDF 쪽 맞춤 (fitZoom)', () => {
+  // 그림 높이가 크기에 비례하는 가짜 악보
+  const run = (heightAtOne: number, start = 1) => {
+    const tried: number[] = []
+    const zoom = fitZoom(start, (z) => (tried.push(z), heightAtOne * z))
+    return { zoom, tried }
+  }
+
+  it('이미 들어가면 고른 크기 그대로 한 번만 그린다', () => {
+    expect(run(0.8)).toEqual({ zoom: 1, tried: [1] })
+  })
+
+  it('넘치면 한 쪽에 들어갈 때까지 줄이고, 마지막에 그린 크기를 쓴다', () => {
+    const r = run(2.4, 1.3)
+    expect(2.4 * r.zoom).toBeLessThanOrEqual(PAGE_FILL_LIMIT)
+    expect(r.tried.at(-1)).toBe(r.zoom)
+  })
+
+  it('아무리 커도 정해진 횟수 안에 끝난다', () => {
+    expect(run(1000).tried.length).toBeLessThanOrEqual(9)
   })
 })

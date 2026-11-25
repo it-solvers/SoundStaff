@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.29.2',
+    date: '2026-11-25',
+    changes: [
+      '[PDF] 악기가 많아 쪽 아래가 잘리던 문제를 고침: 모든 악기가 한 쪽에 들어갈 때까지 악보 크기를 자동으로 줄임',
+    ],
+  },
+  {
     version: '1.29.1',
     date: '2026-11-25',
     changes: [
