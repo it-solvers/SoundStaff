@@ -233,11 +233,6 @@ export default function App() {
             {phone ? t.taglineMidiOnly : t.tagline}
           </p>
           {!phone && (
-            <p className="mt-1 text-xs text-slate-400" data-testid="tagline-note">
-              {t.taglineNote}
-            </p>
-          )}
-          {!phone && (
             <section
               className="mt-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
               data-testid="fit-guide"

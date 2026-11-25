@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.48.0',
+    date: '2026-11-25',
+    changes: [
+      '[화면] 첫 화면의 음원 안내를 짧게 정리: 겹치는 설명 한 줄을 없애고 "음원 파일은 어디까지 되나요?" 상자로 모음',
+    ],
+  },
+  {
     version: '1.47.0',
     date: '2026-11-25',
     changes: [

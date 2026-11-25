@@ -8,25 +8,17 @@ export const en: Messages = {
   appName: 'SoundStaff',
   language: { label: '한국어', lang: 'ko', href: '../' },
   tagline: 'Turn audio or MIDI files into sheet music. Your files never leave your computer.',
-  taglineNote:
-    'Audio results are a draft of the notes picked up from the sound alone, and instruments are not told apart. You can also switch to [Melody only].',
   fitGuide: {
-    heading: 'Where audio analysis works well',
+    heading: 'How well does audio work?',
     items: [
       {
         label: 'Usable',
-        text: 'The melody of a solo song (turn on [Songs: use the separated voice only]) or a simple performance on one instrument. Expect wrong notes to correct',
+        text: 'The melody of a song (turn on [Songs: use the separated voice only]) or a simple performance on one instrument',
       },
-      {
-        label: 'Fair',
-        text: 'Pieces with several notes at once, such as two-hand piano: some notes are missed or added',
-      },
-      {
-        label: 'Difficult',
-        text: 'Choir, orchestra, band and other mixed sound: instruments and voice parts are not told apart and many notes are wrong. Use MIDI for accurate part scores',
-      },
+      { label: 'Fair', text: 'Performances with several notes at once, such as two-hand piano' },
+      { label: 'Difficult', text: 'Choir, orchestra, band and other mixed sound' },
     ],
-    note: 'A score made from audio is a draft. These are tendencies seen with test pieces, and real songs may differ. MIDI files do not have these limits.',
+    note: 'A score from audio is a draft with wrong or missing notes to correct, and instruments are not told apart. For an accurate score, use a MIDI file.',
   },
   taglineMidiOnly: 'Turn MIDI files into sheet music. Your files never leave your device.',
 
@@ -41,7 +33,7 @@ export const en: Messages = {
     steps: [
       {
         title: 'Add MIDI or audio',
-        desc: 'Drop files or press [Choose files] and the score is made right away. Audio (mp3, wav, etc.) is analyzed on a computer.',
+        desc: 'Drop files or press [Choose files] and the score is made. Audio (mp3, wav, etc.) works on a computer only.',
       },
       {
         title: 'Refine the score (optional)',
