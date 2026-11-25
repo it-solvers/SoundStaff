@@ -5,7 +5,7 @@ import { svg2pdf } from 'svg2pdf.js'
 import { t } from '../text'
 import { UserError } from '../utils/errors'
 import { wrapTitle } from './wrapTitle'
-import { fitZoom, OVERFLOW_FILL, pageFill } from './fitPage'
+import { fitZoom, OVERFLOW_FILL, pageBounds, pageFill, TOP_MARGIN_PT } from './fitPage'
 import { parseOutlineFont, textToPathData, textWidth, type OutlineFont, type TextAnchor } from './outlineText'
 import { ellipsize, measureCount, staffCount, withPageBreaks, workTitle } from './pageLayout'
 import { DEFAULT_PDF_SETTINGS, MEASURES_PER_PAGE, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
@@ -16,6 +16,7 @@ const NEEDS_CJK = /[\u0100-\uffff]/
 const SVG_NS = 'http://www.w3.org/2000/svg'
 /** 이 수 이상의 보표는 한 쪽에 한 줄만 들어간다고 본다 */
 const CROWDED_STAVES = 6
+const A4_PT = { short: 595.28, long: 841.89 }
 
 let fontPromise: Promise<OutlineFont> | null = null
 
@@ -121,8 +122,6 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
     osmd.EngravingRules.VoiceSpacingMultiplierVexflow = 0.7
     osmd.EngravingRules.VoiceSpacingAddendVexflow = 2
   }
-  // 둘째 쪽부터의 제목 자리를 위에 남긴다
-  osmd.EngravingRules.PageTopMargin = Math.max(osmd.EngravingRules.PageTopMargin, 8)
   try {
     await osmd.load(settings.layout === 'four' ? withPageBreaks(xml, MEASURES_PER_PAGE) : xml)
     const drawn = () => Array.from(container.querySelectorAll<SVGSVGElement>(':scope > div > svg, :scope > svg'))
@@ -133,7 +132,8 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
       osmd.zoom = zoom
       osmd.render()
       const now = drawn()
-      return Math.max(pageFill(now), now.length > wanted ? OVERFLOW_FILL : 0)
+      const pageHeight = settings.orientation === 'landscape' ? A4_PT.short : A4_PT.long
+      return Math.max(pageFill(now, TOP_MARGIN_PT.next / pageHeight), now.length > wanted ? OVERFLOW_FILL : 0)
     })
     const pages = drawn()
     if (!pages.length) throw new UserError(t.errors.pdfNoPages)
@@ -157,8 +157,10 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
       const h = vb && vb.height ? vb.height : svg.getBoundingClientRect().height
       const scale = Math.min(pageW / w, pageH / h)
       if (i > 0) pdf.addPage()
+      // 그림이 시작하는 곳이 쪽마다 같은 위 여백에 오도록 내려 놓는다
+      const y = TOP_MARGIN_PT[i === 0 ? 'first' : 'next'] - pageBounds(svg).top * h * scale
       // 쪽보다 좁아지면(긴 제목을 여러 줄로 나눠 악보가 길어진 경우 등) 왼쪽에 붙지 않고 가로 가운데에 놓는다
-      await svg2pdf(svg, pdf, { x: (pageW - w * scale) / 2, y: 0, width: w * scale, height: h * scale })
+      await svg2pdf(svg, pdf, { x: (pageW - w * scale) / 2, y, width: w * scale, height: h * scale })
 
       if (i > 0) await drawRunningTitle(pdf, font, workTitle(xml))
 

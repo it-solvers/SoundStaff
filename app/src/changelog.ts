@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.30.2',
+    date: '2026-11-25',
+    changes: ['[PDF] 악보가 쪽 위에 너무 붙던 것을 고쳐, 쪽마다 위 여백(약 2cm)을 두고 시작함'],
+  },
+  {
     version: '1.30.1',
     date: '2026-11-25',
     changes: ['[악보] 곡 끝에 마침 세로줄(가는 줄 + 굵은 줄)을 표시함. 화면·PDF·MusicXML에 적용'],

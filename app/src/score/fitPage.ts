@@ -24,24 +24,37 @@ export function fitZoom(start: number, render: (zoom: number) => number): number
   }
 }
 
-/**
- * 쪽마다 가장 아래(와 가장 오른쪽)에 그린 것의 위치를 쪽 크기로 나눈 값 중 가장 큰 것. 1에 가까울수록 꽉 찬 것이다.
- * 오른쪽은 여백이 좁아 RIGHT_LIMIT를 한도로 본다. 배경(쪽 전체를 덮는 사각형)은 세지 않는다
- */
-export function pageFill(pages: SVGSVGElement[]): number {
-  let worst = 0
-  for (const svg of pages) {
-    const vb = svg.viewBox.baseVal
-    const top = vb?.height ? vb.y : 0
-    const height = vb?.height || svg.getBoundingClientRect().height
-    const left = vb?.width ? vb.x : 0
-    const width = vb?.width || svg.getBoundingClientRect().width
-    for (const el of Array.from(svg.querySelectorAll<SVGGraphicsElement>('path, text'))) {
-      const box = el.getBBox()
-      if (box.height >= height) continue
-      const right = (box.x + box.width - left) / width
-      worst = Math.max(worst, (box.y + box.height - top) / height, (right * PAGE_FILL_LIMIT) / RIGHT_LIMIT)
-    }
+/** 쪽 위 가장자리에서 그림이 시작하는 곳까지의 여백(pt): 첫 쪽(큰 제목) / 둘째 쪽부터(오른쪽 위 작은 제목 아래) */
+export const TOP_MARGIN_PT = { first: 48, next: 62 }
+
+/** 쪽 안에서 그림이 차지하는 범위 (쪽 높이·폭에 대한 비율). 배경(쪽 전체를 덮는 도형)은 세지 않는다 */
+export function pageBounds(svg: SVGSVGElement): { top: number; bottom: number; right: number } {
+  const vb = svg.viewBox.baseVal
+  const x = vb?.width ? vb.x : 0
+  const y = vb?.height ? vb.y : 0
+  const width = vb?.width || svg.getBoundingClientRect().width
+  const height = vb?.height || svg.getBoundingClientRect().height
+  let [top, bottom, right] = [1, 0, 0]
+  for (const el of Array.from(svg.querySelectorAll<SVGGraphicsElement>('path, text'))) {
+    const box = el.getBBox()
+    if (box.height >= height || (!box.width && !box.height)) continue
+    top = Math.min(top, (box.y - y) / height)
+    bottom = Math.max(bottom, (box.y + box.height - y) / height)
+    right = Math.max(right, (box.x + box.width - x) / width)
   }
-  return worst
+  return { top: Math.min(top, bottom), bottom, right }
+}
+
+/**
+ * 가장 꽉 찬 쪽의 채움 비율: 위 여백(topMargin, 쪽 높이에 대한 비율)을 두고 그림을 놓았을 때의 아래 끝.
+ * 오른쪽은 여백이 좁아 RIGHT_LIMIT를 한도로 본다.
+ */
+export function pageFill(pages: SVGSVGElement[], topMargin: number): number {
+  return Math.max(
+    0,
+    ...pages.map((svg) => {
+      const b = pageBounds(svg)
+      return Math.max(topMargin + b.bottom - b.top, (b.right * PAGE_FILL_LIMIT) / RIGHT_LIMIT)
+    }),
+  )
 }
