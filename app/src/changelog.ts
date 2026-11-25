@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.25.0',
+    date: '2026-11-25',
+    changes: [
+      '[타악기] 악보 재생에서 타악기 소리가 남: GM 타악기 47종을 컴퓨터가 만든 소리로 들려줌(녹음 샘플 아님, 고른 소리와 상관없음). 악기 설정의 소리 끄기가 타악기에도 적용됨',
+    ],
+  },
+  {
     version: '1.24.1',
     date: '2026-11-25',
     changes: [

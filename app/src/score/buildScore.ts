@@ -105,7 +105,6 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
   }
   // 파일의 트랙 순서대로 단을 쌓는다
   tracks.sort((a, b) => a.track.index - b.track.index)
-  if (drums.length) warnings.push(t.warnings.drumsSilent)
   const mergedCount = info.audio?.mergedCount ?? 0
   if (mergedCount > 0) warnings.push(t.warnings.notesMerged(mergedCount, info.audio?.allNotes.length ?? 0))
   if (trimmed > 0) {

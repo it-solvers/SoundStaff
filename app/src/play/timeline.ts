@@ -8,6 +8,8 @@ export interface PlayNote {
   midi: number
   /** 악보 위치(16분음표 칸) */
   step: number
+  /** true면 타악기: midi는 음높이가 아니라 GM 타악기 번호 */
+  drum?: boolean
 }
 
 export interface Timeline {
@@ -72,7 +74,6 @@ export function buildTimeline(model: ScoreModel): Timeline {
 
   const notes: PlayNote[] = []
   for (const part of model.parts) {
-    if (part.percussion) continue // 타악기 소리는 아직 없다 (타악기 번호를 음높이로 치면 엉뚱한 소리가 난다)
     if (part.muted) continue // 소리를 끈 악기는 재생 목록에 넣지 않는다 (악보에는 그대로 있다)
     part.staves.forEach((staff, si) => {
       if (staff.muted) return // 소리를 끈 보표 (악보에는 그대로 있다)
@@ -109,6 +110,7 @@ export function buildTimeline(model: ScoreModel): Timeline {
           duration: Math.max(0.03, secondsAtStep(n.startStep + n.steps) - s),
           midi: n.midi,
           step: n.startStep,
+          ...(part.percussion ? { drum: true } : {}),
         })
       }
     })

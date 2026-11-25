@@ -249,7 +249,6 @@ export const en: Messages = {
       `Tempo changes inside a measure were moved to the nearest measure start (${count(n, 'change')}).`,
     unknownDrums: (n: number) =>
       `Notes with unknown percussion numbers were left out of the score (${count(n, 'note')}).`,
-    drumsSilent: 'Percussion is in the score, PDF and MusicXML, but it is not yet heard in playback here.',
     voicesMerged: (max: number, n: number) =>
       `More than ${max} voices sounded at once, so some notes were merged into chords (${count(n, 'note')}).`,
     voicesTrimmed: (max: number, n: number) =>
@@ -295,7 +294,7 @@ export const en: Messages = {
       harpsichord: 'Harpsichord',
     },
     playHint:
-      'Plays the notes in the score with the chosen sound, at the written tempo. [Real piano] uses recorded piano; the others are computer-generated and differ from real instruments.',
+      'Plays the notes in the score with the chosen sound, at the written tempo. [Real piano] uses recorded piano; the others are computer-generated and differ from real instruments. Percussion always uses computer-generated drum sounds, whatever sound you choose.',
     loading: 'Loading piano sounds…',
     fallback: 'Could not load the real piano sound, so the synth piano is used.',
     zoomIn: 'Zoom in',

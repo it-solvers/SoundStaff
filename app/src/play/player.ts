@@ -1,3 +1,4 @@
+import { scheduleDrum } from './drums'
 import { loadPianoSamples, scheduleSample } from './pianoSamples'
 import {
   createMaster,
@@ -73,7 +74,8 @@ export class ScorePlayer {
       // 실제 피아노: 곡에서 쓰는 음역의 샘플을 불러온 뒤 시작한다. 불러오는 동안 정지를 누르면 그만둔다.
       this.set('loading')
       try {
-        const samples = await loadPianoSamples(ctx, new Set(this.timeline.notes.map((n) => n.midi)))
+        const pitches = this.timeline.notes.filter((n) => !n.drum).map((n) => n.midi)
+        const samples = await loadPianoSamples(ctx, new Set(pitches))
         if (this.ctx !== ctx) return // 불러오는 사이에 정지했다
         this.samples = samples
       } catch (err) {
@@ -106,7 +108,8 @@ export class ScorePlayer {
       if (when > horizon) break
       const note = { midi: n.midi, duration: n.duration / this.speed }
       const at = Math.max(when, ctx.currentTime)
-      if (this.samples) scheduleSample(ctx, this.dest, this.samples, note, at)
+      if (n.drum) scheduleDrum(ctx, this.dest, n.midi, at)
+      else if (this.samples) scheduleSample(ctx, this.dest, this.samples, note, at)
       else if (this.wave) scheduleNote(ctx, this.dest, this.wave, note, at, TIMBRES[this.timbreId])
       this.idx++
     }

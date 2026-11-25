@@ -1,3 +1,4 @@
+import { scheduleDrum } from './drums'
 import type { PlayNote } from './timeline'
 
 export const midiToHz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
@@ -175,6 +176,9 @@ export function scheduleAll(
   const timbre = TIMBRES[timbreId]
   const dest = createMaster(ctx)
   const wave = createWave(ctx, timbre)
-  for (const n of notes)
-    scheduleNote(ctx, dest, wave, { midi: n.midi, duration: n.duration / speed }, startAt + n.start / speed, timbre)
+  for (const n of notes) {
+    if (n.drum) scheduleDrum(ctx, dest, n.midi, startAt + n.start / speed)
+    else
+      scheduleNote(ctx, dest, wave, { midi: n.midi, duration: n.duration / speed }, startAt + n.start / speed, timbre)
+  }
 }

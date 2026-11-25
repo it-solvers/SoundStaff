@@ -1,3 +1,5 @@
+import { drumRecipe } from '../src/play/drums'
+import { drumSound } from '../src/midi/percussion'
 import { buildTimeline } from '../src/play/timeline'
 import { DOMParser } from '@xmldom/xmldom'
 import { describe, expect, it } from 'vitest'
@@ -241,8 +243,20 @@ describe('타악기 보표', () => {
     expect(first.getAttribute('print-object')).toBe('no')
   })
 
-  it('타악기는 아직 재생 시간표에 넣지 않는다', () => {
-    expect(buildTimeline(res.model).notes).toEqual([])
+  it('재생 시간표에 타악기 표시와 함께 들어가고, 소리를 끄면 빠진다', () => {
+    const notes = buildTimeline(res.model).notes
+    expect(notes.map((n) => n.midi)).toEqual([36, 42, 42, 38, 36])
+    expect(notes.every((n) => n.drum)).toBe(true)
+    const muted = buildInstrumentScore(i, { ...defaultSettings(i), mutedTracks: [0] })
+    expect(buildTimeline(muted.model).notes).toEqual([])
+  })
+
+  it('악보에 적을 수 있는 모든 타악기에 소리가 있다', () => {
+    for (let midi = 35; midi <= 81; midi++) {
+      expect(drumSound(midi), `${midi}`).toBeDefined()
+      expect(drumRecipe(midi).length, `${midi}`).toBeGreaterThan(0)
+      for (const l of drumRecipe(midi)) expect(l.decay + (l.delay ?? 0)).toBeLessThan(2)
+    }
   })
 })
 
