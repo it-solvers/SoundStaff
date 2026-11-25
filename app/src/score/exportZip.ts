@@ -3,8 +3,9 @@ import { t } from '../text'
 import { uniqueName } from '../utils/fileName'
 import type { PdfSettings } from './pdfSettings'
 import { buildPianoMidi, hasPitched } from './exportPianoMidi'
+import { partScores } from './parts'
 import type { MidiFileInfo } from '../midi/types'
-import type { BuildResult, ScoreSettings } from './types'
+import type { BuildResult, ScoreModel, ScoreSettings } from './types'
 
 export interface ZipEntry {
   name: string
@@ -49,6 +50,28 @@ export async function buildResultZip(
       entries.push({ name: t.panel.pianoMidiName(it.base), data: buildPianoMidi(it.info, it.settings) })
     }
     onProgress(i + 1, items.length)
+  }
+  return buildZip(entries)
+}
+
+/** 파트보 ZIP: 악기마다 PDF + MusicXML */
+export async function buildPartsZip(
+  model: ScoreModel,
+  base: string,
+  pdf: PdfSettings,
+  onProgress: (done: number, total: number) => void,
+): Promise<Uint8Array> {
+  const parts = partScores(model, base)
+  const entries: ZipEntry[] = []
+  onProgress(0, parts.length)
+  const { exportScorePdf } = await import('./exportPdf')
+  for (const [i, part] of parts.entries()) {
+    const blob = await exportScorePdf(part.xml, pdf)
+    entries.push(
+      { name: `${part.base}.pdf`, data: new Uint8Array(await blob.arrayBuffer()) },
+      { name: `${part.base}.musicxml`, data: strToU8(part.xml) },
+    )
+    onProgress(i + 1, parts.length)
   }
   return buildZip(entries)
 }

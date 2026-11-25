@@ -1,3 +1,4 @@
+import { partScores } from '../src/score/parts'
 import { ellipsize, measureCount, staffCount, workTitle } from '../src/score/pageLayout'
 import { fitZoom, PAGE_FILL_LIMIT } from '../src/score/fitPage'
 import { Midi } from '@tonejs/midi'
@@ -343,5 +344,26 @@ describe('PDF 마디 배치와 쪽 제목', () => {
     expect(workTitle('<work><work-title>A &amp; B &lt;다&gt;</work-title></work>')).toBe('A & B <다>')
     expect(ellipsize('abcdef', 4, (s) => s.length)).toBe('abc…')
     expect(ellipsize('abc', 4, (s) => s.length)).toBe('abc')
+  })
+})
+
+describe('파트보 (partScores)', () => {
+  const src = info([melody, bass, drums], { fileName: '곡.mid' })
+  const res = buildInstrumentScore(src, applySettings(src))
+  const parts = partScores(res.model, '곡')
+
+  it('악기마다 하나씩, 총보 순서의 번호가 붙은 파일 이름이 나온다', () => {
+    expect(parts.map((p) => p.base)).toEqual(res.model.parts.map((x, i) => `곡 - 0${i + 1} ${x.name}`))
+    expect(parts).toHaveLength(3)
+  })
+
+  it('파트보에는 그 악기만 있고 마디 수·템포가 총보와 같으며 제목에 악기 이름이 붙는다', () => {
+    parts.forEach((p, i) => {
+      expect(p.xml.match(/<score-part /g)).toHaveLength(1)
+      expect(p.xml).toContain(`<work-title>곡 - ${res.model.parts[i].name}</work-title>`)
+      expect(p.xml.match(/<measure number=/g)).toHaveLength(res.model.grid.length)
+      expect(p.xml).toContain('<sound tempo=')
+      expect(p.xml).toContain('light-heavy')
+    })
   })
 })

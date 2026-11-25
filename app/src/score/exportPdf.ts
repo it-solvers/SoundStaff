@@ -137,7 +137,8 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
     const pages = drawn()
     if (!pages.length) throw new UserError(t.errors.pdfNoPages)
 
-    const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: settings.orientation })
+    // compress: 악보의 선 좌표는 압축이 잘 되어 파일이 훨씬 작아진다
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: settings.orientation, compress: true })
     const font = await loadOutlineFont()
 
     const pageW = pdf.internal.pageSize.getWidth()

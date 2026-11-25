@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.36.0',
+    date: '2026-11-25',
+    changes: [
+      '[파트보 ZIP] 추가: 버튼 한 번으로 악기마다 따로 만든 PDF·MusicXML을 ZIP으로 받음. 제목에 악기 이름이 붙고 PDF 설정을 따름',
+      '[PDF] 압축해 저장해 파일 크기를 줄임',
+    ],
+  },
+  {
     version: '1.35.0',
     date: '2026-11-25',
     changes: [
