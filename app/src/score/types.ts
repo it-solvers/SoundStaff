@@ -36,7 +36,7 @@ export interface ScoreSettings {
 
 /** 보표 하나. 피아노는 한 파트에 보표 2개(오른손 높은음자리표, 왼손 낮은음자리표) */
 export interface StaffModel {
-  clef: 'G' | 'F'
+  clef: 'G' | 'F' | 'percussion'
   layout: VoiceMeasure[][]
   /** true면 재생할 때 이 보표의 소리를 내지 않는다 (피아노 대보표에서 오른손·왼손을 따로 끌 때) */
   muted?: boolean
@@ -51,6 +51,8 @@ export interface PartModel {
   /** MIDI 프로그램 번호 (0~127) */
   program: number
   staves: StaffModel[]
+  /** true면 타악기 파트: 음높이 번호는 GM 타악기 번호이고 타악기 음자리표로 적는다 */
+  percussion?: boolean
   /** true면 재생할 때 소리를 내지 않는다 (악보에는 그대로 있다) */
   muted?: boolean
 }
@@ -77,7 +79,6 @@ export type OutputUnit = 'merged' | 'separate'
 export interface ScoreReport {
   measureCount: number
   parts: PartReport[]
-  excludedDrums: string[]
   warnings: string[]
 }
 

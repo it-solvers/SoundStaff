@@ -1,3 +1,4 @@
+import { buildTimeline } from '../src/play/timeline'
 import { DOMParser } from '@xmldom/xmldom'
 import { describe, expect, it } from 'vitest'
 import { buildInstrumentScore, defaultSettings } from '../src/score/buildScore'
@@ -50,12 +51,12 @@ describe('MusicXML 구조 — 악기별 악보', () => {
   const res = buildInstrumentScore(i, defaultSettings(i))
   const root = parse(res.xml)
 
-  it('score-partwise 3.1 이고 제목·파트 수가 맞다 (드럼 제외)', () => {
+  it('score-partwise 3.1 이고 제목·파트 수가 맞다 (타악기 포함)', () => {
     expect(root.nodeName).toBe('score-partwise')
     expect(root.getAttribute('version')).toBe('3.1')
     expect(all(root, 'work-title')[0].textContent).toBe('test')
-    expect(all(root, 'score-part').length).toBe(2)
-    expect(all(root, 'part').length).toBe(2)
+    expect(all(root, 'score-part').length).toBe(3)
+    expect(all(root, 'part').length).toBe(3)
   })
 
   it('모든 마디·성부의 길이 합이 박자표와 정확히 일치한다', () => {
@@ -74,7 +75,7 @@ describe('MusicXML 구조 — 악기별 악보', () => {
     expect(all(attrs, 'beats')[0].textContent).toBe('4')
     expect(all(attrs, 'beat-type')[0].textContent).toBe('4')
     const clefs = all(root, 'sign').map((s) => s.textContent)
-    expect(clefs).toEqual(['G', 'F']) // 선율 = 높은음자리표, 베이스 = 낮은음자리표
+    expect(clefs).toEqual(['G', 'F', 'percussion']) // 선율 = 높은음자리표, 베이스 = 낮은음자리표, 드럼 = 타악기
   })
 
   it('템포를 기록하고, 템포 변화는 해당 마디에 둔다', () => {
@@ -172,9 +173,75 @@ describe('MusicXML 구조 — 한 파트에 보표 2개 (대보표) 지원', () 
   })
 })
 
+describe('타악기 보표', () => {
+  // 한 박 안: 하이햇 8분 두 번(손), 첫 박에 큰북(발), 둘째 박에 작은북, 자리를 모르는 번호 하나
+  const kit = track(
+    0,
+    'Kit',
+    [
+      [0, 1, 42],
+      [0, 1, 36],
+      [2, 1, 42],
+      [4, 8, 38],
+      [8, 1, 36],
+      [8, 1, 100],
+    ],
+    { kind: 'drum', channel: 10 },
+  )
+  const i = info([kit])
+  const res = buildInstrumentScore(i, defaultSettings(i))
+  const root = parse(res.xml)
+  const notes = all(root, 'note').filter((n) => kids(n, 'unpitched').length)
+
+  it('드럼만 있는 파일도 타악기 음자리표 악보가 되고 조표·음높이는 적지 않는다', () => {
+    expect(all(root, 'sign').map((s) => s.textContent)).toEqual(['percussion'])
+    expect(all(root, 'key')).toHaveLength(0)
+    expect(all(root, 'pitch')).toHaveLength(0)
+    expect(notes).toHaveLength(5)
+  })
+
+  it('손은 1성부(위 줄기), 발은 2성부(아래 줄기)이고 심벌은 × 머리다', () => {
+    const summary = notes.map(
+      (n) =>
+        `${text(kids(n, 'unpitched')[0], 'display-step')}${text(kids(n, 'unpitched')[0], 'display-octave')} v${text(n, 'voice')} ${text(n, 'stem')} ${text(n, 'notehead')}`,
+    )
+    expect(summary).toEqual(['G5 v1 up x', 'G5 v1 up x', 'C5 v1 up ', 'F4 v2 down ', 'F4 v2 down '])
+  })
+
+  it('길이는 다음 타격이나 박 끝까지이고 붙임줄이 없으며 마디 길이가 맞다', () => {
+    expect(notes.map((n) => text(n, 'duration'))).toEqual(['2', '2', '4', '4', '4'])
+    expect(all(root, 'tie')).toHaveLength(0)
+    for (const [, sum] of voiceSums(all(root, 'measure')[0])) expect(sum).toBe(16)
+  })
+
+  it('쓰인 타악기마다 악기와 midi-unpitched(번호 + 1)를 적고 음이 가리킨다', () => {
+    expect(all(root, 'midi-unpitched').map((e) => e.textContent)).toEqual(['37', '39', '43'])
+    expect(all(root, 'midi-channel').every((e) => e.textContent === '10')).toBe(true)
+    const ids = all(root, 'score-instrument').map((e) => e.getAttribute('id'))
+    for (const n of notes) expect(ids).toContain(kids(n, 'instrument')[0].getAttribute('id'))
+  })
+
+  it('자리를 모르는 번호는 빼고 알린다', () => {
+    expect(res.report.warnings.some((w) => w.includes('1개는 악보에 넣지 않았습니다'))).toBe(true)
+  })
+
+  it('박 중간에서 시작해 나뉘는 길이는 붙임줄 대신 쉼표로 채운다', () => {
+    const k = info([track(0, 'Kit', [[1, 1, 38]], { kind: 'drum', channel: 10 })])
+    const doc = parse(buildInstrumentScore(k, defaultSettings(k)).xml)
+    expect(all(doc, 'tie')).toHaveLength(0)
+    expect(all(doc, 'unpitched')).toHaveLength(1)
+  })
+
+  it('타악기는 아직 재생 시간표에 넣지 않는다', () => {
+    expect(buildTimeline(res.model).notes).toEqual([])
+  })
+})
+
 describe('만들 수 없는 파일의 오류 안내', () => {
-  it('드럼 트랙만 있으면 음높이 트랙이 없다고 알린다', () => {
+  it('타악기를 모두 빼면 남은 악기가 없다고 알린다', () => {
     const i = info([drums])
-    expect(() => buildInstrumentScore(i, defaultSettings(i))).toThrow('음 높이가 있는 트랙이 없습니다')
+    expect(() => buildInstrumentScore(i, { ...defaultSettings(i), excludedTracks: [drums.index] })).toThrow(
+      '악보에 넣을 악기가 없습니다',
+    )
   })
 })

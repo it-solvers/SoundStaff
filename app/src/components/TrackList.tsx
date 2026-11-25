@@ -25,7 +25,6 @@ function kindLabel(tr: TrackInfo) {
 export default function TrackList({ info }: { info: MidiFileInfo }) {
   const s = summarize(info)
   const isAudio = info.source === 'audio' && !!info.audio
-  const drumCount = info.tracks.filter((tr) => tr.kind === 'drum').length
   const c = t.files.columns
 
   return (
@@ -120,12 +119,6 @@ export default function TrackList({ info }: { info: MidiFileInfo }) {
           </tbody>
         </table>
       </div>
-
-      {drumCount > 0 && (
-        <p className="mt-3 rounded-lg bg-rose-950/60 px-3 py-2 text-sm text-rose-200" data-testid="drum-notice">
-          {t.files.drumNotice(drumCount)}
-        </p>
-      )}
     </article>
   )
 }

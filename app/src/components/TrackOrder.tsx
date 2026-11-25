@@ -49,7 +49,11 @@ function SpeakerIcon({ on }: { on: boolean }) {
   )
 }
 
-const label = (tr: TrackInfo) => tr.name || tr.instrumentName || `${t.trackOrder.track} ${tr.index + 1}`
+const label = (tr: TrackInfo) =>
+  tr.name || (tr.kind === 'drum' ? t.files.drum : tr.instrumentName) || `${t.trackOrder.track} ${tr.index + 1}`
+const checkbox = 'h-5 w-5 shrink-0 cursor-pointer accent-sky-600'
+const bulkBtn =
+  'inline-flex min-h-9 items-center rounded-lg border border-slate-700 px-3 text-xs text-slate-200 disabled:opacity-30'
 const btn =
   'inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-slate-200 disabled:opacity-30'
 // 마우스를 올렸을 때 배경: 반투명 회색이라 어두운·밝은 화면 모두에서 글자가 보인다 (slate-700 같은 진한 색은 밝은 화면에서 글자와 같은 색이 된다)
@@ -63,7 +67,9 @@ const hoverMuted = 'hover:bg-amber-900'
 export default function TrackOrder({ info, order, excluded, muted, onChange, reorder = true }: Props) {
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
-  const tracks = info.tracks.filter((tr) => tr.kind === 'pitched')
+  /** 한 번에 바꾸려고 체크한 악기 (트랙 번호) */
+  const [checked, setChecked] = useState<ReadonlySet<number>>(new Set())
+  const tracks = info.tracks.filter((tr) => tr.kind !== 'empty')
   if (tracks.length < 2) return null
 
   const original = tracks.map((tr) => tr.index)
@@ -81,6 +87,29 @@ export default function TrackOrder({ info, order, excluded, muted, onChange, reo
     mutedSet.size > 0
 
   const norm = (list: number[]) => (list.length ? list : undefined)
+  // 체크한 것 가운데 지금 목록에 있는 악기만 대상이다
+  const selected = active.filter((tr) => checked.has(tr.index)).map((tr) => tr.index)
+  const allSelected = selected.length === active.length
+  const toggleCheck = (index: number) => {
+    const next = new Set(checked)
+    if (!next.delete(index)) next.add(index)
+    setChecked(next)
+  }
+  const muteSelected = (on: boolean) => {
+    const next = new Set(mutedSet)
+    for (const i of selected) {
+      if (on) next.add(i)
+      else next.delete(i)
+    }
+    onChange({ mutedTracks: norm([...next]) })
+  }
+  const removeSelected = () => {
+    onChange({
+      excludedTracks: [...removed, ...selected],
+      mutedTracks: norm([...mutedSet].filter((i) => !selected.includes(i))),
+    })
+    setChecked(new Set())
+  }
   /** 보이는(뺀 것 제외) 목록 안에서 옮긴다. 뺀 악기는 순서 목록의 맨 뒤에 둔다 */
   const move = (from: number, to: number) => {
     const next = [...moveItem(active, from, to), ...gone].map((tr) => tr.index)
@@ -119,6 +148,49 @@ export default function TrackOrder({ info, order, excluded, muted, onChange, reo
         )}
       </div>
       <p className="mt-1 text-xs text-slate-400">{reorder ? t.trackOrder.hint : t.trackOrder.hintFixed}</p>
+      <div className="mt-2 flex flex-wrap items-center gap-2 px-2" data-testid="track-bulk">
+        <label className="mr-auto inline-flex min-h-9 cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className={checkbox}
+            checked={allSelected}
+            ref={(el) => {
+              if (el) el.indeterminate = selected.length > 0 && !allSelected
+            }}
+            onChange={() => setChecked(new Set(allSelected ? [] : active.map((tr) => tr.index)))}
+            data-testid="track-check-all"
+          />
+          {selected.length ? t.trackOrder.selected(selected.length) : t.trackOrder.selectAll}
+        </label>
+        <button
+          type="button"
+          className={`${bulkBtn} ${hoverNormal}`}
+          disabled={!selected.length}
+          onClick={() => muteSelected(true)}
+          data-testid="track-bulk-mute"
+        >
+          {t.trackOrder.muteSelected}
+        </button>
+        <button
+          type="button"
+          className={`${bulkBtn} ${hoverNormal}`}
+          disabled={!selected.length}
+          onClick={() => muteSelected(false)}
+          data-testid="track-bulk-unmute"
+        >
+          {t.trackOrder.unmuteSelected}
+        </button>
+        <button
+          type="button"
+          className={`${bulkBtn} ${hoverNormal}`}
+          disabled={!selected.length || allSelected}
+          title={allSelected ? t.trackOrder.keepOne : undefined}
+          onClick={removeSelected}
+          data-testid="track-bulk-remove"
+        >
+          {t.trackOrder.removeSelected}
+        </button>
+      </div>
       <ol className="mt-2 space-y-1.5">
         {active.map((tr, i) => {
           const isMuted = mutedSet.has(tr.index)
@@ -158,6 +230,14 @@ export default function TrackOrder({ info, order, excluded, muted, onChange, reo
               data-muted={isMuted ? 'true' : 'false'}
             >
               <div className="flex min-w-0 flex-1 basis-48 items-center gap-2">
+                <input
+                  type="checkbox"
+                  className={checkbox}
+                  checked={checked.has(tr.index)}
+                  onChange={() => toggleCheck(tr.index)}
+                  aria-label={`${label(tr)} ${t.trackOrder.select}`}
+                  data-testid={`track-check-${tr.index}`}
+                />
                 {reorder && (
                   <span
                     className="cursor-grab select-none px-1 text-slate-400"
@@ -236,7 +316,19 @@ export default function TrackOrder({ info, order, excluded, muted, onChange, reo
       </ol>
       {gone.length > 0 && (
         <div className="mt-3" data-testid="track-removed">
-          <h5 className="text-xs font-semibold text-slate-300">{t.trackOrder.removedHeading}</h5>
+          <div className="flex items-center justify-between">
+            <h5 className="text-xs font-semibold text-slate-300">{t.trackOrder.removedHeading}</h5>
+            {gone.length > 1 && (
+              <button
+                type="button"
+                className="inline-flex min-h-9 items-center px-1 text-xs text-slate-400 underline hover:text-slate-100"
+                onClick={() => onChange({ excludedTracks: undefined })}
+                data-testid="track-restore-all"
+              >
+                {t.trackOrder.restoreAll}
+              </button>
+            )}
+          </div>
           <ul className="mt-1.5 space-y-1.5">
             {gone.map((tr) => (
               <li

@@ -150,9 +150,7 @@ export const ko = {
     drum: '드럼',
     trackNumber: (n: number) => `트랙 ${n}`,
     andMore: (first: string, n: number) => `${first} 외 ${n}개`,
-    kind: { drum: '드럼 · 악보 제외', empty: '음표 없음', pitched: '음높이 악기' },
-    drumNotice: (n: number) =>
-      `드럼 트랙 ${n}개는 악보에서 제외됩니다. (드럼은 음높이가 없는 타악기 소리라 일반 악보로 옮기지 않습니다)`,
+    kind: { drum: '타악기', empty: '음표 없음', pitched: '음높이 악기' },
     meta: (size: string, dur: string, ppq: number) => `${size} · 길이 ${dur} · 해상도 ${ppq} PPQ`,
     metaAudio: (size: string, dur: string) => `음원 · ${size} · 길이 ${dur}`,
   },
@@ -175,7 +173,7 @@ export const ko = {
 
   trackOrder: {
     heading: '악기 설정',
-    hint: '순서: 끌어서 옮기거나 ▲▼ 버튼 · 스피커 버튼: 재생할 때만 소리 끄기(악보에는 그대로) · ✕: 악보에서 빼기. 바꾸면 악보가 다시 만들어집니다.',
+    hint: '여러 개는 체크해서 한 번에 바꾸기 · 순서: 끌어서 옮기거나 ▲▼ 버튼 · 스피커 버튼: 재생할 때만 소리 끄기(악보에는 그대로) · ✕: 악보에서 빼기. 바꾸면 악보가 다시 만들어집니다.',
     hintFixed:
       '오른손(높은 음)은 위, 왼손(낮은 음)은 아래의 피아노 대보표라 순서는 바뀌지 않습니다. 스피커 버튼: 재생할 때만 소리 끄기(악보에는 그대로) · ✕: 악보에서 빼기.',
     up: '위로',
@@ -187,6 +185,13 @@ export const ko = {
     keepOne: '악기를 하나 이상 남겨야 합니다',
     removedHeading: '악보에서 뺀 악기',
     restore: '다시 넣기',
+    restoreAll: '모두 다시 넣기',
+    select: '선택',
+    selectAll: '모두 선택',
+    selected: (n: number) => `${n}개 선택`,
+    muteSelected: '소리 끄기',
+    unmuteSelected: '소리 켜기',
+    removeSelected: '악보에서 빼기',
     reset: '원래대로',
     handle: '끌어서 옮기기',
     track: '트랙',
@@ -238,7 +243,8 @@ export const ko = {
     unsupportedTimeSignature:
       '지원하지 않는 박자표(분모가 1·2·4·8·16이 아님)가 있어 해당 구간을 4/4로 처리했습니다. 박자는 [악보 설정]에서 고칠 수 있습니다.',
     snappedTempo: (n: number) => `마디 중간에 있는 템포 변화 ${n}개를 가장 가까운 마디 시작으로 옮겼습니다.`,
-    drumsExcluded: (n: number) => `드럼 트랙 ${n}개는 악보에서 제외했습니다.`,
+    unknownDrums: (n: number) => `어떤 타악기인지 알 수 없는 번호의 음 ${n}개는 악보에 넣지 않았습니다.`,
+    drumsSilent: '타악기는 악보·PDF·MusicXML에 들어가지만 이 화면의 재생에서는 아직 소리가 나지 않습니다.',
     voicesMerged: (max: number, n: number) =>
       `동시에 울리는 성부가 ${max}개를 넘어 일부 음 ${n}개를 화음으로 합쳤습니다.`,
     voicesTrimmed: (max: number, n: number) => `성부가 ${max}개를 넘어 일부 음 ${n}개의 길이를 줄였습니다.`,
@@ -260,7 +266,7 @@ export const ko = {
     pdfBusy: 'PDF 만드는 중…',
     musicXml: 'MusicXML 다운로드',
     pianoMidi: '피아노 MIDI 다운로드',
-    pianoMidiHint: '모든 음높이 악기를 피아노 소리로 통일한 MIDI입니다 (드럼 제외).',
+    pianoMidiHint: '모든 음높이 악기를 피아노 소리로 통일한 MIDI입니다 (타악기 제외).',
     zip: '전체 ZIP 만들기',
     zipReady: (name: string) => `ZIP 저장 (${name})`,
     zipName: (app: string) => `${app} 악보.zip`,
@@ -322,7 +328,6 @@ export const ko = {
     empty: '빈 파일입니다.',
     tooBig: (mb: string, maxMb: number) => `파일이 너무 큽니다 (${mb}MB). 최대 ${maxMb}MB까지 지원합니다.`,
     noNotes: '음표가 없는 파일입니다.',
-    noPitched: '음 높이가 있는 트랙이 없습니다.',
     allRemoved: '악보에 넣을 악기가 없습니다. 악기를 하나 이상 남겨 주세요.',
     structure: (detail: string) => `악보 구조 검증에 실패했습니다: ${detail}`,
     validation: {

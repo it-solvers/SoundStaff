@@ -10,6 +10,10 @@ const CHANNELS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15]
 /** MIDI 텍스트는 인코딩 규격이 없어서 라이브러리가 글자 코드를 그대로 바이트로 쓴다. 한글이 깨지지 않게 UTF-8 바이트를 글자로 바꿔 넘긴다. */
 const asUtf8Bytes = (s: string) => String.fromCharCode(...new TextEncoder().encode(s))
 
+/** 피아노 MIDI에 담을 음(음높이 악기)이 있는가 */
+export const hasPitched = (info: MidiFileInfo) =>
+  info.source === 'audio' || info.tracks.some((t) => t.kind === 'pitched')
+
 /**
  * 모든 음높이 악기를 피아노(Acoustic Grand Piano, 프로그램 0)로 통일한 MIDI를 만든다. (기획서 4.1장 7번)
  * - 원본의 음표를 그대로 쓴다 (악보용 양자화·피아노 합치기를 거치지 않으므로 음이 빠지지 않는다).

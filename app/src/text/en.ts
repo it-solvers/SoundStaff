@@ -154,9 +154,7 @@ export const en: Messages = {
     drum: 'Drums',
     trackNumber: (n: number) => `Track ${n}`,
     andMore: (first: string, n: number) => `${first} and ${n} more`,
-    kind: { drum: 'Drums · not in score', empty: 'No notes', pitched: 'Pitched' },
-    drumNotice: (n: number) =>
-      `${count(n, 'drum track')} will be left out of the score. (Drums are unpitched percussion, so they are not written as ordinary notation.)`,
+    kind: { drum: 'Percussion', empty: 'No notes', pitched: 'Pitched' },
     meta: (size: string, dur: string, ppq: number) => `${size} · length ${dur} · resolution ${ppq} PPQ`,
     metaAudio: (size: string, dur: string) => `Audio · ${size} · length ${dur}`,
   },
@@ -179,7 +177,7 @@ export const en: Messages = {
 
   trackOrder: {
     heading: 'Instruments',
-    hint: 'Order: drag or use ▲▼ · Speaker: mutes during playback only (stays in the score) · ✕: removes from the score. The score is rebuilt after changes.',
+    hint: 'Check several to change them at once · Order: drag or use ▲▼ · Speaker: mutes during playback only (stays in the score) · ✕: removes from the score. The score is rebuilt after changes.',
     hintFixed:
       'This is a piano grand staff with the right hand (high) on top and the left hand (low) below, so the order is fixed. Speaker: mutes during playback only (stays in the score) · ✕: removes from the score.',
     up: 'Move up',
@@ -191,6 +189,13 @@ export const en: Messages = {
     keepOne: 'Keep at least one instrument',
     removedHeading: 'Removed instruments',
     restore: 'Restore',
+    restoreAll: 'Restore all',
+    select: 'Select',
+    selectAll: 'Select all',
+    selected: (n: number) => `${n} selected`,
+    muteSelected: 'Mute',
+    unmuteSelected: 'Unmute',
+    removeSelected: 'Remove from score',
     reset: 'Reset',
     handle: 'Drag to move',
     track: 'Track',
@@ -242,7 +247,9 @@ export const en: Messages = {
       'An unsupported time signature (bottom number other than 1, 2, 4, 8 or 16) was treated as 4/4. You can change it in [Score settings].',
     snappedTempo: (n: number) =>
       `Tempo changes inside a measure were moved to the nearest measure start (${count(n, 'change')}).`,
-    drumsExcluded: (n: number) => `${count(n, 'drum track')} left out of the score.`,
+    unknownDrums: (n: number) =>
+      `Notes with unknown percussion numbers were left out of the score (${count(n, 'note')}).`,
+    drumsSilent: 'Percussion is in the score, PDF and MusicXML, but it is not yet heard in playback here.',
     voicesMerged: (max: number, n: number) =>
       `More than ${max} voices sounded at once, so some notes were merged into chords (${count(n, 'note')}).`,
     voicesTrimmed: (max: number, n: number) =>
@@ -265,7 +272,7 @@ export const en: Messages = {
     pdfBusy: 'Making PDF…',
     musicXml: 'Download MusicXML',
     pianoMidi: 'Download piano MIDI',
-    pianoMidiHint: 'A MIDI file with every pitched instrument set to piano (drums excluded).',
+    pianoMidiHint: 'A MIDI file with every pitched instrument set to piano (percussion excluded).',
     zip: 'Make ZIP of everything',
     zipReady: (name: string) => `Save ZIP (${name})`,
     zipName: (app: string) => `${app} scores.zip`,
@@ -326,7 +333,6 @@ export const en: Messages = {
     empty: 'The file is empty.',
     tooBig: (mb: string, maxMb: number) => `The file is too large (${mb}MB). The limit is ${maxMb}MB.`,
     noNotes: 'The file has no notes.',
-    noPitched: 'There are no pitched tracks.',
     allRemoved: 'No instruments are left for the score. Keep at least one.',
     structure: (detail: string) => `The score failed its structure check: ${detail}`,
     validation: {

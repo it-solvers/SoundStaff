@@ -72,6 +72,7 @@ export function buildTimeline(model: ScoreModel): Timeline {
 
   const notes: PlayNote[] = []
   for (const part of model.parts) {
+    if (part.percussion) continue // 타악기 소리는 아직 없다 (타악기 번호를 음높이로 치면 엉뚱한 소리가 난다)
     if (part.muted) continue // 소리를 끈 악기는 재생 목록에 넣지 않는다 (악보에는 그대로 있다)
     part.staves.forEach((staff, si) => {
       if (staff.muted) return // 소리를 끈 보표 (악보에는 그대로 있다)

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { musicXmlBlob } from '../score/exportMusicXml'
 import type { PdfSettings } from '../score/pdfSettings'
-import { buildPianoMidi } from '../score/exportPianoMidi'
+import { buildPianoMidi, hasPitched } from '../score/exportPianoMidi'
 import { t } from '../text'
 import { downloadBlob } from '../utils/download'
 import { reportError } from '../utils/errors'
@@ -60,6 +60,7 @@ export default function DownloadButtons({ item, pdf, onError }: Props) {
         </button>
         <button
           type="button"
+          disabled={!hasPitched(item.info)}
           className={`${primary} bg-violet-700 hover:bg-violet-600`}
           data-testid="download-midi"
           onClick={() =>

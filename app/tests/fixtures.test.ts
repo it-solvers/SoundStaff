@@ -15,10 +15,7 @@ const load = async (name: string) => {
   return r.info
 }
 const names = fs.readdirSync(DIR).filter((n) => /^\d\d_.*\.mid$/.test(n))
-const NO_SCORE = new Map([
-  ['09_드럼만.mid', '음 높이가 있는 트랙이 없습니다.'],
-  ['15_음표없음.mid', '음표가 없는 파일입니다.'],
-])
+const NO_SCORE = new Map([['15_음표없음.mid', '음표가 없는 파일입니다.']])
 
 describe('시험용 파일 전체 (tests/fixtures)', () => {
   it('시험 파일이 15개 있다', () => expect(names).toHaveLength(15))
@@ -32,6 +29,8 @@ describe('시험용 파일 전체 (tests/fixtures)', () => {
       expect(res.report.measureCount).toBeGreaterThan(0)
       expect(res.xml).not.toMatch(/undefined|NaN/)
     })
+
+    if (name === '09_드럼만.mid') continue // 타악기만 있으면 피아노 MIDI를 만들지 않는다
 
     it(`${name}: 피아노 MIDI를 만들어 다시 읽으면 모두 음높이 악기다`, async () => {
       const info = await load(name)
@@ -66,7 +65,7 @@ describe('시험용 파일 전체 (tests/fixtures)', () => {
     const merged = mergeFiles(files)
     const res = buildInstrumentScore(merged.info, defaultSettings(merged.info))
     const pitched = files
-      .flatMap((f) => f.tracks.filter((t) => t.kind === 'pitched'))
+      .flatMap((f) => f.tracks.filter((t) => t.kind !== 'empty'))
       .reduce((a, t) => a + t.noteCount, 0)
     expect(res.report.parts.reduce((a, p) => a + p.noteCount, 0)).toBe(pitched)
     expect(merged.warnings.length).toBe(6)

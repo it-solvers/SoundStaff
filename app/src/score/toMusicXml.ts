@@ -1,4 +1,5 @@
 import { startsTie, stopsTie, type Piece } from '../midi/measures'
+import { drumSound } from '../midi/percussion'
 import type { PartModel, ScoreModel } from './types'
 
 const SHARP_NAMES: [string, number][] = [
@@ -71,12 +72,26 @@ function noteXml(
   stem: string,
   hiddenRest: boolean,
   staff: number | null,
+  /** 타악기 파트면 파트 id (음마다 어떤 타악기인지 가리킨다) */
+  drumPart: string | null = null,
 ): string {
   const [type, dot] = TYPE_OF[p.duration]
   const typeXml = `<type>${type}</type>${dot ? '<dot/>' : ''}`
   const staffXml = staff ? `<staff>${staff}</staff>` : ''
   if (p.midis.length === 0) {
     return `<note${hiddenRest ? ' print-object="no"' : ''}><rest/><duration>${p.duration}</duration><voice>${voice}</voice>${typeXml}${staffXml}</note>`
+  }
+  if (drumPart) {
+    return p.midis
+      .map((midi, i) => {
+        const d = drumSound(midi)!
+        const head = d.head === 'normal' ? '' : `<notehead>${d.head}</notehead>`
+        return (
+          `<note>${i > 0 ? '<chord/>' : ''}<unpitched><display-step>${d.step}</display-step><display-octave>${d.octave}</display-octave></unpitched>` +
+          `<duration>${p.duration}</duration><instrument id="${drumPart}-I${midi}"/><voice>${voice}</voice>${typeXml}${stem}${head}${staffXml}</note>`
+        )
+      })
+      .join('')
   }
   const names = fifths < 0 ? FLAT_NAMES : SHARP_NAMES
   return p.midis
@@ -115,12 +130,13 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
       const clefs = part.staves
         .map(
           (st, si) =>
-            `<clef${multi ? ` number="${si + 1}"` : ''}><sign>${st.clef}</sign><line>${st.clef === 'G' ? 2 : 4}</line></clef>`,
+            `<clef${multi ? ` number="${si + 1}"` : ''}><sign>${st.clef}</sign><line>${st.clef === 'F' ? 4 : 2}</line></clef>`,
         )
         .join('')
       attrs =
         `<attributes><divisions>4</divisions>` +
-        `<key><fifths>${model.key.fifths}</fifths><mode>${model.key.mode}</mode></key>` +
+        // 타악기 보표에는 조표를 적지 않는다
+        (part.percussion ? '' : `<key><fifths>${model.key.fifths}</fifths><mode>${model.key.mode}</mode></key>`) +
         `<time><beats>${spec.numerator}</beats><beat-type>${spec.denominator}</beat-type></time>` +
         `${multi ? `<staves>${part.staves.length}</staves><part-symbol>brace</part-symbol>` : ''}${clefs}</attributes>`
     } else if (timeChanged) {
@@ -137,7 +153,7 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
     const chunks: string[] = []
     part.staves.forEach((staff, si) => {
       const voices = staff.layout[mi]
-      const stemmed = voices.length > 1
+      const stemmed = voices.length > 1 || !!part.percussion
       const staffNo = multi ? si + 1 : null
       for (const vm of voices) {
         const voiceNo = vm.voice + (multi ? si * VOICES_PER_STAFF : 0)
@@ -148,7 +164,10 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
           )
         } else {
           const stem = stemmed ? `<stem>${vm.voice % 2 === 1 ? 'up' : 'down'}</stem>` : ''
-          chunks.push(vm.pieces.map((p) => noteXml(p, voiceNo, model.key.fifths, stem, hidden, staffNo)).join(''))
+          const drumPart = part.percussion ? part.id : null
+          chunks.push(
+            vm.pieces.map((p) => noteXml(p, voiceNo, model.key.fifths, stem, hidden, staffNo, drumPart)).join(''),
+          )
         }
       }
     })
@@ -157,14 +176,40 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
   return `<part id="${part.id}">\n${measures.join('\n')}\n</part>`
 }
 
+/** 타악기 파트의 목록 항목: 쓰인 타악기마다 악기 하나. Finale가 각 음을 알맞은 타악기 소리로 열게 한다 */
+function drumScorePart(p: PartModel): string {
+  const used = new Set(
+    p.staves.flatMap((s) => s.layout.flatMap((vs) => vs.flatMap((v) => v.pieces))).flatMap((x) => x.midis),
+  )
+  const midis = [...used].sort((a, b) => a - b)
+  return (
+    `<score-part id="${p.id}"><part-name>${escapeXml(p.name)}</part-name>` +
+    midis
+      .map(
+        (m) =>
+          `<score-instrument id="${p.id}-I${m}"><instrument-name>${drumSound(m)!.name}</instrument-name></score-instrument>`,
+      )
+      .join('') +
+    // MusicXML의 midi-unpitched는 1부터 세므로 MIDI 번호 + 1
+    midis
+      .map(
+        (m) =>
+          `<midi-instrument id="${p.id}-I${m}"><midi-channel>${p.channel}</midi-channel><midi-unpitched>${m + 1}</midi-unpitched></midi-instrument>`,
+      )
+      .join('') +
+    '</score-part>'
+  )
+}
+
 /** 악보 모델 → MusicXML 3.1 (score-partwise) */
 export function toMusicXml(model: ScoreModel): string {
   const partList = model.parts
-    .map(
-      (p) =>
-        `<score-part id="${p.id}"><part-name>${escapeXml(p.name)}</part-name>` +
-        `<score-instrument id="${p.id}-I1"><instrument-name>${escapeXml(p.instrumentName)}</instrument-name></score-instrument>` +
-        `<midi-instrument id="${p.id}-I1"><midi-channel>${p.channel}</midi-channel><midi-program>${p.program + 1}</midi-program></midi-instrument></score-part>`,
+    .map((p) =>
+      p.percussion
+        ? drumScorePart(p)
+        : `<score-part id="${p.id}"><part-name>${escapeXml(p.name)}</part-name>` +
+          `<score-instrument id="${p.id}-I1"><instrument-name>${escapeXml(p.instrumentName)}</instrument-name></score-instrument>` +
+          `<midi-instrument id="${p.id}-I1"><midi-channel>${p.channel}</midi-channel><midi-program>${p.program + 1}</midi-program></midi-instrument></score-part>`,
     )
     .join('')
   return (

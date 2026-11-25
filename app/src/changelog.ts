@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.24.0',
+    date: '2026-11-25',
+    changes: [
+      '[타악기] MIDI의 드럼·타악기 트랙을 악보·PDF·MusicXML에 넣음: 타악기 음자리표, 심벌·하이햇은 × 머리, 손은 위 줄기·발은 아래 줄기. 타악기만 있는 파일도 악보가 됨. 재생 소리는 아직 없고, 피아노 MIDI에는 넣지 않음. 음원 분석에는 해당 없음',
+      '[악기 설정] 악기를 체크해서(모두 선택 가능) 한 번에 소리 끄기·켜기·악보에서 빼기를 할 수 있음. 뺀 악기는 [모두 다시 넣기]로 되돌림',
+    ],
+  },
+  {
     version: '1.23.0',
     date: '2026-11-25',
     changes: [

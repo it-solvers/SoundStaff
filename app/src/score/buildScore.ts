@@ -1,4 +1,5 @@
-import { fitMinorToVoices, layoutTrack, selectMainNotes, splitIntoLayers } from '../midi/measures'
+import { fitMinorToVoices, layoutPercussion, layoutTrack, selectMainNotes, splitIntoLayers } from '../midi/measures'
+import { drumSound } from '../midi/percussion'
 import {
   buildMeasureGrid,
   enforceMonophonic,
@@ -25,6 +26,7 @@ export const defaultSettings = (info: MidiFileInfo): ScoreSettings => applySetti
 export const baseName = baseNameOf
 
 function trackName(track: TrackInfo): string {
+  if (track.kind === 'drum') return track.name || t.files.drum
   return track.name || track.instrumentName || t.files.trackNumber(track.index + 1)
 }
 
@@ -36,7 +38,6 @@ function pickClef(notes: QNote[]): 'G' | 'F' {
 
 interface Prepared {
   warnings: string[]
-  excludedDrums: string[]
   tracks: { track: TrackInfo; notes: QNote[] }[]
   grid: MeasureGrid
   tempoByMeasure: Map<number, number>
@@ -45,16 +46,24 @@ interface Prepared {
 /** 두 변환 방식이 공통으로 거치는 단계: 트랙 선별 → 양자화 → 마디 구성 → 템포 배치 */
 function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): Prepared {
   const warnings: string[] = []
-  const allPitched = info.tracks.filter((t) => t.kind === 'pitched')
+  const playable = info.tracks.filter((t) => t.kind !== 'empty')
   // 사용자가 악보에서 뺀 악기는 처음부터 없는 것으로 친다 (마디 수·경고·악보·재생·PDF·MusicXML 모두)
   const removed = new Set(settings.excludedTracks ?? [])
-  const pitched = allPitched.filter((t) => !removed.has(t.index))
-  if (allPitched.length && !pitched.length) throw new UserError(t.errors.allRemoved)
-  const excludedDrums = info.tracks.filter((tr) => tr.kind === 'drum').map((tr) => tr.name || t.files.drum)
-  if (!pitched.length) {
-    const anyNotes = info.tracks.some((tr) => tr.noteCount > 0)
-    throw new UserError(anyNotes ? t.errors.noPitched : t.errors.noNotes)
-  }
+  const kept = playable.filter((t) => !removed.has(t.index))
+  if (playable.length && !kept.length) throw new UserError(t.errors.allRemoved)
+  const pitched = kept.filter((t) => t.kind === 'pitched')
+  // 타악기는 GM 번호가 있는 음만 적는다. 자리를 모르는 음은 빼고 알린다
+  let unknownDrums = 0
+  const drums = kept
+    .filter((t) => t.kind === 'drum')
+    .map((track) => {
+      const known = track.notes.filter((n) => drumSound(n.midi))
+      unknownDrums += track.notes.length - known.length
+      return { track, known }
+    })
+    .filter((d) => d.known.length)
+  if (!pitched.length && !drums.length) throw new UserError(t.errors.noNotes)
+  if (unknownDrums) warnings.push(t.warnings.unknownDrums(unknownDrums))
 
   let offGrid = 0
   let noteTotal = 0
@@ -87,6 +96,16 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
     if (t.chords) trimmed += t.notes.length - notes.length
     return { track: t, notes }
   })
+  for (const { track, known } of drums) {
+    const q = quantizeNotes(known, info.ppq)
+    offGrid += q.offGrid
+    noteTotal += known.length
+    // 타악기는 친 위치만 의미가 있다 (길이는 마디 배치에서 정한다)
+    tracks.push({ track, notes: q.notes.map((n) => ({ ...n, end: n.start + 1 })) })
+  }
+  // 파일의 트랙 순서대로 단을 쌓는다
+  tracks.sort((a, b) => a.track.index - b.track.index)
+  if (drums.length) warnings.push(t.warnings.drumsSilent)
   const mergedCount = info.audio?.mergedCount ?? 0
   if (mergedCount > 0) warnings.push(t.warnings.notesMerged(mergedCount, info.audio?.allNotes.length ?? 0))
   if (trimmed > 0) {
@@ -121,7 +140,7 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
   if (snapped) warnings.push(t.warnings.snappedTempo(snapped))
   if (!tempoByMeasure.has(0)) tempoByMeasure.set(0, tempos[0] ? Math.round(tempos[0].bpm * 100) / 100 : 120)
 
-  return { warnings, excludedDrums, tracks, grid, tempoByMeasure }
+  return { warnings, tracks, grid, tempoByMeasure }
 }
 
 /** 모델 검증 → XML 생성 → XML 형식 검증 */
@@ -134,7 +153,7 @@ function finish(model: ScoreModel, base: Omit<BuildResult['report'], 'measureCou
   return { xml, model, report: { ...base, measureCount: model.grid.length } }
 }
 
-/** 악기별 악보: 음높이 트랙마다 한 단. 드럼·빈 트랙은 제외한다. */
+/** 악기별 악보: 트랙마다 한 단 (타악기 트랙은 타악기 보표). 빈 트랙은 제외한다. */
 export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings): BuildResult {
   const p = prepare(info, settings)
   const warnings = [...p.warnings]
@@ -173,6 +192,22 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
   // 사용자가 정한 순서가 있으면 그 순서로 단을 쌓는다
   if (!grand)
     orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes }) => {
+      if (track.kind === 'drum') {
+        const name = trackName(track)
+        const layout = layoutPercussion(notes, p.grid.measures, (midi) => !!drumSound(midi)?.foot)
+        parts.push({
+          id: `P${parts.length + 1}`,
+          name,
+          instrumentName: name,
+          channel: 10,
+          program: 0,
+          staves: [{ clef: 'percussion', layout }],
+          percussion: true,
+          muted: muted.has(track.index),
+        })
+        partReports.push({ name, noteCount: notes.length, maxVoices: Math.max(1, ...layout.map((vs) => vs.length)) })
+        return
+      }
       // 음원 "들리는 대로": 한 단에 4성부가 넘는 음은 줄이지 않고 같은 음자리표의 추가 단("오른손 2" 등)으로 나눈다
       const layered = info.source === 'audio' && !!track.chords && !settings.audioSimplify
       const layers = layered ? splitIntoLayers(notes) : [notes]
@@ -196,7 +231,6 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
         })
       })
     })
-  if (p.excludedDrums.length) warnings.push(t.warnings.drumsExcluded(p.excludedDrums.length))
 
   const model: ScoreModel = {
     title: settings.title,
@@ -206,7 +240,7 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
     tempoByMeasure: p.tempoByMeasure,
     parts,
   }
-  return finish(model, { parts: partReports, excludedDrums: p.excludedDrums, warnings })
+  return finish(model, { parts: partReports, warnings })
 }
 
 export function buildScore(info: MidiFileInfo, settings: ScoreSettings): BuildResult {

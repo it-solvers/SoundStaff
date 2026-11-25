@@ -282,6 +282,49 @@ export function layoutTrack(
 }
 
 /**
+ * 타악기 트랙의 배치: 손으로 치는 음은 1성부(위 줄기), 발로 치는 음은 2성부(아래 줄기).
+ * 타악기는 음 길이가 의미 없으므로(MIDI의 길이는 제각각이다) 각 타격을 같은 성부의 다음 타격이나
+ * 박의 끝까지로 적는다. 붙임줄은 쓰지 않고, 한 음표로 못 적는 나머지 길이는 쉼표로 채운다.
+ */
+export function layoutPercussion(
+  hits: { start: number; midi: number }[],
+  grid: MeasureSpec[],
+  isFoot: (midi: number) => boolean,
+): VoiceMeasure[][] {
+  /** 이 위치가 든 박의 끝 */
+  const beatEnd = (step: number) => {
+    const m = grid.findLast((x) => x.startStep <= step) ?? grid[0]
+    const beat = beatSteps(m.numerator, m.denominator)
+    return Math.min(m.startStep + m.length, m.startStep + (Math.floor((step - m.startStep) / beat) + 1) * beat)
+  }
+  const voiceOf = (list: { start: number; midi: number }[]) => {
+    const byStart = new Map<number, Set<number>>()
+    for (const h of list) {
+      const set = byStart.get(h.start)
+      if (set) set.add(h.midi)
+      else byStart.set(h.start, new Set([h.midi]))
+    }
+    const starts = [...byStart.keys()].sort((a, b) => a - b)
+    const events = starts.map((start, i) => ({
+      start,
+      end: Math.min(starts[i + 1] ?? Infinity, beatEnd(start)),
+      midis: [...byStart.get(start)!].sort((a, b) => a - b),
+    }))
+    return layoutVoice(events, grid).map((pieces) =>
+      pieces.map((p) => ({ ...p, midis: p.tieStop ? [] : p.midis, tieStart: false, tieStop: false })),
+    )
+  }
+  const hands = voiceOf(hits.filter((h) => !isFoot(h.midi)))
+  const feet = voiceOf(hits.filter((h) => isFoot(h.midi)))
+  return grid.map((_, mi) =>
+    [hands[mi], feet[mi]].flatMap((pieces, vi) => {
+      const wholeRest = pieces.every((p) => p.midis.length === 0)
+      return vi === 0 || !wholeRest ? [{ voice: vi + 1, pieces, wholeRest }] : []
+    }),
+  )
+}
+
+/**
  * 음을 하나도 빼지 않으려고, 한 단(성부 4개 이하)에 다 못 담는 음을 여러 "층"으로 나눈다.
  * 겹치는 음을 성부 수 제한 없이 나눠 본 뒤 maxVoices개씩 묶어 층 하나로 만든다. 각 층은 layoutTrack에 그대로 넘겨도
  * 성부가 maxVoices를 넘지 않으므로 음을 합치거나 길이를 줄이는 일이 생기지 않는다.

@@ -2,7 +2,7 @@ import { strToU8, zipSync } from 'fflate'
 import { t } from '../text'
 import { uniqueName } from '../utils/fileName'
 import type { PdfSettings } from './pdfSettings'
-import { buildPianoMidi } from './exportPianoMidi'
+import { buildPianoMidi, hasPitched } from './exportPianoMidi'
 import type { MidiFileInfo } from '../midi/types'
 import type { BuildResult, ScoreSettings } from './types'
 
@@ -43,8 +43,11 @@ export async function buildResultZip(
     entries.push(
       { name: `${it.base}.pdf`, data: new Uint8Array(await pdfBlob.arrayBuffer()) },
       { name: `${it.base}.musicxml`, data: strToU8(it.result.xml) },
-      { name: t.panel.pianoMidiName(it.base), data: buildPianoMidi(it.info, it.settings) },
     )
+    // 타악기만 있는 곡은 피아노 MIDI에 담을 음이 없다
+    if (hasPitched(it.info)) {
+      entries.push({ name: t.panel.pianoMidiName(it.base), data: buildPianoMidi(it.info, it.settings) })
+    }
     onProgress(i + 1, items.length)
   }
   return buildZip(entries)

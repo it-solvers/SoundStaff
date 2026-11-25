@@ -269,7 +269,7 @@ describe('오류 안내 (기획서 11.3장)', () => {
     const empty = info([track(0, 'e', [], { kind: 'empty' })])
     expect(() => buildInstrumentScore(empty, applySettings(empty))).toThrow('음표가 없는 파일입니다.')
     const onlyDrums = info([drums])
-    expect(() => buildInstrumentScore(onlyDrums, applySettings(onlyDrums))).toThrow('음 높이가 있는 트랙이 없습니다.')
+    expect(buildInstrumentScore(onlyDrums, applySettings(onlyDrums)).model.parts[0].percussion).toBe(true)
   })
 })
 
