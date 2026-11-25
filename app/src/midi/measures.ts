@@ -39,6 +39,8 @@ interface ChordEvent {
   midis: number[]
   /** 덜 주된 음(회색)의 높이 */
   minor?: Set<number>
+  /** 새로 치는 음의 높이: 앞 화음의 같은 음과 붙임줄로 잇지 않는다 */
+  struck?: Set<number>
 }
 
 export const MAX_VOICES = 4
@@ -105,6 +107,10 @@ function toChordEvents(notes: QNote[]): ChordEvent[] {
     const e = map.get(key)
     if (e) e.midis.push(n.midi)
     else map.set(key, { start: n.start, end: n.end, midis: [n.midi] })
+    if (n.struck) {
+      const ev = map.get(key)!
+      ;(ev.struck ??= new Set()).add(n.midi)
+    }
     if (n.minor) {
       const ev = map.get(key)!
       ;(ev.minor ??= new Set()).add(n.midi)
@@ -201,7 +207,7 @@ function layoutVoice(
   tieCommon = false,
   triplets: ReadonlySet<number> = new Set(),
 ): Piece[][] {
-  type Seg = { start: number; end: number; midis: number[]; minor?: Set<number> }
+  type Seg = { start: number; end: number; midis: number[]; minor?: Set<number>; struck?: Set<number> }
   const segs: Seg[] = []
   const total = grid[grid.length - 1].startStep + grid[grid.length - 1].length
   let cursor = 0
@@ -210,7 +216,7 @@ function layoutVoice(
     if (e.start >= total) continue
     const end = Math.min(e.end, total)
     if (e.start > cursor) segs.push({ start: cursor, end: e.start, midis: [] })
-    segs.push({ start: e.start, end, midis: e.midis, minor: e.minor })
+    segs.push({ start: e.start, end, midis: e.midis, minor: e.minor, struck: e.struck })
     cursor = end
   }
   if (cursor < total) segs.push({ start: cursor, end: total, midis: [] })
@@ -281,7 +287,7 @@ function layoutVoice(
       const a = segPieces[k]
       const b = segPieces[k + 1]
       if (a.seg.end !== b.seg.start || !a.seg.midis.length || !b.seg.midis.length) continue
-      const common = a.seg.midis.filter((x) => b.seg.midis.includes(x))
+      const common = a.seg.midis.filter((x) => b.seg.midis.includes(x) && !b.seg.struck?.has(x))
       if (!common.length) continue
       a.last.tieStartMidis = common
       b.first.tieStopMidis = common

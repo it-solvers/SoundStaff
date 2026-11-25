@@ -1011,3 +1011,23 @@ describe('편집용: 짧은 화음 변화 합치기 (smoothSteps)', () => {
     expect(out.some((n) => n.start === 4 && n.midi === 40)).toBe(true)
   })
 })
+
+describe('편집용 정리에서 [같은 음 이어 붙이기]를 끈 경우', () => {
+  const grid = [{ startStep: 0, length: 16, numerator: 4, denominator: 4 }]
+  const q = (start: number, end: number, midi = 60) => ({ start, end, midi, velocity: 0.7 })
+  const ties = (notes: ReturnType<typeof q>[], join: boolean) =>
+    layoutTrack(tidyForEditing(notes, join), grid, { relaxed: true })
+      .measures[0].flatMap((v) => v.pieces)
+      .filter((p) => p.tieStart || p.tieStartMidis?.length).length
+
+  it('따로 친 같은 음은 붙임줄로 잇지 않는다', () => {
+    const struck = [q(0, 4), q(4, 8), q(8, 12)]
+    expect(ties(struck, false)).toBe(0)
+  })
+
+  it('한 번 쳐서 길게 울리는 음은 박마다 나눠 적되 붙임줄로 이어 다시 치지 않는다', () => {
+    // 낮은 음이 두 박 울리는 동안 위의 음이 바뀐다
+    const held = [q(0, 8, 48), q(0, 4, 64), q(4, 8, 67)]
+    expect(ties(held, false)).toBe(1)
+  })
+})

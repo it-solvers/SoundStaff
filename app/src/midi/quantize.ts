@@ -12,6 +12,8 @@ export interface QNote {
   end: number
   midi: number
   velocity: number
+  /** true면 앞 화음의 같은 음에서 이어 오지 않고 새로 치는 음 (붙임줄로 잇지 않는다) */
+  struck?: boolean
   /** true면 타악기 롤(아주 빠른 연타) */
   roll?: boolean
   /** true면 덜 주된 음 (회색으로 그린다) */
@@ -210,7 +212,7 @@ function chordifyAt(
   mergeSame = true,
   smooth?: { steps: number; similarity: number },
 ): QNote[] {
-  type Seg = { start: number; end: number; midis: number[]; vel: Map<number, number> }
+  type Seg = { start: number; end: number; midis: number[]; vel: Map<number, number>; struck?: Set<number> }
   let segs: Seg[] = []
   starts.forEach((t, i) => {
     const active = notes.filter((n) => n.start <= t && n.end > t)
@@ -231,7 +233,14 @@ function chordifyAt(
       }
       midis = midis.filter((m) => keep.has(m))
     }
-    segs.push({ start: t, end, midis, vel })
+    // 이어 붙이지 않을 때: 앞 화음 때부터 울리던 음이 아니면 새로 친 음이다
+    const prevStart = segs[segs.length - 1]?.start
+    const struck = mergeSame
+      ? undefined
+      : new Set(
+          midis.filter((m) => !active.some((n) => n.midi === m && prevStart !== undefined && n.start <= prevStart)),
+        )
+    segs.push({ start: t, end, midis, vel, struck })
   })
   if (mergeSame) {
     // 앞뒤 화음에는 있는데 가운데 화음에만 빠진 음(자리가 모자라 빠진 경우)은 채워 넣어 한 음으로 이어지게 한다
@@ -279,7 +288,15 @@ function chordifyAt(
     }
     segs = merged
   }
-  return segs.flatMap((g) => g.midis.map((m) => ({ start: g.start, end: g.end, midi: m, velocity: g.vel.get(m)! })))
+  return segs.flatMap((g) =>
+    g.midis.map((m) => ({
+      start: g.start,
+      end: g.end,
+      midi: m,
+      velocity: g.vel.get(m)!,
+      ...(g.struck?.has(m) ? { struck: true } : {}),
+    })),
+  )
 }
 
 /** 어떤 음이 시작하는 순간마다 울리는 음 전체를 화음으로 잡는다 */

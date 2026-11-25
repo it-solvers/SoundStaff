@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.41.2',
+    date: '2026-11-25',
+    changes: [
+      '[음원 악보] [같은 음 이어 붙이기]를 꺼도 따로 친 같은 음이 붙임줄로 이어지던 문제를 고침. 한 번 쳐서 길게 울리는 음은 이전처럼 붙임줄로 이음',
+    ],
+  },
+  {
     version: '1.41.1',
     date: '2026-11-25',
     changes: [
