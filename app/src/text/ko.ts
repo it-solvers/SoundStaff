@@ -225,6 +225,9 @@ export const ko = {
     invalidTempo: '템포는 20~400 사이 숫자로 입력해 주세요.',
     tempoOctaveHint:
       '음원에서는 템포가 절반이나 두 배로 잡히는 일이 있습니다. 음표가 너무 빽빽하거나 성기면 눌러 보세요.',
+    tempoChanges: (n: number) =>
+      `빠르기가 ${n}곳에서 바뀝니다. 일정한 빠르기의 곡이라면 하나로 고정하세요. 되돌리려면 [추정값으로 되돌리기]를 누르세요.`,
+    tempoFix: (bpm: number) => `템포 하나로 고정 (${bpm} BPM)`,
     tempoHalf: (bpm: number) => `절반 (${bpm} BPM)`,
     tempoDouble: (bpm: number) => `두 배 (${bpm} BPM)`,
     invalidBeats: '박자의 윗수는 1~32 사이 정수로 입력해 주세요.',

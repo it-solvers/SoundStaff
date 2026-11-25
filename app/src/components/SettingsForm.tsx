@@ -226,6 +226,20 @@ export default function SettingsForm({ info, override, onChange }: Props) {
               {t.settings.invalidTempo}
             </span>
           )}
+          {/* 연주의 느려짐·빨라짐을 따라가는 중이면, 일정한 노래는 값 하나로 고정할 수 있게 알린다 */}
+          {info.source === 'audio' && info.tempos.length > 1 && override.tempo === undefined && (
+            <span className="mt-2 block" data-testid="tempo-changes">
+              <span className="block text-xs text-amber-300">{t.settings.tempoChanges(info.tempos.length - 1)}</span>
+              <button
+                type="button"
+                className="mt-1 inline-flex min-h-9 items-center rounded-lg border border-slate-600 bg-slate-800 px-3 text-xs text-slate-100 hover:bg-slate-700"
+                data-testid="tempo-fix"
+                onClick={() => setTempo(Math.round(f.tempo))}
+              >
+                {t.settings.tempoFix(Math.round(f.tempo))}
+              </button>
+            </span>
+          )}
           {info.source === 'audio' && !tempoBad && (
             <span className="mt-2 block" data-testid="tempo-octave">
               <span className="block text-xs text-slate-400">{t.settings.tempoOctaveHint}</span>

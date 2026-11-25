@@ -226,6 +226,9 @@ export const en: Messages = {
     invalidTempo: 'Enter a tempo between 20 and 400.',
     tempoOctaveHint:
       'With audio, the tempo is sometimes detected at half or double speed. Try these if the notes look too dense or too sparse.',
+    tempoChanges: (n: number) =>
+      `The tempo changes in ${n} ${n === 1 ? 'place' : 'places'}. If the song keeps a steady tempo, fix it to one value. Use [Reset to estimates] to undo.`,
+    tempoFix: (bpm: number) => `Use one tempo (${bpm} BPM)`,
     tempoHalf: (bpm: number) => `Half (${bpm} BPM)`,
     tempoDouble: (bpm: number) => `Double (${bpm} BPM)`,
     invalidBeats: 'Enter a whole number between 1 and 32 for the top number.',

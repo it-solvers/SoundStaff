@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.43.0',
+    date: '2026-11-25',
+    changes: ['[음원 악보] 빠르기가 여러 곳에서 바뀌면 알려 주고 [템포 하나로 고정] 버튼을 보여 줌'],
+  },
+  {
     version: '1.41.2',
     date: '2026-11-25',
     changes: [
