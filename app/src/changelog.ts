@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.46.0',
+    date: '2026-11-25',
+    changes: [
+      '[음원 악보] [멜로디만]에서도 [같은 음 이어 붙이기]를 고를 수 있게 함. 목소리를 분리한 악보는 끈 상태가 기본이라 "도도 솔솔"처럼 다시 부른 음이 따로 적힘',
+    ],
+  },
+  {
     version: '1.45.0',
     date: '2026-11-25',
     changes: [

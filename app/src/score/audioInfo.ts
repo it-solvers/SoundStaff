@@ -7,6 +7,9 @@ import type { AudioMode, ScoreSettings } from './types'
 /** 고치기 쉽게(편집용) 방식인가: 들리는 대로 + 읽기 쉽게 정리하기가 켜져 있고 편집용도 켠 경우 */
 export const isEditMode = (s: ScoreSettings) => (s.audioMode ?? 'full') === 'full' && !!s.audioSimplify && !!s.audioEdit
 
+/** 같은 음 이어 붙이기의 기본값: 분리한 목소리는 다시 부른 음을 따로 적고, 그 밖에는 이어 붙인다 */
+export const defaultAudioMerge = (info: MidiFileInfo) => info.audio?.vocals !== 'used'
+
 /**
  * 음원 분석 결과는 음표를 초 단위로 갖고 있다. 악보를 만들 때 지금 템포(사용자가 고친 값 포함)에 맞춰 박 위치(틱)로 환산한다.
  * 그래야 템포를 바꾸면 박자 구조가 그에 맞게 다시 만들어진다. MIDI 파일은 그대로 돌려준다.
@@ -18,7 +21,7 @@ export function materializeAudio(info: MidiFileInfo, settings: ScoreSettings): M
   if (info.source !== 'audio' || !info.audio) return info
   const bpm = settings.tempos[0]?.bpm ?? info.tempos[0].bpm
   const mode = settings.audioMode ?? 'full'
-  const merge = settings.audioMerge ?? true
+  const merge = settings.audioMerge ?? defaultAudioMerge(info)
   const emphasis = settings.audioEmphasis ?? true
   const edit = isEditMode(settings)
   // 사용자가 템포를 직접 고치지 않았으면(설정의 템포가 분석한 템포와 같으면) 박 지도로 연주의 느려짐·빨라짐을 따라간다

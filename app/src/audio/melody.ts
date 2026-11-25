@@ -8,6 +8,7 @@ import type { AudioNote } from '../midi/types'
  *  2단계(신뢰도·길이 우선): 같은 시간에 여러 음이 있으면 `신뢰도 × 음 지속시간` 점수가 가장 높은 음을 고른다.
  *  3단계(옥타브 점프 보정): 직전 음보다 1옥타브(12반음) 이상 튄 짧은 음은 배음 오인식으로 보고 직전 음 가까운 옥타브로 맞춘다.
  *  4단계(레가토 병합): 같은 높이가 50ms 이내의 짧은 틈으로 이어지면 하나의 긴 음표로 합친다.
+ * [같은 음 이어 붙이기]를 끄면 4단계를 하지 않고, 같은 높이라도 다시 친(부른) 음은 따로 남긴다.
  * 그 밖에 너무 짧은 조각은 이웃에 합치고, 결과는 항상 한 번에 한 음만 있는 한 줄 선율이다 (겹치는 음 없음).
  * 기준값은 시험곡으로 조정한다.
  */
@@ -28,12 +29,14 @@ interface Segment {
   end: number
   midi: number
   velocity: number
+  /** 이 조각이 나온 분석 음. 같은 높이라도 다른 음이면 다시 친 음이다 */
+  source: AudioNote
 }
 
 const score = (n: AudioNote) => n.velocity * n.durationSec
 
 /** 활성 음 중 `신뢰도 × 음 지속시간` 점수가 가장 높은 음을 시간 구간마다 고른다 (음역 필터는 먼저 적용) */
-function followBest(notes: AudioNote[]): Segment[] {
+function followBest(notes: AudioNote[], merge: boolean): Segment[] {
   const candidates = notes.filter((n) => n.midi >= MELODY_LOW && n.midi <= MELODY_HIGH)
   if (!candidates.length) return []
   const times = [...new Set(candidates.flatMap((n) => [n.startSec, n.startSec + n.durationSec]))].sort((a, b) => a - b)
@@ -49,20 +52,23 @@ function followBest(notes: AudioNote[]): Segment[] {
     }
     if (!top) continue
     const last = segs[segs.length - 1]
-    if (last && last.midi === top.midi && Math.abs(last.end - a) < 1e-6) {
+    if (last && last.midi === top.midi && (merge || last.source === top) && Math.abs(last.end - a) < 1e-6) {
       last.end = b
       last.velocity = Math.max(last.velocity, top.velocity)
-    } else segs.push({ start: a, end: b, midi: top.midi, velocity: top.velocity })
+    } else segs.push({ start: a, end: b, midi: top.midi, velocity: top.velocity, source: top })
   }
   return segs
 }
 
-/** 같은 높이가 틈 없이(또는 아주 작은 틈으로) 이어지면 하나로 합친다 */
-function mergeSame(segs: Segment[], gap = LEGATO_GAP_SECONDS): Segment[] {
+/**
+ * 같은 높이가 틈 없이(또는 아주 작은 틈으로) 이어지면 하나로 합친다.
+ * merge가 false면 같은 분석 음에서 나온 조각(사이의 짧은 끼어듦을 지운 자리)만 다시 잇는다.
+ */
+function mergeSame(segs: Segment[], merge: boolean, gap = LEGATO_GAP_SECONDS): Segment[] {
   const out: Segment[] = []
   for (const s of segs) {
     const last = out[out.length - 1]
-    if (last && last.midi === s.midi && s.start - last.end <= gap) {
+    if (last && last.midi === s.midi && (merge || last.source === s.source) && s.start - last.end <= gap) {
       last.end = s.end
       last.velocity = Math.max(last.velocity, s.velocity)
     } else out.push({ ...s })
@@ -127,11 +133,11 @@ function foldOctaveJumps(segs: Segment[]): Segment[] {
  * 여러 음이 섞인 분석 결과에서 주 멜로디 한 줄을 뽑는다.
  * 돌려주는 음표는 시작 순서이며 서로 겹치지 않는다.
  */
-export function selectMelody(notes: AudioNote[]): AudioNote[] {
-  let segs = followBest(notes)
-  segs = dropTiny(mergeSame(segs))
+export function selectMelody(notes: AudioNote[], merge = true): AudioNote[] {
+  let segs = followBest(notes, merge)
+  segs = dropTiny(mergeSame(segs, merge))
   segs = foldOctaveJumps(smoothOutliers(segs))
-  segs = dropTiny(mergeSame(segs))
+  segs = dropTiny(mergeSame(segs, merge))
   return segs.map((s) => ({ startSec: s.start, durationSec: s.end - s.start, midi: s.midi, velocity: s.velocity }))
 }
 

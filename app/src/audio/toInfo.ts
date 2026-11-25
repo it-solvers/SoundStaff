@@ -1,3 +1,4 @@
+import { selectMelody } from './melody'
 import { tonicName } from '../midi/keys'
 import type { AudioNote, MidiFileInfo, TrackInfo } from '../midi/types'
 import type { AudioMode } from '../score/types'
@@ -106,7 +107,11 @@ export function audioTracks(
   edit = false,
   tuning?: Partial<EditTuning>,
 ): TrackInfo[] {
-  if (mode === 'melody') return [makeTrack(0, t.audio.trackName, audio.notes, bpm, { clef: 'G' }, audio.beatTimes)]
+  if (mode === 'melody') {
+    // 이어 붙이기를 끄면 같은 높이라도 다시 부른 음을 따로 남긴 선율을 다시 고른다
+    const line = !merge && audio.allNotes ? selectMelody(audio.allNotes, false) : audio.notes
+    return [makeTrack(0, t.audio.trackName, line, bpm, { clef: 'G' }, audio.beatTimes)]
+  }
   const found = audio.allNotes ?? audio.notes
   const tn = resolveEditTuning(tuning)
   const merged = merge ? mergeRepeatedNotes(found, edit ? tn.mergeGapSec : MERGE_GAP_SECONDS) : found // 같은 높이로 이어진 음은 하나로 (끄면 AI가 나눈 그대로)
@@ -172,7 +177,8 @@ export function audioToInfo(r: AudioResult): MidiFileInfo {
         tonic: tonicName(r.key.value.fifths, r.key.value.mode),
       },
     ],
-    tracks: audioTracks(r, r.vocals === 'used' ? 'melody' : 'full', r.bpm.value, true, true),
+    // 분리한 목소리는 멜로디만 · 이어 붙이기 끔이 기본이다
+    tracks: audioTracks(r, r.vocals === 'used' ? 'melody' : 'full', r.bpm.value, r.vocals !== 'used', true),
     audio: {
       vocals: r.vocals,
       notes: r.notes,

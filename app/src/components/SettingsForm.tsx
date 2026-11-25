@@ -1,4 +1,4 @@
-import { defaultAudioMode } from '../score/audioInfo'
+import { defaultAudioMerge, defaultAudioMode } from '../score/audioInfo'
 import { useState } from 'react'
 import { prettyTonic, tonicName } from '../midi/keys'
 import type { MidiFileInfo } from '../midi/types'
@@ -131,21 +131,24 @@ export default function SettingsForm({ info, override, onChange }: Props) {
                 </span>
               </label>
             )}
-          {(override.audioMode ?? defaultAudioMode(info)) === 'full' && (
-            <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-merge-label">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={override.audioMerge ?? true}
-                onChange={(e) => onChange({ audioMerge: e.target.checked ? undefined : false })}
-                data-testid="audio-merge"
-              />
-              <span>
-                <span className="font-medium">{t.audio.merge.label}</span>
-                <span className="ml-1 text-xs text-slate-300">{t.audio.merge.desc}</span>
-              </span>
-            </label>
-          )}
+          <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-merge-label">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={override.audioMerge ?? defaultAudioMerge(info)}
+              onChange={(e) =>
+                onChange({
+                  audioMerge: e.target.checked === defaultAudioMerge(info) ? undefined : e.target.checked,
+                })
+              }
+              data-testid="audio-merge"
+            />
+            <span>
+              <span className="font-medium">{t.audio.merge.label}</span>
+              <span className="ml-1 text-xs text-slate-300">{t.audio.merge.desc}</span>
+            </span>
+          </label>
+
           {(override.audioMode ?? defaultAudioMode(info)) === 'full' && (
             <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-simplify-label">
               <input

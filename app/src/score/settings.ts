@@ -1,4 +1,4 @@
-import { defaultAudioMode } from './audioInfo'
+import { defaultAudioMerge, defaultAudioMode } from './audioInfo'
 import type { EditTuning } from '../audio/editTuning'
 import { MAJOR_BY_FIFTHS, accidentalsLabel, prettyTonic, tonicName, type KeyMode } from '../midi/keys'
 import type { MidiFileInfo } from '../midi/types'
@@ -74,7 +74,7 @@ export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): Sco
     midiTidy: o.midiTidy ?? true,
     audioMode: o.audioMode ?? defaultAudioMode(info),
     audioSimplify: o.audioSimplify ?? true,
-    audioMerge: o.audioMerge ?? true,
+    audioMerge: o.audioMerge ?? defaultAudioMerge(info),
     audioEdit: o.audioEdit ?? true,
     editTuning: o.editTuning,
     audioEmphasis: o.audioEmphasis ?? true,

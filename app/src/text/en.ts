@@ -97,7 +97,7 @@ export const en: Messages = {
     },
     merge: {
       label: 'Join repeated notes',
-      desc: 'Writes consecutive notes of the same pitch as one long note so the score is not chopped up. Turn off to keep the notes as the AI split them.',
+      desc: 'Writes consecutive notes of the same pitch as one long note so the score is not chopped up. Turn off to keep the notes as the AI split them, so repeated notes show separately. Off by default for separated-voice scores.',
     },
     simplify: {
       label: 'Simplify for reading',

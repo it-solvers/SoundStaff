@@ -30,6 +30,20 @@ describe('주 멜로디 선택 (selectMelody, 기획서 8.5장 4번)', () => {
 
   it('빈 입력이면 빈 결과', () => expect(selectMelody([])).toEqual([]))
 
+  it('이어 붙이기를 끄면 같은 높이라도 다시 부른 음을 따로 남긴다', () => {
+    const n = (startSec: number, durationSec: number, midi: number, velocity = 0.8) => ({
+      startSec,
+      durationSec,
+      midi,
+      velocity,
+    })
+    const twice = [n(0, 0.5, 60), n(0.5, 0.5, 60), n(1.02, 0.5, 60)]
+    expect(selectMelody(twice)).toHaveLength(1)
+    expect(selectMelody(twice, false).map((x) => x.startSec)).toEqual([0, 0.5, 1.02])
+    // 한 음 위로 아주 짧은 음이 스치면, 끈 상태에서도 그 음은 하나로 남는다
+    expect(selectMelody([n(0, 2, 60, 0.5), n(1, 0.03, 64, 1)], false)).toHaveLength(1)
+  })
+
   it('이미 한 줄인 선율은 그대로 돌려준다', () => {
     const melody = tune.map((p, i) => n(i * 0.5, 0.5, p))
     const out = selectMelody(melody)
