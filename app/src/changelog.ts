@@ -12,13 +12,6 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
-    version: '1.42.0',
-    date: '2026-11-25',
-    changes: [
-      '[화면] 맨 위에서는 제목부터 알림까지가 한 덩어리의 머리말로 보이게 함(경계선을 알림 아래로 옮김). 스크롤하면 소개·알림은 올라가고 얇은 머리말만 남음',
-    ],
-  },
-  {
     version: '1.41.0',
     date: '2026-11-25',
     changes: [

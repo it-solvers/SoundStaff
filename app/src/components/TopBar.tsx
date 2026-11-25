@@ -13,8 +13,7 @@ const EXPAND_AT = 4
 const MOTION = 'duration-300 ease-out motion-reduce:transition-none'
 
 /**
- * Sticky header: 맨 위에서는 큰 제목과 단계 설명까지 보이고(아래의 소개·알림과 한 덩어리로 보인다),
- * 스크롤하면 얇게 접히며 그림자가 생긴다.
+ * Sticky header: 맨 위에서는 큰 제목과 단계 설명까지 보이고, 스크롤하면 얇게 접히며 그림자가 생긴다.
  * 접히며 줄어든 높이(36px = 제목 줄 16px + 설명 줄 20px)만큼 바로 아래의 빈칸을 늘려, 본문은 움직이지 않는다.
  */
 export default function TopBar({ step, showSteps }: { step: 1 | 2 | 3 | 4; showSteps: boolean }) {
@@ -30,8 +29,8 @@ export default function TopBar({ step, showSteps }: { step: 1 | 2 | 3 | 4; showS
   return (
     <>
       <header
-        className={`sticky top-0 z-30 bg-slate-950 transition-shadow ${MOTION} ${
-          compact ? 'shadow-lg shadow-black/25' : 'shadow-none'
+        className={`sticky top-0 z-30 border-b bg-slate-950 transition-[border-color,box-shadow] ${MOTION} ${
+          compact ? 'border-transparent shadow-lg shadow-black/25' : 'border-slate-800 shadow-none'
         }`}
         data-testid="top-bar"
         data-compact={compact ? 'true' : 'false'}
