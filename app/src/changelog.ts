@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.52.0',
+    date: '2026-11-25',
+    changes: ['[화면] 안내 상자에 "이 앱으로 만든 악보는 상업적 용도로 사용하면 안 됩니다" 문구 추가'],
+  },
+  {
     version: '1.51.0',
     date: '2026-11-25',
     changes: [

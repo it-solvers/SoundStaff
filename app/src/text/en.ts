@@ -26,6 +26,7 @@ export const en: Messages = {
   notices: [
     'Results are converted automatically and may be inaccurate. Please correct them in a notation editor.',
     'Only use files you have the right to use. Songs made on a free plan may be limited to non-commercial use.',
+    'Do not use scores made with this app for commercial purposes, such as selling or paid distribution.',
     'Files are not sent to any server. They are processed only on this device.',
   ],
 
