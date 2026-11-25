@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.30.0',
+    date: '2026-11-25',
+    changes: [
+      '[PDF] 둘째 쪽부터 오른쪽 위에 작은 글씨로 곡 제목을 표시함',
+      '[PDF 설정] 마디 배치 추가: 한 쪽에 4마디(기본) / 자동(들어가는 만큼). 4마디 배치에서는 쉬는 마디를 숫자로 묶지 않음',
+    ],
+  },
+  {
     version: '1.29.3',
     date: '2026-11-25',
     changes: ['[악보 미리보기] 축소를 60%에서 20%까지 할 수 있게 함(50·40·30·20% 추가)'],

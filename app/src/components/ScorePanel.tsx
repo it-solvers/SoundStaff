@@ -1,6 +1,12 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import type { MidiFileInfo } from '../midi/types'
-import { DEFAULT_PDF_SETTINGS, type PdfOrientation, type PdfSettings, type PdfSize } from '../score/pdfSettings'
+import {
+  DEFAULT_PDF_SETTINGS,
+  type PdfLayout,
+  type PdfOrientation,
+  type PdfSettings,
+  type PdfSize,
+} from '../score/pdfSettings'
 import type { BuildResult, ScoreSettings } from '../score/types'
 import { t } from '../text'
 import { reportError } from '../utils/errors'
@@ -135,6 +141,18 @@ export default function ScorePanel({ items, selectedId, onSelect, showZip }: Pro
             <option value="small">{t.panel.sizes.small}</option>
             <option value="normal">{t.panel.sizes.normal}</option>
             <option value="large">{t.panel.sizes.large}</option>
+          </select>
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-xs text-slate-400">{t.panel.layout}</span>
+          <select
+            className={select}
+            value={pdf.layout}
+            data-testid="pdf-layout"
+            onChange={(e) => setPdf({ ...pdf, layout: e.target.value as PdfLayout })}
+          >
+            <option value="four">{t.panel.layouts.four}</option>
+            <option value="auto">{t.panel.layouts.auto}</option>
           </select>
         </label>
       </fieldset>

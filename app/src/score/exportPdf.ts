@@ -5,14 +5,17 @@ import { svg2pdf } from 'svg2pdf.js'
 import { t } from '../text'
 import { UserError } from '../utils/errors'
 import { wrapTitle } from './wrapTitle'
-import { fitZoom, pageFill } from './fitPage'
+import { fitZoom, OVERFLOW_FILL, pageFill } from './fitPage'
 import { parseOutlineFont, textToPathData, textWidth, type OutlineFont, type TextAnchor } from './outlineText'
-import { DEFAULT_PDF_SETTINGS, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
+import { ellipsize, measureCount, staffCount, withPageBreaks, workTitle } from './pageLayout'
+import { DEFAULT_PDF_SETTINGS, MEASURES_PER_PAGE, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
 
 const FONT_FILE = 'SoundStaffKR-Regular.ttf'
 /** 기본 글꼴(Latin-1)로 그릴 수 없는 글자(한글 등)가 들어 있는지 */
 const NEEDS_CJK = /[\u0100-\uffff]/
 const SVG_NS = 'http://www.w3.org/2000/svg'
+/** 이 수 이상의 보표는 한 쪽에 한 줄만 들어간다고 본다 */
+const CROWDED_STAVES = 6
 
 let fontPromise: Promise<OutlineFont> | null = null
 
@@ -49,6 +52,19 @@ function textToOutline(el: SVGTextElement, font: OutlineFont): void {
   const transform = el.getAttribute('transform')
   if (transform) path.setAttribute('transform', transform)
   el.replaceWith(path)
+}
+
+/** 둘째 쪽부터 오른쪽 위에 작은 글씨로 곡 제목을 쓴다 (한글도 보이도록 윤곽선으로) */
+async function drawRunningTitle(pdf: jsPDF, font: OutlineFont, title: string) {
+  const [width, height, size, margin] = [pdf.internal.pageSize.getWidth(), 24, 9, 30]
+  const text = ellipsize(title, width * 0.6, (s) => textWidth(font, s, size))
+  const svg = document.createElementNS(SVG_NS, 'svg')
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`)
+  const path = document.createElementNS(SVG_NS, 'path')
+  path.setAttribute('d', textToPathData(font, text, width - margin, 17, size, 'end'))
+  path.setAttribute('fill', '#444')
+  svg.appendChild(path)
+  await svg2pdf(svg, pdf, { x: 0, y: 0, width, height })
 }
 
 /**
@@ -93,15 +109,31 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
     autoBeam: true,
     pageFormat: landscape ? 'A4 L' : 'A4 P',
     pageBackgroundColor: '#FFFFFF',
+    // 한 쪽에 4마디: 4마디마다 넣은 "새 쪽" 표시를 따르고, 쉬는 마디를 숫자로 묶지 않는다(묶으면 마디 수가 달라진다)
+    ...(settings.layout === 'four'
+      ? { newPageFromXML: true, autoGenerateMultipleRestMeasuresFromRestMeasures: false }
+      : {}),
   })
+  // 보표가 많으면 한 쪽에 한 줄만 들어가므로 4마디를 한 줄에 놓고, 악보가 지나치게 작아지지 않게 음표 사이를 좁힌다.
+  // 보표가 적으면 줄을 자연스럽게 나눠(한 쪽 4마디는 그대로) 음표가 겹치지 않게 둔다
+  if (settings.layout === 'four' && staffCount(xml) >= CROWDED_STAVES) {
+    osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = MEASURES_PER_PAGE
+    osmd.EngravingRules.VoiceSpacingMultiplierVexflow = 0.7
+    osmd.EngravingRules.VoiceSpacingAddendVexflow = 2
+  }
+  // 둘째 쪽부터의 제목 자리를 위에 남긴다
+  osmd.EngravingRules.PageTopMargin = Math.max(osmd.EngravingRules.PageTopMargin, 8)
   try {
-    await osmd.load(xml)
+    await osmd.load(settings.layout === 'four' ? withPageBreaks(xml, MEASURES_PER_PAGE) : xml)
     const drawn = () => Array.from(container.querySelectorAll<SVGSVGElement>(':scope > div > svg, :scope > svg'))
-    // 고른 크기로 그렸을 때 악기가 많아 쪽 아래가 잘리면, 한 쪽에 다 들어갈 때까지 작게 다시 그린다
+    // 4마디 배치에서 만들어져야 할 쪽수. 이보다 많으면 4마디가 한 쪽에 못 들어간 것이다
+    const wanted = settings.layout === 'four' ? Math.ceil(measureCount(xml) / MEASURES_PER_PAGE) : Infinity
+    // 고른 크기로 그렸을 때 쪽 아래가 잘리거나 4마디가 한 쪽을 넘으면, 들어갈 때까지 작게 다시 그린다
     fitZoom(SIZE_ZOOM[settings.size], (zoom) => {
       osmd.zoom = zoom
       osmd.render()
-      return pageFill(drawn())
+      const now = drawn()
+      return Math.max(pageFill(now), now.length > wanted ? OVERFLOW_FILL : 0)
     })
     const pages = drawn()
     if (!pages.length) throw new UserError(t.errors.pdfNoPages)
@@ -127,6 +159,8 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
       if (i > 0) pdf.addPage()
       // 쪽보다 좁아지면(긴 제목을 여러 줄로 나눠 악보가 길어진 경우 등) 왼쪽에 붙지 않고 가로 가운데에 놓는다
       await svg2pdf(svg, pdf, { x: (pageW - w * scale) / 2, y: 0, width: w * scale, height: h * scale })
+
+      if (i > 0) await drawRunningTitle(pdf, font, workTitle(xml))
 
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(9)

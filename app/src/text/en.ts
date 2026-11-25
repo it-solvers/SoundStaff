@@ -314,6 +314,8 @@ export const en: Messages = {
     portrait: 'A4 portrait',
     landscape: 'A4 landscape',
     size: 'Score size',
+    layout: 'Measures',
+    layouts: { four: '4 per page', auto: 'Automatic (as many as fit)' },
     sizes: { small: 'Small', normal: 'Normal', large: 'Large' },
     finaleHelp:
       'Open MusicXML (a standard score exchange format) in Finale (a notation program) with File → Open (or Import). Finale runs only on computers, so move files saved on a phone to a computer first. Results are converted automatically, so check and correct them in Finale.',
