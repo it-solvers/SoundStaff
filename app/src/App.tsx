@@ -241,7 +241,7 @@ export default function App() {
               <ul className="mt-1 space-y-1 text-xs text-slate-400">
                 {t.fitGuide.items.map((it) => (
                   <li key={it.label}>
-                    <span className="mr-1.5 inline-block min-w-[3.5rem] font-medium text-slate-200">{it.label}</span>
+                    <span className="mr-1.5 inline-block min-w-[5.5rem] font-medium text-slate-200">{it.label}</span>
                     {it.text}
                   </li>
                 ))}

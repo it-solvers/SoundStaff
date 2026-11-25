@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.50.0',
+    date: '2026-11-25',
+    changes: ['[화면] 음원 안내의 난이도를 올림: 양손 피아노는 "어려움", 합창·관현악·밴드는 "매우 어려움"'],
+  },
+  {
     version: '1.49.0',
     date: '2026-11-25',
     changes: ['[화면] 첫 화면 소개 문장에서 MIDI를 음원보다 앞에 적음'],
