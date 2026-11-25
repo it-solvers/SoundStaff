@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.40.1',
+    date: '2026-11-25',
+    changes: ['[화면] 단계 설명 앞의 "1/4" 표시를 없앰 (위의 단계 번호와 같은 뜻이라 중복)'],
+  },
+  {
     version: '1.40.0',
     date: '2026-11-25',
     changes: [

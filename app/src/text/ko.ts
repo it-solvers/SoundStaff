@@ -50,7 +50,7 @@ export const ko = {
     ],
     /** 위쪽에 고정되는 단계 막대의 짧은 이름 (steps와 같은 순서) */
     short: ['첨부', '다듬기', '저장', '편집'],
-    barLabel: (current: number, total: number, title: string, desc: string) => `${current}/${total} ${title}: ${desc}`,
+    barLabel: (title: string, desc: string) => `${title}: ${desc}`,
     footer:
       '폰·태블릿에서는 MIDI 변환만 쓸 수 있고, 음원 분석은 PC에서 이용해 주세요. 악보를 고치려면 폰에서 받은 파일을 PC로 옮겨 악보 프로그램에서 여세요.',
   },

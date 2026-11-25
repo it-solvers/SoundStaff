@@ -41,7 +41,7 @@ export default function StepBar({ current }: { current: 1 | 2 | 3 | 4 }) {
         })}
       </ol>
       <p className="mt-1 truncate text-xs text-slate-300 sm:text-sm" data-testid="step-bar-desc">
-        {t.guide.barLabel(current, steps.length, steps[current - 1].title, steps[current - 1].desc)}
+        {t.guide.barLabel(steps[current - 1].title, steps[current - 1].desc)}
       </p>
     </nav>
   )

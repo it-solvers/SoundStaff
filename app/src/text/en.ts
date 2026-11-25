@@ -48,7 +48,7 @@ export const en: Messages = {
       },
     ],
     short: ['Add', 'Refine', 'Save', 'Edit'],
-    barLabel: (current: number, total: number, title: string, desc: string) => `${current}/${total} ${title}: ${desc}`,
+    barLabel: (title: string, desc: string) => `${title}: ${desc}`,
     footer:
       'Phones and tablets can only convert MIDI; please analyze audio on a computer. To edit a score, move files saved on a phone to a computer and open them in a notation program.',
   },
