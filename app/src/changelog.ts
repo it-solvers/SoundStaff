@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.29.0',
+    date: '2026-11-25',
+    changes: [
+      '[MIDI 악보] 어쿠스틱 기타는 엄지로 치는 베이스 음을 아래 기둥, 나머지 음을 위 기둥으로 나눠 적음(음높이로 추정). 마림바·하프도 음역이 넓으면 두 보표로 적음',
+    ],
+  },
+  {
     version: '1.28.0',
     date: '2026-11-25',
     changes: [

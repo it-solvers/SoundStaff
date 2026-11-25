@@ -282,6 +282,20 @@ export function layoutTrack(
 }
 
 /**
+ * 위 선율(1성부, 위 줄기)과 베이스(2성부, 아래 줄기)를 한 보표에 적는다 (핑거스타일 기타).
+ * 두 목록은 각각 겹치지 않는 화음의 나열이어야 한다. 베이스가 없는 마디는 한 성부로 보인다.
+ */
+export function layoutTwoVoices(upper: QNote[], lower: QNote[], grid: MeasureSpec[]): VoiceMeasure[][] {
+  const [top, bottom] = [upper, lower].map((notes) => layoutVoice(toChordEvents(notes), grid, true))
+  return grid.map((_, mi) =>
+    [top[mi], bottom[mi]].flatMap((pieces, vi) => {
+      const wholeRest = pieces.every((p) => p.midis.length === 0)
+      return vi === 0 || !wholeRest ? [{ voice: vi + 1, pieces, wholeRest }] : []
+    }),
+  )
+}
+
+/**
  * 타악기 트랙의 배치: 손으로 치는 음은 1성부(위 줄기), 발로 치는 음은 2성부(아래 줄기).
  * 타악기는 음 길이가 의미 없으므로(MIDI의 길이는 제각각이다) 각 타격을 같은 성부의 다음 타격이나
  * 박의 끝까지로 적는다. 붙임줄은 쓰지 않고, 한 음표로 못 적는 나머지 길이는 쉼표로 채운다.

@@ -326,6 +326,30 @@ describe('읽기 좋은 MIDI 악보', () => {
     expect(all(build(73, [[0, 4, 76]]).root, 'octave-shift')).toHaveLength(0)
   })
 
+  it('어쿠스틱 기타: 베이스는 아래 줄기, 나머지는 위 줄기이고 음은 빠지지 않는다', () => {
+    // 낮은 라를 치고 높은 음들을 뜯는 한 마디 + 낮은 음만 있는 한 마디
+    const notes: [number, number, number][] = [
+      [0, 16, 45],
+      [2, 2, 64],
+      [4, 2, 69],
+      [8, 8, 52],
+      [10, 6, 64],
+      [16, 4, 45],
+      [20, 4, 47],
+    ]
+    const r = build(24, notes)
+    const [m1, m2] = all(r.root, 'measure')
+    const stems = kids(m1, 'note')
+      .filter((n) => kids(n, 'pitch').length)
+      .map((n) => `${text(kids(n, 'pitch')[0], 'step')}${text(kids(n, 'pitch')[0], 'octave')} ${text(n, 'stem')}`)
+    expect(stems.filter((s) => s.endsWith('down')).map((s) => s.slice(0, 2))).toEqual(['A2', 'E3'])
+    expect(stems.filter((s) => s.endsWith('up'))).toHaveLength(3)
+    expect(new Set(kids(m2, 'note').map((n) => text(n, 'voice')))).toEqual(new Set(['1']))
+    expect(buildTimeline(r.model).notes.map((n) => n.midi)).toEqual([45, 64, 69, 52, 64, 45, 47])
+    for (const m of [m1, m2]) for (const [, sum] of voiceSums(m)) expect(sum).toBe(16)
+    expect(build(27, notes).report.parts[0].maxVoices).toBe(1) // 일렉 기타는 한 성부
+  })
+
   it('음역이 넓은 건반악기는 두 보표로 나누고, 좁으면 한 보표다', () => {
     const wide: [number, number, number][] = [
       [0, 4, 43],

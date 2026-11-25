@@ -15,8 +15,9 @@ export const SPLIT_MIDI = 60
 
 const isGuitar = (program: number) => program >= 24 && program <= 31
 const isLowStrings = (program: number) => (program >= 32 && program <= 39) || program === 43 // 베이스 기타, 더블베이스
-/** 피아노·하프시코드 계열(0~7)과 오르간(16~20) */
-const isKeyboard = (program: number) => program <= 7 || (program >= 16 && program <= 20)
+/** 두 보표로 적는 것이 관례인 악기: 피아노·하프시코드 계열(0~7), 마림바(12), 오르간(16~20), 하프(46) */
+const isKeyboard = (program: number) =>
+  program <= 7 || program === 12 || (program >= 16 && program <= 20) || program === 46
 
 /** 여러 사람의 소리를 한 트랙에 담는 악기: 합주 현악·합창(48~54), 신스 패드·효과음(88~103) */
 const isEnsemble = (program: number) => (program >= 48 && program <= 54) || (program >= 88 && program <= 103)
@@ -83,7 +84,7 @@ const hardShare = (notes: QNote[], c: StaffClef) =>
 
 /**
  * 두 보표(높은음자리표·낮은음자리표)로 나눌지.
- * 음역이 넓은 건반악기, 그리고 화음을 내는데 한 보표로는 덧줄이 많은 합주 현악·합창·패드. 기타·베이스는 한 보표가 관례다.
+ * 음역이 넓은 건반악기(마림바·하프 포함), 그리고 화음을 내는데 한 보표로는 덧줄이 많은 합주 현악·합창·패드. 기타·베이스는 한 보표가 관례다.
  */
 export function needsTwoStaves(program: number, notes: QNote[]): boolean {
   if (isGuitar(program) || isLowStrings(program)) return false

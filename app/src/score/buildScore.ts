@@ -1,4 +1,11 @@
-import { fitMinorToVoices, layoutPercussion, layoutTrack, selectMainNotes, splitIntoLayers } from '../midi/measures'
+import {
+  fitMinorToVoices,
+  layoutPercussion,
+  layoutTrack,
+  layoutTwoVoices,
+  selectMainNotes,
+  splitIntoLayers,
+} from '../midi/measures'
 import { drumSound } from '../midi/percussion'
 import {
   buildMeasureGrid,
@@ -16,6 +23,7 @@ import { UserError } from '../utils/errors'
 import { baseName as baseNameOf } from '../utils/fileName'
 import { materializeAudio } from './audioInfo'
 import { groupDrums } from './drumStaves'
+import { isAcousticGuitar, splitThumb } from './guitar'
 import { SPLIT_MIDI, needsTwoStaves, ottavaFor, pickClef, staffClef, type StaffClef } from './notation'
 import { applySettings } from './settings'
 import { orderBy } from './trackOrder'
@@ -238,9 +246,14 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
         const tidy = settings.midiTidy !== false
         let maxVoices = 1
         const staves: StaffModel[] = hands.map((hand) => {
-          const layout = tidy
-            ? layoutTrack(toSingleVoice(hand.notes), p.grid.measures, { relaxed: true, tieCommon: false })
-            : layoutTrack(hand.notes, p.grid.measures)
+          let layout: ReturnType<typeof layoutTrack>
+          if (tidy && isAcousticGuitar(program)) {
+            const { upper, lower } = splitThumb(hand.notes, p.grid.measures)
+            layout = { measures: layoutTwoVoices(upper, lower, p.grid.measures), warnings: [] }
+          } else
+            layout = tidy
+              ? layoutTrack(toSingleVoice(hand.notes), p.grid.measures, { relaxed: true, tieCommon: false })
+              : layoutTrack(hand.notes, p.grid.measures)
           warnings.push(...layout.warnings.map((w) => t.warnings.track(name, w)))
           maxVoices = Math.max(maxVoices, ...layout.measures.map((vs) => vs.length))
           const ottava = hands.length === 1 ? ottavaFor(hand.notes, hand) : 0
