@@ -13,14 +13,20 @@ export const en: Messages = {
   fitGuide: {
     heading: 'Where audio analysis works well',
     items: [
-      { label: 'Good', text: 'A single melody line on one instrument, such as piano (including isolated vocals)' },
+      {
+        label: 'Usable',
+        text: 'The melody of a solo song (turn on [Songs: use the separated voice only]) or a simple performance on one instrument. Expect wrong notes to correct',
+      },
       {
         label: 'Fair',
-        text: 'Overlapping notes, such as two-hand piano or choir: expect a few missing or extra notes',
+        text: 'Pieces with several notes at once, such as two-hand piano: some notes are missed or added',
       },
-      { label: 'Rough', text: 'Mixed instruments: many wrong notes, so try [Melody only] or use MIDI' },
+      {
+        label: 'Difficult',
+        text: 'Choir, orchestra, band and other mixed sound: instruments and voice parts are not told apart and many notes are wrong. Use MIDI for accurate part scores',
+      },
     ],
-    note: 'Trends seen on our own test pieces; real songs may score lower. MIDI files do not have this limitation.',
+    note: 'A score made from audio is a draft. These are tendencies seen with test pieces, and real songs may differ. MIDI files do not have these limits.',
   },
   taglineMidiOnly: 'Turn MIDI files into sheet music. Your files never leave your device.',
 
@@ -83,7 +89,7 @@ export const en: Messages = {
     vocalHint: 'An isolated vocal file (vocal stem) gives much better results.',
     vocals: {
       label: 'Songs: use the separated voice only',
-      desc: 'Turn on before choosing a file. The vocal melody comes through much better. About 30MB is downloaded the first time, and it needs more time and memory (about 1GB). Leave off for instrumental music.',
+      desc: 'Turn on before choosing a file. The vocal melody comes through much better. About 30MB is downloaded the first time, and it needs more time and memory (about 1GB). It cannot split choir parts. Leave off for instrumental music.',
       used: 'The score was made from the separated voice ([Melody only]). The tempo was read from the original.',
       notFound: 'Hardly any voice was heard, so this was treated as instrumental and the original audio was used.',
     },

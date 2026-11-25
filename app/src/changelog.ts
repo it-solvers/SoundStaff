@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.47.0',
+    date: '2026-11-25',
+    changes: [
+      '[화면] "음원 분석이 잘 맞는 곡" 안내를 고침: 노래 선율은 목소리 분리를 켜고, 합창·관현악·밴드는 어렵다고 알림. 목소리 분리는 합창의 성부를 나누지 못한다는 설명을 추가',
+    ],
+  },
+  {
     version: '1.46.0',
     date: '2026-11-25',
     changes: [
