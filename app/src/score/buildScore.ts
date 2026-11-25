@@ -23,6 +23,7 @@ import { UserError } from '../utils/errors'
 import { baseName as baseNameOf } from '../utils/fileName'
 import { findTripletBeats, snapThird, tripletsAllowed } from '../midi/triplets'
 import { materializeAudio } from './audioInfo'
+import { findRolls, limitHands, rollHits } from './drumPlay'
 import { groupDrums } from './drumStaves'
 import { isAcousticGuitar, splitThumb } from './guitar'
 import { splitHands } from './hands'
@@ -132,10 +133,14 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
     return { track: t, notes, triplets, silent: undefined as Set<string> | undefined }
   })
   // 타악기는 친 위치만 의미가 있다 (길이는 마디 배치에서 정한다)
+  const tidyDrums = settings.midiTidy !== false
   for (const { known } of drums) {
-    offGrid += quantizeNotes(known, info.ppq, findTriplets(known)).offGrid
-    noteTotal += known.length
+    const hitsOnly = tidyDrums ? findRolls(known, info.ppq).rest : known // 롤은 박자 칸에 맞는지 따지지 않는다
+    offGrid += quantizeNotes(hitsOnly, info.ppq, findTriplets(hitsOnly)).offGrid
+    noteTotal += hitsOnly.length
   }
+  let rollCount = 0
+  let handsDropped = 0
   const muted = new Set(settings.mutedTracks ?? [])
   // 읽기 쉽게 정리: 흩어진 타악기 트랙을 드럼 세트 보표와 손 타악기 보표로 모은다
   const staves =
@@ -147,19 +152,43 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
     // 원본 트랙 하나가 통째로 한 보표가 되면 원래 이름을 쓴다
     const whole = sources.length === 1 && sources[0].known.length === original.known.length
     const name = whole || !group ? trackName(original.track) : group === 'kit' ? t.files.drumSet : t.files.percussion
+    // 읽기 쉽게 정리: 아주 빠른 연타는 롤로 적는다
+    const split = sources.map((src) => ({
+      index: src.track.index,
+      ...(tidyDrums ? findRolls(src.known, info.ppq) : { rolls: [], rest: src.known }),
+    }))
     // 3연음 박은 보표에 모인 타격 전체로 정하고, 트랙별로 나눠 볼 때도 같은 자리를 쓴다
-    const all = sources.flatMap((s) => s.known)
+    const all = split.flatMap((x) => x.rest)
     const triplets = findTriplets(all)
-    const hits = (known: NoteEvent[]) => quantizeNotes(known, info.ppq, triplets)
+    const hits = (known: NoteEvent[]) => quantizeNotes(known, info.ppq, triplets).notes
+    const onsets = new Set(hits(all).map((n) => n.start))
+    const perSource = split.map((x) => ({
+      index: x.index,
+      notes: [...x.rolls.flatMap((r) => rollHits(r, onsets)), ...hits(x.rest)],
+    }))
+    rollCount += split.reduce((a, x) => a + x.rolls.length, 0)
+    // 같은 자리·같은 악기는 하나로 (롤이 앞에 오므로 롤 표시가 남는다)
+    const unique = new Map<string, QNote>()
+    for (const n of perSource.flatMap((x) => x.notes)) {
+      const key = `${n.start}:${n.midi}`
+      if (!unique.has(key) || n.roll) unique.set(key, { ...n, end: snapThird(n.start + 1) })
+    }
+    let notes = [...unique.values()].sort((a, b) => a.start - b.start || b.midi - a.midi)
+    if (tidyDrums && group === 'kit') {
+      const limited = limitHands(notes, (midi) => !!drumSound(midi)?.foot)
+      notes = limited.notes
+      handsDropped += limited.dropped
+    }
     // 소리 끄기는 원본 트랙 단위다: 끈 트랙만 친 타격은 재생하지 않는다
-    const keysOf = (list: typeof sources) => list.flatMap((s) => hits(s.known).notes.map((n) => `${n.start}:${n.midi}`))
-    const audible = new Set(keysOf(sources.filter((s) => !muted.has(s.track.index))))
-    const silent = new Set(keysOf(sources).filter((k) => !audible.has(k)))
-    const notes = hits(all).notes.map((n) => ({ ...n, end: snapThird(n.start + 1) }))
+    const keysOf = (list: typeof perSource) => list.flatMap((x) => x.notes.map((n) => `${n.start}:${n.midi}`))
+    const audible = new Set(keysOf(perSource.filter((x) => !muted.has(x.index))))
+    const silent = new Set(keysOf(perSource).filter((k) => !audible.has(k)))
     tracks.push({ track: { ...original.track, name }, notes, triplets, silent })
   }
   const combined = drums.length - staves.length
   if (combined > 0) warnings.push(t.warnings.drumsCombined(drums.length, staves.length))
+  if (rollCount) warnings.push(t.warnings.drumRolls(rollCount))
+  if (handsDropped) warnings.push(t.warnings.drumHands(handsDropped))
   // 파일의 트랙 순서대로 단을 쌓는다
   tracks.sort((a, b) => a.track.index - b.track.index)
   const mergedCount = info.audio?.mergedCount ?? 0

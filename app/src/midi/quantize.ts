@@ -12,6 +12,8 @@ export interface QNote {
   end: number
   midi: number
   velocity: number
+  /** true면 타악기 롤(아주 빠른 연타) */
+  roll?: boolean
   /** true면 덜 주된 음 (회색으로 그린다) */
   minor?: boolean
 }

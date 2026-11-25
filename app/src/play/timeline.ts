@@ -87,6 +87,13 @@ export function buildTimeline(model: ScoreModel): Timeline {
           let pos = grid[mi]?.startStep ?? 0
           for (const piece of v.pieces) {
             for (const midi of piece.midis) {
+              // 타악기 롤: 음표 길이 동안 32분음표 간격으로 연타한다
+              if (part.percussion && piece.roll?.includes(midi)) {
+                if (!part.silentHits?.has(`${pos}:${midi}`))
+                  for (let s = pos; s < pos + piece.duration - 1e-6; s += 0.5)
+                    done.push({ startStep: s, steps: 0.5, midi })
+                continue
+              }
               const key = `${part.id}|${si}|${v.voice}|${midi}`
               const cur = open.get(key)
               if (stopsTie(piece, midi) && cur && Math.abs(cur.startStep + cur.steps - pos) < 1e-6) {

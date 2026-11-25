@@ -105,7 +105,10 @@ function noteXml(
         const head = d.head === 'normal' ? '' : `<notehead>${d.head}</notehead>`
         return (
           `<note>${i > 0 ? '<chord/>' : ''}<unpitched><display-step>${d.step}</display-step><display-octave>${d.octave}</display-octave></unpitched>` +
-          `<duration>${duration}</duration><instrument id="${drumPart}-I${midi}"/><voice>${voice}</voice>${typeXml}${stem}${head}${staffXml}${notations(i === 0 ? bracket : '')}</note>`
+          `<duration>${duration}</duration><instrument id="${drumPart}-I${midi}"/><voice>${voice}</voice>${typeXml}${stem}${head}${staffXml}${notations(
+            (i === 0 ? bracket : '') +
+              (p.roll?.includes(midi) ? '<ornaments><tremolo type="single">3</tremolo></ornaments>' : ''),
+          )}</note>`
         )
       })
       .join('')

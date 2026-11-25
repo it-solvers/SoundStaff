@@ -251,6 +251,9 @@ export const ko = {
     snappedTempo: (n: number) => `마디 중간에 있는 템포 변화 ${n}개를 가장 가까운 마디 시작으로 옮겼습니다.`,
     drumsCombined: (tracks: number, staves: number) =>
       `타악기 트랙 ${tracks}개를 보표 ${staves}개(드럼 세트·손 타악기)로 모았습니다. [읽기 쉽게 정리하기]를 끄면 트랙마다 따로 적습니다.`,
+    drumRolls: (n: number) => `아주 빠른 타악기 연타 ${n}곳을 롤(사선 표시)로 적었습니다.`,
+    drumHands: (n: number) =>
+      `드럼 세트에서 손으로 동시에 칠 수 없는 타격 ${n}개를 뺐습니다(하이햇·라이드부터). [읽기 쉽게 정리하기]를 끄면 모두 적습니다.`,
     unknownDrums: (n: number) => `어떤 타악기인지 알 수 없는 번호의 음 ${n}개는 악보에 넣지 않았습니다.`,
     voicesMerged: (max: number, n: number) =>
       `동시에 울리는 성부가 ${max}개를 넘어 일부 음 ${n}개를 화음으로 합쳤습니다.`,

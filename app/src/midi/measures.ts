@@ -16,6 +16,8 @@ export interface Piece {
   tieStopMidis?: number[]
   /** 3연음에 속한 조각 (길이는 4/3 또는 8/3칸). 묶음의 처음·끝 조각에는 표시가 있다 */
   triplet?: { start: boolean; stop: boolean; bracket?: boolean }
+  /** 이 조각에서 롤(빠른 연타)로 치는 타악기 번호 */
+  roll?: number[]
 }
 
 /** 이 조각에서 이 높이의 음이 다음 조각으로 붙임줄을 시작하는가 */
@@ -351,7 +353,7 @@ export function layoutTwoVoices(
  * 박의 끝까지로 적는다. 붙임줄은 쓰지 않고, 한 음표로 못 적는 나머지 길이는 쉼표로 채운다.
  */
 export function layoutPercussion(
-  hits: { start: number; midi: number }[],
+  hits: { start: number; midi: number; roll?: boolean }[],
   grid: MeasureSpec[],
   isFoot: (midi: number) => boolean,
   triplets?: ReadonlySet<number>,
@@ -381,6 +383,18 @@ export function layoutPercussion(
   }
   const hands = voiceOf(hits.filter((h) => !isFoot(h.midi)))
   const feet = voiceOf(hits.filter((h) => isFoot(h.midi)))
+  const rolls = new Set(hits.filter((h) => h.roll).map((h) => `${h.start}:${h.midi}`))
+  if (rolls.size) {
+    for (const voice of [hands, feet])
+      voice.forEach((pieces, mi) => {
+        let pos = grid[mi].startStep
+        for (const p of pieces) {
+          const roll = p.midis.filter((m) => rolls.has(`${pos}:${m}`))
+          if (roll.length) p.roll = roll
+          pos = snapThird(pos + p.duration)
+        }
+      })
+  }
   return grid.map((_, mi) =>
     [hands[mi], feet[mi]].flatMap((pieces, vi) => {
       const wholeRest = pieces.every((p) => p.midis.length === 0)

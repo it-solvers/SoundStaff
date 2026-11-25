@@ -70,6 +70,15 @@ async function drawRunningTitle(pdf: jsPDF, font: OutlineFont, title: string) {
 }
 
 /**
+ * OSMD는 감춘 쉼표를 투명색(#RRGGBB00)으로 그리는데 svg2pdf는 투명도를 몰라 검게 칠한다. 칠하지 않게 바꾼다.
+ */
+function dropTransparent(svg: SVGSVGElement): void {
+  for (const attr of ['fill', 'stroke'])
+    for (const el of Array.from(svg.querySelectorAll(`[${attr}]`)))
+      if (/^#[0-9a-f]{6}00$/i.test(el.getAttribute(attr) ?? '')) el.setAttribute(attr, 'none')
+}
+
+/**
  * svg2pdf가 읽지 못하는 글자 표기를 읽을 수 있는 형태로 바꾼다.
  * OSMD는 템포 표시(♩ = 100)만 `14pt`, `times`, `xml:space="preserve"`, 앞 공백으로 그려서
  * 그대로 변환하면 PDF에서 숫자가 빠진다. 다른 글자처럼 px 크기와 일반 글꼴 이름으로 맞춘다.
@@ -146,6 +155,7 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
 
     for (let i = 0; i < pages.length; i++) {
       const svg = pages[i]
+      dropTransparent(svg)
       // 긴 곡 제목은 쪽 폭에 맞춰 여러 줄로 나눈다 (한글이 있으면 실제로 그릴 윤곽선 글꼴로 폭을 잰다)
       wrapTitle(svg, (text, px) => (NEEDS_CJK.test(text) ? textWidth(font, text, px) : undefined))
       for (const t of Array.from(svg.querySelectorAll<SVGTextElement>('text'))) {

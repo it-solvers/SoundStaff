@@ -12,6 +12,15 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.38.0',
+    date: '2026-11-25',
+    changes: [
+      '[드럼] 아주 빠른 연타(심벌 롤 등)를 롤 기호(사선)로 적음. 재생은 연타로 들림',
+      '[드럼] 드럼 세트에서 손으로 동시에 셋 이상 치는 곳은 둘만 남김(하이햇·라이드부터 뺌)',
+      '[PDF] 감춰야 할 쉼표가 PDF에만 검게 나와 음표와 겹치던 문제를 고침',
+    ],
+  },
+  {
     version: '1.37.0',
     date: '2026-11-25',
     changes: [

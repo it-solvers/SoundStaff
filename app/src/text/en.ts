@@ -255,6 +255,9 @@ export const en: Messages = {
       `Tempo changes inside a measure were moved to the nearest measure start (${count(n, 'change')}).`,
     drumsCombined: (tracks: number, staves: number) =>
       `${count(tracks, 'percussion track')} combined into ${count(staves, 'staff')} (drum set and hand percussion). Turn off [Simplify for reading] to keep one staff per track.`,
+    drumRolls: (n: number) => `Very fast repeated percussion hits were written as rolls (slashes): ${n}.`,
+    drumHands: (n: number) =>
+      `Drum set hits that two hands cannot play at once were removed, hi-hat and ride first (${count(n, 'hit')}). Turn off [Simplify for reading] to keep them all.`,
     unknownDrums: (n: number) =>
       `Notes with unknown percussion numbers were left out of the score (${count(n, 'note')}).`,
     voicesMerged: (max: number, n: number) =>
