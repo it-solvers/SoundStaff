@@ -261,6 +261,19 @@ describe('타악기 보표', () => {
   })
 })
 
+describe('마침 세로줄', () => {
+  it('파트마다 마지막 마디의 끝에만 가는 줄 + 굵은 줄을 적는다', () => {
+    const i = info([melody, bass, drums])
+    const root = parse(buildInstrumentScore(i, defaultSettings(i)).xml)
+    for (const part of all(root, 'part')) {
+      const measures = kids(part, 'measure')
+      const bars = measures.map((m) => kids(m, 'barline').length)
+      expect(bars).toEqual(measures.map((_, k) => (k === measures.length - 1 ? 1 : 0)))
+      expect(text(kids(measures.at(-1)!, 'barline')[0], 'bar-style')).toBe('light-heavy')
+    }
+  })
+})
+
 describe('악기 줄임말', () => {
   const part = (name: string, program: number, instrumentName = name) =>
     ({ id: 'P', name, instrumentName, channel: 1, program, staves: [] }) as ScoreModel['parts'][number]

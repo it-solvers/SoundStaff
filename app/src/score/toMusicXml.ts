@@ -184,7 +184,10 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
         }
       }
     })
-    return `<measure number="${mi + 1}">${attrs}${tempo}${shiftStart}${chunks.join(`<backup><duration>${spec.length}</duration></backup>`)}${shiftStop}</measure>`
+    // 곡 끝에는 마침 세로줄(가는 줄 + 굵은 줄)
+    const finalBar =
+      mi === model.grid.length - 1 ? '<barline location="right"><bar-style>light-heavy</bar-style></barline>' : ''
+    return `<measure number="${mi + 1}">${attrs}${tempo}${shiftStart}${chunks.join(`<backup><duration>${spec.length}</duration></backup>`)}${shiftStop}${finalBar}</measure>`
   })
   return `<part id="${part.id}">\n${measures.join('\n')}\n</part>`
 }
