@@ -162,6 +162,8 @@ MIDI를 받을 수 없는 무료 요금제 사용자를 위해 **음원 파일(m
 
 ### 8.3 MusicXML 작성 기준 (Finale에서 열리는 것이 최우선)
 
+- 첫 파트의 4마디마다 `<print new-system="yes"/>`를 마디 맨 앞에 적고 `<supports element="print" attribute="new-system">`로 알린다. Finale가 따르는지는 작성자 확인 필요. (2026-11-25 작성자 요청)
+
 - 모든 파트의 마지막 마디에는 마침 세로줄(`light-heavy`)을 적는다.
 
 - 버전은 3.1 기준 (Finale 호환 버전은 확인 필요)
