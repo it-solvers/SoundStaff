@@ -10,7 +10,9 @@ import { useTheme } from '../theme/theme'
 
 /** 미리보기 악보 색: 어두운 배경에서는 밝게, 밝은 배경에서는 어둡게 */
 const INK = { dark: '#e2e8f0', light: '#0f172a' } as const
-const ZOOMS = [0.6, 0.8, 1, 1.25, 1.5, 2]
+/** 화면 확대·축소 단계. 악기가 많은 총보도 한눈에 보도록 20%까지 줄인다 */
+const ZOOMS = [0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.25, 1.5, 2]
+const DEFAULT_ZOOM_INDEX = ZOOMS.indexOf(1)
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5]
 
@@ -69,10 +71,10 @@ function draw(osmd: OpenSheetMusicDisplay): number[] {
 export default function ScoreView({ xml, model }: { xml: string; model: ScoreModel }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const osmdRef = useRef<OpenSheetMusicDisplay | null>(null)
-  const [zoomIdx, setZoomIdx] = useState(2)
+  const [zoomIdx, setZoomIdx] = useState(DEFAULT_ZOOM_INDEX)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState('')
-  const zoomRef = useRef(ZOOMS[2])
+  const zoomRef = useRef(ZOOMS[DEFAULT_ZOOM_INDEX])
   const { resolved } = useTheme()
   const boxRef = useRef<HTMLDivElement>(null)
   const timeline = useMemo(() => buildTimeline(model), [model])

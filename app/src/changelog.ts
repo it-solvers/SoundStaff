@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.29.3',
+    date: '2026-11-25',
+    changes: ['[악보 미리보기] 축소를 60%에서 20%까지 할 수 있게 함(50·40·30·20% 추가)'],
+  },
+  {
     version: '1.29.2',
     date: '2026-11-25',
     changes: [
