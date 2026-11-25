@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.31.0',
+    date: '2026-11-25',
+    changes: [
+      '[PDF 설정] 마디 배치의 기본을 [한 줄에 4마디]로 바꿈: 4마디씩 여러 줄로 쪽을 채움(이전: 한 쪽에 4마디). 마지막 줄도 쪽 폭을 채워 마침 세로줄이 오른쪽 끝에 옴',
+    ],
+  },
+  {
     version: '1.30.2',
     date: '2026-11-25',
     changes: ['[PDF] 악보가 쪽 위에 너무 붙던 것을 고쳐, 쪽마다 위 여백(약 2cm)을 두고 시작함'],

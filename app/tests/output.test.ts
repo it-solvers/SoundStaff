@@ -1,4 +1,4 @@
-import { ellipsize, measureCount, staffCount, withPageBreaks, workTitle } from '../src/score/pageLayout'
+import { ellipsize, measureCount, staffCount, workTitle } from '../src/score/pageLayout'
 import { fitZoom, PAGE_FILL_LIMIT } from '../src/score/fitPage'
 import { Midi } from '@tonejs/midi'
 import { DOMParser } from '@xmldom/xmldom'
@@ -333,12 +333,10 @@ describe('PDF 마디 배치와 쪽 제목', () => {
   const part = (id: string, n: number) =>
     `<part id="${id}">${Array.from({ length: n }, (_, i) => `<measure number="${i + 1}"><note/></measure>`).join('')}</part>`
 
-  it('첫 파트의 4마디마다 새 쪽 표시를 넣고 다른 파트는 그대로 둔다', () => {
-    const out = withPageBreaks(part('P1', 10) + part('P2', 10), 4)
-    const breaks = [...out.matchAll(/<measure number="(\d+)"><print new-page="yes"\/>/g)].map((m) => m[1])
-    expect(breaks).toEqual(['5', '9'])
-    expect(measureCount(out)).toBe(10)
-    expect(staffCount(part('P1', 1) + '<staves>2</staves>' + part('P2', 1))).toBe(3)
+  it('마디 수는 첫 파트로, 보표 수는 두 보표 파트를 2로 센다', () => {
+    const xml = part('P1', 10) + '<staves>2</staves>' + part('P2', 10)
+    expect(measureCount(xml)).toBe(10)
+    expect(staffCount(xml)).toBe(3)
   })
 
   it('제목을 읽고(특수문자 포함), 길면 …로 줄인다', () => {

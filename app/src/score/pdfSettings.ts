@@ -1,8 +1,8 @@
 export type PdfOrientation = 'portrait' | 'landscape'
 export type PdfSize = 'small' | 'normal' | 'large'
-/** 마디 배치: 한 쪽에 4마디 / 자동(들어가는 만큼) */
+/** 마디 배치: 한 줄에 4마디 / 자동(들어가는 만큼) */
 export type PdfLayout = 'four' | 'auto'
-export const MEASURES_PER_PAGE = 4
+export const MEASURES_PER_LINE = 4
 
 /** 기획서 8.6장: A4 세로(기본)·가로, 악보 크기 작게/보통/크게 */
 export interface PdfSettings {

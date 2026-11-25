@@ -7,8 +7,8 @@ import { UserError } from '../utils/errors'
 import { wrapTitle } from './wrapTitle'
 import { fitZoom, OVERFLOW_FILL, pageBounds, pageFill, TOP_MARGIN_PT } from './fitPage'
 import { parseOutlineFont, textToPathData, textWidth, type OutlineFont, type TextAnchor } from './outlineText'
-import { ellipsize, measureCount, staffCount, withPageBreaks, workTitle } from './pageLayout'
-import { DEFAULT_PDF_SETTINGS, MEASURES_PER_PAGE, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
+import { ellipsize, measureCount, staffCount, workTitle } from './pageLayout'
+import { DEFAULT_PDF_SETTINGS, MEASURES_PER_LINE, SIZE_ZOOM, type PdfSettings } from './pdfSettings'
 
 const FONT_FILE = 'SoundStaffKR-Regular.ttf'
 /** 기본 글꼴(Latin-1)로 그릴 수 없는 글자(한글 등)가 들어 있는지 */
@@ -17,6 +17,8 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 /** 이 수 이상의 보표는 한 쪽에 한 줄만 들어간다고 본다 */
 const CROWDED_STAVES = 6
 const A4_PT = { short: 595.28, long: 841.89 }
+/** 쪽 아래에 남기는 여백 (쪽 높이에 대한 비율, 쪽 번호 자리) */
+const BOTTOM_MARGIN = 0.07
 
 let fontPromise: Promise<OutlineFont> | null = null
 
@@ -110,30 +112,37 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
     autoBeam: true,
     pageFormat: landscape ? 'A4 L' : 'A4 P',
     pageBackgroundColor: '#FFFFFF',
-    // 한 쪽에 4마디: 4마디마다 넣은 "새 쪽" 표시를 따르고, 쉬는 마디를 숫자로 묶지 않는다(묶으면 마디 수가 달라진다)
-    ...(settings.layout === 'four'
-      ? { newPageFromXML: true, autoGenerateMultipleRestMeasuresFromRestMeasures: false }
-      : {}),
+    // 한 줄에 4마디: 쉬는 마디를 숫자로 묶지 않는다(묶으면 한 줄의 마디 수가 달라진다)
+    ...(settings.layout === 'four' ? { autoGenerateMultipleRestMeasuresFromRestMeasures: false } : {}),
   })
-  // 보표가 많으면 한 쪽에 한 줄만 들어가므로 4마디를 한 줄에 놓고, 악보가 지나치게 작아지지 않게 음표 사이를 좁힌다.
-  // 보표가 적으면 줄을 자연스럽게 나눠(한 쪽 4마디는 그대로) 음표가 겹치지 않게 둔다
-  if (settings.layout === 'four' && staffCount(xml) >= CROWDED_STAVES) {
-    osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = MEASURES_PER_PAGE
-    osmd.EngravingRules.VoiceSpacingMultiplierVexflow = 0.7
-    osmd.EngravingRules.VoiceSpacingAddendVexflow = 2
+  const rules = osmd.EngravingRules
+  if (settings.layout === 'four') {
+    rules.RenderXMeasuresPerLineAkaSystem = MEASURES_PER_LINE
+    rules.StretchLastSystemLine = true // 마지막 줄도 쪽 폭을 채워 마침 세로줄이 오른쪽 끝에 오게 한다
+    // 보표가 많으면 악보가 지나치게 작아지지 않게 음표 사이를 좁힌다 (보표가 적을 때 좁히면 음표가 겹친다)
+    if (staffCount(xml) >= CROWDED_STAVES) {
+      rules.VoiceSpacingMultiplierVexflow = 0.7
+      rules.VoiceSpacingAddendVexflow = 2
+    }
   }
   try {
-    await osmd.load(settings.layout === 'four' ? withPageBreaks(xml, MEASURES_PER_PAGE) : xml)
+    await osmd.load(xml)
     const drawn = () => Array.from(container.querySelectorAll<SVGSVGElement>(':scope > div > svg, :scope > svg'))
-    // 4마디 배치에서 만들어져야 할 쪽수. 이보다 많으면 4마디가 한 쪽에 못 들어간 것이다
-    const wanted = settings.layout === 'four' ? Math.ceil(measureCount(xml) / MEASURES_PER_PAGE) : Infinity
-    // 고른 크기로 그렸을 때 쪽 아래가 잘리거나 4마디가 한 쪽을 넘으면, 들어갈 때까지 작게 다시 그린다
+    // 한 줄에 4마디 배치에서 만들어져야 할 줄 수. 이보다 많으면 4마디가 한 줄에 못 들어간 것이다
+    const wanted = settings.layout === 'four' ? Math.ceil(measureCount(xml) / MEASURES_PER_LINE) : Infinity
+    const lines = () => osmd.GraphicSheet.MusicPages.reduce((a, p) => a + p.MusicSystems.length, 0)
+    const landscapePage = settings.orientation === 'landscape'
+    const pageHeightPt = landscapePage ? A4_PT.short : A4_PT.long
+    const aspect = landscapePage ? A4_PT.short / A4_PT.long : A4_PT.long / A4_PT.short
+    // 고른 크기로 그렸을 때 쪽 아래가 잘리거나 4마디가 한 줄을 넘으면, 들어갈 때까지 작게 다시 그린다
     fitZoom(SIZE_ZOOM[settings.size], (zoom) => {
       osmd.zoom = zoom
+      // 줄을 쪽에 나눠 담을 때부터 위·아래 여백을 남긴다 (OSMD의 단위는 10px이라 크기에 따라 달라진다)
+      const pageUnits = (container.clientWidth / (10 * zoom)) * aspect
+      rules.PageTopMargin = (TOP_MARGIN_PT.next / pageHeightPt) * pageUnits
+      rules.PageBottomMargin = BOTTOM_MARGIN * pageUnits
       osmd.render()
-      const now = drawn()
-      const pageHeight = settings.orientation === 'landscape' ? A4_PT.short : A4_PT.long
-      return Math.max(pageFill(now, TOP_MARGIN_PT.next / pageHeight), now.length > wanted ? OVERFLOW_FILL : 0)
+      return Math.max(pageFill(drawn(), TOP_MARGIN_PT.next / pageHeightPt), lines() > wanted ? OVERFLOW_FILL : 0)
     })
     const pages = drawn()
     if (!pages.length) throw new UserError(t.errors.pdfNoPages)

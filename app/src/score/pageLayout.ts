@@ -1,18 +1,5 @@
 /** PDF의 마디 배치와 둘째 쪽부터의 제목 */
 
-/** 첫 파트의 perPage 마디마다 "새 쪽" 표시를 넣은 MusicXML (PDF를 그릴 때만 쓰고 내려받는 파일은 바꾸지 않는다) */
-export function withPageBreaks(xml: string, perPage: number): string {
-  const end = xml.indexOf('</part>')
-  if (end < 0) return xml
-  let index = 0
-  const first = xml
-    .slice(0, end)
-    .replace(/<measure number="[^"]*">/g, (tag) =>
-      index++ > 0 && (index - 1) % perPage === 0 ? `${tag}<print new-page="yes"/>` : tag,
-    )
-  return first + xml.slice(end)
-}
-
 /** 곡의 마디 수 (첫 파트 기준) */
 export function measureCount(xml: string): number {
   const end = xml.indexOf('</part>')

@@ -309,7 +309,7 @@ export const ko = {
     landscape: 'A4 가로',
     size: '악보 크기',
     layout: '마디 배치',
-    layouts: { four: '한 쪽에 4마디', auto: '자동 (들어가는 만큼)' },
+    layouts: { four: '한 줄에 4마디', auto: '자동 (들어가는 만큼)' },
     sizes: { small: '작게', normal: '보통', large: '크게' },
     finaleHelp:
       'MusicXML(뮤직엑스엠엘, 악보 교환용 표준 파일 형식)은 Finale(피날레, 악보 제작 프로그램)에서 파일 → 열기(또는 가져오기)로 불러옵니다. Finale는 PC에서만 쓸 수 있으므로 폰에서 받았다면 PC로 옮겨서 여세요. 자동 변환 결과이므로 Finale에서 확인하고 고쳐 주세요.',
