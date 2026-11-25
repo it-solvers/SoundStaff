@@ -3,12 +3,10 @@ import { AnalysisCancelled, analyzeAudioFile } from './audio/analyze'
 import { isPhoneOrTablet, readDeviceEnv } from './audio/device'
 import { kindOfFile } from './audio/format'
 import AnalysisProgress, { type AnalysisState } from './components/AnalysisProgress'
-import LanguageLink from './components/LanguageLink'
-import ThemeToggle from './components/ThemeToggle'
 import AudioUpload, { AudioNotes } from './components/AudioUpload'
 import ChangeLog from './components/ChangeLog'
 import Notices from './components/Notices'
-import StepBar from './components/StepBar'
+import TopBar from './components/TopBar'
 import OptionsPanel from './components/OptionsPanel'
 import OutputCard, { type OutputItem } from './components/OutputCard'
 import ScorePanel, { type PanelItem } from './components/ScorePanel'
@@ -25,7 +23,6 @@ import type { OutputUnit } from './score/types'
 import { t } from './text'
 import { checkBrowserSupport, reportError } from './utils/errors'
 import { baseName, safeFileName } from './utils/fileName'
-import { APP_VERSION } from './version'
 
 interface FailedFile {
   fileName: string
@@ -201,24 +198,7 @@ export default function App() {
 
   return (
     <>
-      {/* Sticky header: 제목과 단계 막대를 한 덩어리로 화면 위에 붙인다 (화면 전체 폭, 내용은 본문과 같은 폭) */}
-      <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950" data-testid="top-bar">
-        <div className="mx-auto max-w-5xl px-4 pt-3 pb-2 sm:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <h1 className="text-xl font-semibold tracking-tight whitespace-nowrap sm:text-3xl">
-              {t.appName}{' '}
-              <span className="text-sm font-normal text-slate-400 sm:text-[22px]" data-testid="app-version">
-                ({APP_VERSION})
-              </span>
-            </h1>
-            <div className="flex items-center gap-1 sm:gap-3">
-              <LanguageLink />
-              <ThemeToggle />
-            </div>
-          </div>
-          {!unsupported && <StepBar current={step} />}
-        </div>
-      </header>
+      <TopBar step={step} showSteps={!unsupported} />
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
         <div>
           <p className="text-sm text-slate-300" data-testid="tagline">

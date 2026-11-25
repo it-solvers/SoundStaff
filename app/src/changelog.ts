@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.41.0',
+    date: '2026-11-25',
+    changes: [
+      '[화면] 머리말이 접히게 함: 맨 위에서는 큰 제목과 단계 설명이 보이고, 스크롤하면 제목이 작아지며 설명이 사라져 얇아지고 아래에 그림자가 생김. 본문은 밀리지 않음',
+    ],
+  },
+  {
     version: '1.40.1',
     date: '2026-11-25',
     changes: ['[화면] 단계 설명 앞의 "1/4" 표시를 없앰 (위의 단계 번호와 같은 뜻이라 중복)'],

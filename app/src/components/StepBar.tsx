@@ -3,10 +3,10 @@ import { t } from '../text'
 /**
  * 제목 아래의 얇은 단계 막대. 제목과 함께 화면 위에 붙어(App.tsx) 스크롤을 내려도 지금 어느 단계인지 보인다.
  */
-export default function StepBar({ current }: { current: 1 | 2 | 3 | 4 }) {
+export default function StepBar({ current, compact }: { current: 1 | 2 | 3 | 4; compact: boolean }) {
   const steps = t.guide.steps
   return (
-    <nav aria-label={t.guide.title} data-testid="step-bar" className="mt-2">
+    <nav aria-label={t.guide.title} data-testid="step-bar">
       <ol className="flex min-w-0 items-center gap-1 text-xs sm:gap-2 sm:text-sm">
         {t.guide.short.map((label, i) => {
           const no = i + 1
@@ -40,7 +40,14 @@ export default function StepBar({ current }: { current: 1 | 2 | 3 | 4 }) {
           )
         })}
       </ol>
-      <p className="mt-1 truncate text-xs text-slate-300 sm:text-sm" data-testid="step-bar-desc">
+      {/* 머리말이 접히면 설명 줄을 감춘다 */}
+      <p
+        className={`truncate text-xs leading-5 text-slate-300 transition-[height,opacity] duration-300 ease-out motion-reduce:transition-none sm:text-sm ${
+          compact ? 'h-0 overflow-hidden opacity-0' : 'h-5 opacity-100'
+        }`}
+        aria-hidden={compact}
+        data-testid="step-bar-desc"
+      >
         {t.guide.barLabel(steps[current - 1].title, steps[current - 1].desc)}
       </p>
     </nav>
