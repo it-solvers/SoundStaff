@@ -7,7 +7,7 @@ const count = (n: number, word: string) => `${n} ${n === 1 ? word : word === 'st
 export const en: Messages = {
   appName: 'SoundStaff',
   language: { label: '한국어', lang: 'ko', href: '../' },
-  tagline: 'Turn audio or MIDI files into sheet music. Your files never leave your computer.',
+  tagline: 'Turn MIDI or audio files into sheet music. Your files never leave your computer.',
   fitGuide: {
     heading: 'How well does audio work?',
     items: [

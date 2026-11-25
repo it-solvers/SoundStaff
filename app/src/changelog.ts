@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.49.0',
+    date: '2026-11-25',
+    changes: ['[화면] 첫 화면 소개 문장에서 MIDI를 음원보다 앞에 적음'],
+  },
+  {
     version: '1.48.0',
     date: '2026-11-25',
     changes: [
