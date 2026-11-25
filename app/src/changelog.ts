@@ -12,6 +12,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.45.0',
+    date: '2026-11-25',
+    changes: [
+      '[음원] [노래: 목소리만 분리해서 만들기] 추가: 브라우저 안에서 목소리를 분리해 멜로디 악보를 만듦 (빠르기는 원곡에서 읽음). 켠 경우에만 처음 한 번 약 30MB를 내려받고, 목소리가 거의 없으면 원곡으로 만들고 알림',
+      '화면 맨 아래에 목소리 분리 모델(Open-Unmix UMX-HQ) 출처를 표시',
+    ],
+  },
+  {
     version: '1.44.0',
     date: '2026-11-25',
     changes: [

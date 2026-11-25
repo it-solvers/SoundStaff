@@ -6,12 +6,16 @@ export interface AnalysisState {
   stage: AnalysisStage
   /** AI 단계와 음표 정리 단계에서 알 수 있는 실제 진행률 (0~100). 다른 단계는 임의의 숫자를 보이지 않고 단계 이름만 보인다. */
   percent?: number
+  /** 목소리 분리 단계를 거치는 분석 */
+  vocalsOnly?: boolean
 }
 
-const ORDER: AnalysisStage[] = ['decode', 'resample', 'ai', 'finish']
+const ORDER: AnalysisStage[] = ['decode', 'resample', 'separate', 'ai', 'finish']
 
 export default function AnalysisProgress({ state, onCancel }: { state: AnalysisState; onCancel: () => void }) {
-  const current = ORDER.indexOf(state.stage)
+  const stages = ORDER.filter((s) => s !== 'separate' || state.vocalsOnly)
+  const current = stages.indexOf(state.stage)
+  const measured = state.stage === 'separate' || state.stage === 'ai' || state.stage === 'finish'
   return (
     <section
       className="rounded-xl border border-sky-800 bg-sky-950 p-4 sm:p-5"
@@ -31,7 +35,7 @@ export default function AnalysisProgress({ state, onCancel }: { state: AnalysisS
         </button>
       </div>
       <ol className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        {ORDER.map((s, i) => (
+        {stages.map((s, i) => (
           <li
             key={s}
             data-testid="analysis-stage"
@@ -40,11 +44,11 @@ export default function AnalysisProgress({ state, onCancel }: { state: AnalysisS
           >
             {i < current ? '✓ ' : i === current ? '▶ ' : '· '}
             {t.audio.stages[s]}
-            {(s === 'ai' || s === 'finish') && i === current && state.percent !== undefined ? ` ${state.percent}%` : ''}
+            {measured && i === current && state.percent !== undefined ? ` ${state.percent}%` : ''}
           </li>
         ))}
       </ol>
-      {(state.stage === 'ai' || state.stage === 'finish') && (
+      {measured && (
         <progress className="mt-3 h-2 w-full" max={100} value={state.percent ?? 0} data-testid="analysis-bar" />
       )}
     </section>

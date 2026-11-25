@@ -1,5 +1,6 @@
 import { t } from '../text'
 import { UserError } from '../utils/errors'
+import { SEPARATION_RATE } from './separate'
 
 /** Basic Pitch가 요구하는 입력 형식: 모노 22,050Hz (기획서 8.5장 1번) */
 export const ANALYSIS_SAMPLE_RATE = 22050
@@ -56,4 +57,22 @@ export async function toMono22k(decoded: AudioBuffer): Promise<Float32Array> {
   for (let i = 0; i < pcm.length; i++) peak = Math.max(peak, Math.abs(pcm[i]))
   if (peak < 1e-4) throw new UserError(t.errors.silent)
   return pcm
+}
+
+/** 목소리 분리에 넣을 44.1kHz 스테레오 (한 채널 음원은 양쪽에 같은 소리) */
+export async function toStereo44k(decoded: AudioBuffer): Promise<[Float32Array, Float32Array]> {
+  const offline = new OfflineAudioContext(2, Math.ceil(decoded.duration * SEPARATION_RATE), SEPARATION_RATE)
+  const src = offline.createBufferSource()
+  src.buffer = decoded
+  src.connect(offline.destination)
+  src.start()
+  const out = await offline.startRendering()
+  return [out.getChannelData(0).slice(), out.getChannelData(1).slice()]
+}
+
+/** 분리한 목소리(모노 44.1kHz)를 toMono22k에 넣을 수 있는 버퍼로 */
+export function monoBuffer(pcm: Float32Array): AudioBuffer {
+  const buf = new AudioBuffer({ length: pcm.length, numberOfChannels: 1, sampleRate: SEPARATION_RATE })
+  buf.getChannelData(0).set(pcm)
+  return buf
 }

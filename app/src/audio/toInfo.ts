@@ -22,6 +22,7 @@ export interface AudioResult {
   fileName: string
   size: number
   durationSec: number
+  vocals?: 'used' | 'notFound'
   /** 주 멜로디만 골라낸 한 줄 선율 */
   notes: AudioNote[]
   /** 거르기를 마친 모든 음표 (없으면 멜로디와 같다) */
@@ -171,8 +172,9 @@ export function audioToInfo(r: AudioResult): MidiFileInfo {
         tonic: tonicName(r.key.value.fifths, r.key.value.mode),
       },
     ],
-    tracks: audioTracks(r, 'full', r.bpm.value, true, true),
+    tracks: audioTracks(r, r.vocals === 'used' ? 'melody' : 'full', r.bpm.value, true, true),
     audio: {
+      vocals: r.vocals,
       notes: r.notes,
       allNotes: r.allNotes ?? r.notes,
       beatTimes: r.beatTimes,

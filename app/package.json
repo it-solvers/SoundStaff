@@ -1,7 +1,7 @@
 {
   "name": "soundstaff",
   "private": true,
-  "version": "1.44.0",
+  "version": "1.45.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,6 +20,7 @@
     "@tonejs/midi": "^2.0.28",
     "fflate": "^0.8.3",
     "jspdf": "^4.2.1",
+    "onnxruntime-web": "^1.22.0",
     "opensheetmusicdisplay": "^3.0.0",
     "opentype.js": "^2.0.0",
     "react": "^19.3.1",

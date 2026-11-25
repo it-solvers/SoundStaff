@@ -14,6 +14,7 @@ const post = (m: AnalyzeResponse) => self.postMessage(m)
 /** 음원 분석은 무거워서 화면이 멈추지 않도록 별도 스레드에서 실행한다 (기획서 7장). 음원은 이 브라우저 밖으로 나가지 않는다. */
 self.onmessage = async (e: MessageEvent<AnalyzeRequest>) => {
   const { pcm, sampleRate, modelUrl } = e.data
+  const beatSource = e.data.tempoPcm ?? pcm // 목소리에는 박을 알려 주는 반주가 없어 원곡에서 읽는다
   const t0 = performance.now()
   try {
     const { raw, backend } = await detectNotes(pcm, modelUrl, (percent) => post({ type: 'progress', percent }))
@@ -45,7 +46,7 @@ self.onmessage = async (e: MessageEvent<AnalyzeRequest>) => {
     if (allNotes.length < MIN_MELODY_NOTES) return post({ type: 'error', code: 'noNotes' })
 
     // 템포: 파형 기반 추정을 우선하고, 근거가 약하면 음표 간격으로 보완한다 (기획서 8.5장 4번)
-    const fromAudio = estimateBpmFromAudio(pcm, sampleRate)
+    const fromAudio = estimateBpmFromAudio(beatSource, sampleRate)
     const bpm =
       fromAudio && fromAudio.confidence >= 0.1
         ? fromAudio
@@ -56,7 +57,7 @@ self.onmessage = async (e: MessageEvent<AnalyzeRequest>) => {
     // 박 추적: 연주가 느려지거나 빨라지면(마디 템포가 6% 이상 바뀌면) 박 지도로 박 위치를 정한다. 실패해도 일정한 템포로 계속한다.
     let beatTimes: number[] | undefined
     try {
-      beatTimes = usefulBeatTimes(trackBeats(pcm, sampleRate, bpm.value), bpm.value) ?? undefined
+      beatTimes = usefulBeatTimes(trackBeats(beatSource, sampleRate, bpm.value), bpm.value) ?? undefined
     } catch (err) {
       console.error(err)
     }

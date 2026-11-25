@@ -67,6 +67,8 @@ export interface AudioSourceInfo {
   allNotes: AudioNote[]
   /** 추적한 박의 시각(초). 있으면 연주의 느려짐·빨라짐을 따라 박 위치를 정한다 (일정한 템포면 없다) */
   beatTimes?: number[]
+  /** 목소리만 분리해서 만들기를 골랐을 때: used 분리한 목소리를 분석함 / notFound 목소리가 거의 없어 원곡을 분석함 */
+  vocals?: 'used' | 'notFound'
   /** 거르기 전에 AI가 찾은 음표 수 */
   detectedCount: number
   /** 주파수 분석 보정으로 새로 넣은 음·뺀 음 수 */

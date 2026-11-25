@@ -2,7 +2,7 @@ import type { MidiFileInfo } from '../midi/types'
 import { resolveEditTuning } from '../audio/editTuning'
 import { MERGE_GAP_SECONDS, mergeRepeatedNotes } from '../audio/notes'
 import { audioTracks } from '../audio/toInfo'
-import type { ScoreSettings } from './types'
+import type { AudioMode, ScoreSettings } from './types'
 
 /** 고치기 쉽게(편집용) 방식인가: 들리는 대로 + 읽기 쉽게 정리하기가 켜져 있고 편집용도 켠 경우 */
 export const isEditMode = (s: ScoreSettings) => (s.audioMode ?? 'full') === 'full' && !!s.audioSimplify && !!s.audioEdit
@@ -11,6 +11,9 @@ export const isEditMode = (s: ScoreSettings) => (s.audioMode ?? 'full') === 'ful
  * 음원 분석 결과는 음표를 초 단위로 갖고 있다. 악보를 만들 때 지금 템포(사용자가 고친 값 포함)에 맞춰 박 위치(틱)로 환산한다.
  * 그래야 템포를 바꾸면 박자 구조가 그에 맞게 다시 만들어진다. MIDI 파일은 그대로 돌려준다.
  */
+/** 악보 방식의 기본값: 분리한 목소리는 멜로디만, 그 밖에는 들리는 대로 */
+export const defaultAudioMode = (info: MidiFileInfo): AudioMode => (info.audio?.vocals === 'used' ? 'melody' : 'full')
+
 export function materializeAudio(info: MidiFileInfo, settings: ScoreSettings): MidiFileInfo {
   if (info.source !== 'audio' || !info.audio) return info
   const bpm = settings.tempos[0]?.bpm ?? info.tempos[0].bpm

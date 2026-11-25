@@ -1,5 +1,5 @@
 import type { MidiFileInfo } from '../midi/types'
-import { materializeAudio } from '../score/audioInfo'
+import { defaultAudioMode, materializeAudio } from '../score/audioInfo'
 import { applySettings, type SettingsOverride } from '../score/settings'
 import { t } from '../text'
 import ScoreResult, { type ScoreState } from './ScoreResult'
@@ -43,7 +43,7 @@ export default function OutputCard({ item, override, state, busy, onChange }: Pr
         excluded={override.excludedTracks}
         muted={override.mutedTracks}
         onChange={onChange}
-        reorder={!(item.info.source === 'audio' && (override.audioMode ?? 'full') === 'full')}
+        reorder={!(item.info.source === 'audio' && (override.audioMode ?? defaultAudioMode(item.info)) === 'full')}
       />
       {state && <ScoreResult state={state} />}
     </section>

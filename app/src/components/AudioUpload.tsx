@@ -6,11 +6,13 @@ interface Props {
   /** 폰·태블릿이면 메뉴를 숨기고 PC 이용 안내만 보여 준다 (기획서 6.1장) */
   phone: boolean
   disabled?: boolean
+  vocalsOnly: boolean
+  onVocalsOnly: (on: boolean) => void
   onFiles: (files: File[]) => void
 }
 
 /** 음원(mp3, wav 등) 분석 첨부 영역. PC 전용이며 정확도가 낮을 수 있다는 경고를 항상 함께 보여 준다. */
-export default function AudioUpload({ phone, disabled, onFiles }: Props) {
+export default function AudioUpload({ phone, disabled, vocalsOnly, onVocalsOnly, onFiles }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
 
@@ -47,6 +49,20 @@ export default function AudioUpload({ phone, disabled, onFiles }: Props) {
         {t.audio.heading} <span className="text-sm font-normal text-slate-400">({t.audio.pcOnly})</span>
       </p>
       <p className="mt-1 text-sm text-slate-400">{t.audio.hint}</p>
+      <label className="mt-3 flex max-w-sm cursor-pointer items-start gap-2 text-left text-sm">
+        <input
+          type="checkbox"
+          className="mt-1 h-4 w-4 shrink-0 accent-sky-600"
+          checked={vocalsOnly}
+          disabled={disabled}
+          onChange={(e) => onVocalsOnly(e.target.checked)}
+          data-testid="vocals-only"
+        />
+        <span>
+          <span className="font-medium text-slate-100">{t.audio.vocals.label}</span>
+          <span className="block text-xs text-slate-400">{t.audio.vocals.desc}</span>
+        </span>
+      </label>
       <button
         type="button"
         disabled={disabled}

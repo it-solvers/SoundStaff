@@ -1,3 +1,4 @@
+import { defaultAudioMode } from '../score/audioInfo'
 import { useState } from 'react'
 import { prettyTonic, tonicName } from '../midi/keys'
 import type { MidiFileInfo } from '../midi/types'
@@ -67,7 +68,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
           <legend className="text-xs text-slate-400">{t.audio.mode.legend}</legend>
           <div className="mt-1 grid gap-2 sm:grid-cols-2">
             {(['full', 'melody'] as const).map((m) => {
-              const on = (override.audioMode ?? 'full') === m
+              const on = (override.audioMode ?? defaultAudioMode(info)) === m
               return (
                 <label
                   key={m}
@@ -99,7 +100,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
               )
             })}
           </div>
-          {(override.audioMode ?? 'full') === 'full' && (override.audioSimplify ?? true) && (
+          {(override.audioMode ?? defaultAudioMode(info)) === 'full' && (override.audioSimplify ?? true) && (
             <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-edit-label">
               <input
                 type="checkbox"
@@ -114,7 +115,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
               </span>
             </label>
           )}
-          {(override.audioMode ?? 'full') === 'full' &&
+          {(override.audioMode ?? defaultAudioMode(info)) === 'full' &&
             !((override.audioEdit ?? true) && (override.audioSimplify ?? true)) && (
               <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-emphasis-label">
                 <input
@@ -130,7 +131,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
                 </span>
               </label>
             )}
-          {(override.audioMode ?? 'full') === 'full' && (
+          {(override.audioMode ?? defaultAudioMode(info)) === 'full' && (
             <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-merge-label">
               <input
                 type="checkbox"
@@ -145,7 +146,7 @@ export default function SettingsForm({ info, override, onChange }: Props) {
               </span>
             </label>
           )}
-          {(override.audioMode ?? 'full') === 'full' && (
+          {(override.audioMode ?? defaultAudioMode(info)) === 'full' && (
             <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="audio-simplify-label">
               <input
                 type="checkbox"

@@ -1,3 +1,4 @@
+import { defaultAudioMode } from './audioInfo'
 import type { EditTuning } from '../audio/editTuning'
 import { MAJOR_BY_FIFTHS, accidentalsLabel, prettyTonic, tonicName, type KeyMode } from '../midi/keys'
 import type { MidiFileInfo } from '../midi/types'
@@ -71,7 +72,7 @@ export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): Sco
     title: o.title?.trim() ? o.title.normalize('NFC').trim() : f.title,
     composer: o.composer?.normalize('NFC').trim() ?? '',
     midiTidy: o.midiTidy ?? true,
-    audioMode: o.audioMode ?? 'full',
+    audioMode: o.audioMode ?? defaultAudioMode(info),
     audioSimplify: o.audioSimplify ?? true,
     audioMerge: o.audioMerge ?? true,
     audioEdit: o.audioEdit ?? true,

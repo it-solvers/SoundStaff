@@ -87,6 +87,12 @@ export const ko = {
       '음원은 소리만으로 음을 찾기 때문에 여러 악기가 섞인 곡은 틀린 음이 많고 악기도 구분하지 못합니다. 음원은 초안용으로 쓰고, 가능하면 MIDI를 사용하세요.',
     warningMore: '자동 분석 결과는 오류가 있을 수 있습니다. 가능하면 MIDI를 사용하세요.',
     vocalHint: '보컬만 분리된 파일(보컬 스템)을 올리면 훨씬 정확합니다.',
+    vocals: {
+      label: '노래: 목소리만 분리해서 만들기',
+      desc: '파일을 고르기 전에 켜 두세요. 목소리 선율이 훨씬 잘 들립니다. 처음 한 번 약 30MB를 내려받고, 시간과 메모리(약 1GB)가 더 듭니다. 연주곡에는 켜지 마세요.',
+      used: '분리한 목소리로 악보를 만들었습니다([멜로디만]). 빠르기는 원곡에서 읽었습니다.',
+      notFound: '목소리가 거의 들리지 않아 노래가 아닌 것으로 보고 원곡으로 악보를 만들었습니다.',
+    },
     edit: {
       label: '고치기 쉽게 (악보 프로그램 편집용)',
       desc: '같은 음은 끊지 않고 하나로 이어 붙이고, 한 보표에 한 성부(화음)로 단순하게 만듭니다. 아주 짧은 음과 겹쳐 이어지는 음은 빠질 수 있지만 악보 프로그램에서 고치기 훨씬 쉽습니다. 끄면 이전처럼 음을 최대한 살립니다.',
@@ -124,6 +130,7 @@ export const ko = {
     stages: {
       decode: '음원을 읽는 중',
       resample: '분석용으로 변환하는 중',
+      separate: '목소리를 분리하는 중',
       ai: 'AI가 음표를 찾는 중',
       finish: '음표를 정리하는 중',
     },
@@ -336,13 +343,16 @@ export const ko = {
   footer: {
     copyright: '© 2026 아이티해결단',
     license: 'MIT 라이선스',
-    credit: '피아노 소리: Salamander Grand Piano (Alexander Holm, CC BY 3.0)',
+    credit:
+      '피아노 소리: Salamander Grand Piano (Alexander Holm, CC BY 3.0) · 목소리 분리: Open-Unmix UMX-HQ (Inria, MIT 라이선스)',
   },
 
   /** 기획서 11.3장 오류 처리 목록 */
   errors: {
     unreadable: '파일을 읽을 수 없습니다. 다른 파일로 시도해 주세요.',
     unsupportedFormat: '지원하는 형식: mid, midi, mp3, wav, m4a, ogg, flac',
+    separationFailed:
+      '목소리 분리에 실패했습니다. [목소리만 분리해서 만들기]를 끄고 다시 시도하거나, 더 짧은 파일을 써 주세요.',
     analysisFailed: '음원 분석에 실패했습니다. 더 짧은 파일로 시도하거나 PC에서 이용해 주세요.',
     audioTooBig: (mb: string, maxMb: number) => `음원 파일이 너무 큽니다 (${mb}MB). 최대 ${maxMb}MB까지 지원합니다.`,
     audioTooLong: (maxMin: number) => `음원이 너무 깁니다. 최대 ${maxMin}분까지 지원합니다.`,

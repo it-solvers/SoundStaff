@@ -81,6 +81,12 @@ export const en: Messages = {
       'Notes are found from sound alone, so songs with mixed instruments have many wrong notes and instruments are not told apart. Treat audio results as a draft and use MIDI when you can.',
     warningMore: 'Automatic analysis can contain errors. Use MIDI when you can.',
     vocalHint: 'An isolated vocal file (vocal stem) gives much better results.',
+    vocals: {
+      label: 'Songs: use the separated voice only',
+      desc: 'Turn on before choosing a file. The vocal melody comes through much better. About 30MB is downloaded the first time, and it needs more time and memory (about 1GB). Leave off for instrumental music.',
+      used: 'The score was made from the separated voice ([Melody only]). The tempo was read from the original.',
+      notFound: 'Hardly any voice was heard, so this was treated as instrumental and the original audio was used.',
+    },
     edit: {
       label: 'Easy to edit (for notation programs)',
       desc: 'Joins repeated notes into one and keeps each staff to a single voice (chords). Very short and overlapping notes may be dropped, but the score is much easier to fix in a notation program. Turn off to keep as many notes as possible.',
@@ -118,6 +124,7 @@ export const en: Messages = {
     stages: {
       decode: 'Reading the audio',
       resample: 'Preparing for analysis',
+      separate: 'Separating the voice',
       ai: 'AI is finding notes',
       finish: 'Cleaning up notes',
     },
@@ -338,12 +345,15 @@ export const en: Messages = {
   footer: {
     copyright: '© 2026 아이티해결단 (it-solvers)',
     license: 'MIT License',
-    credit: 'Piano sound: Salamander Grand Piano (Alexander Holm, CC BY 3.0)',
+    credit:
+      'Piano sound: Salamander Grand Piano (Alexander Holm, CC BY 3.0) · Voice separation: Open-Unmix UMX-HQ (Inria, MIT license)',
   },
 
   errors: {
     unreadable: 'Could not read the file. Please try another one.',
     unsupportedFormat: 'Supported formats: mid, midi, mp3, wav, m4a, ogg, flac',
+    separationFailed:
+      'Voice separation failed. Turn off [use the separated voice only] and try again, or use a shorter file.',
     analysisFailed: 'Audio analysis failed. Try a shorter file or use a computer.',
     audioTooBig: (mb: string, maxMb: number) => `The audio file is too large (${mb}MB). The limit is ${maxMb}MB.`,
     audioTooLong: (maxMin: number) => `The audio is too long. The limit is ${maxMin} minutes.`,

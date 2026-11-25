@@ -29,6 +29,8 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   // 음원 분석 작업 스레드(Web Worker)를 모듈 형식으로 묶는다 (AI 라이브러리를 가져오기 위해)
   worker: { format: 'es' },
+  // onnxruntime-web은 자기 wasm 파일을 상대 주소로 찾으므로 개발 서버에서 미리 묶지 않는다
+  optimizeDeps: { exclude: ['onnxruntime-web'] },
   build: {
     // 악보 그리기(OSMD)·PDF 만들기 묶음은 원래 크고, 해당 기능을 쓸 때만 내려받으므로 경고 기준을 넉넉히 둔다
     chunkSizeWarningLimit: 2000,

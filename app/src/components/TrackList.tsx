@@ -44,6 +44,7 @@ export default function TrackList({ info }: { info: MidiFileInfo }) {
           data-testid="audio-banner"
         >
           <p className="font-medium">{t.audio.warningGeneric}</p>
+          {info.audio.vocals && <p data-testid="audio-vocals">{t.audio.vocals[info.audio.vocals]}</p>}
           <p data-testid="audio-summary">
             {t.audio.summary(
               info.audio.detectedCount,

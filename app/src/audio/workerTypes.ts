@@ -2,8 +2,20 @@ import type { AudioNote } from '../midi/types'
 import type { KeyGuess } from './key'
 import type { Estimate } from './types'
 
+export interface SeparateRequest {
+  /** 44.1kHz 스테레오 */
+  left: Float32Array
+  right: Float32Array
+  modelUrl: string
+}
+
+export type SeparateResponse =
+  { type: 'progress'; percent: number } | { type: 'result'; vocals: Float32Array; ratio: number } | { type: 'error' }
+
 export interface AnalyzeRequest {
   pcm: Float32Array
+  /** 빠르기·박을 읽을 소리 (목소리만 분석할 때는 반주가 있는 원곡). 없으면 pcm */
+  tempoPcm?: Float32Array
   sampleRate: number
   modelUrl: string
 }

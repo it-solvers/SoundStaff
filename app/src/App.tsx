@@ -70,6 +70,8 @@ export default function App() {
   const [phone, setPhone] = useState(() => isPhoneOrTablet(readDeviceEnv()))
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  /** 음원에서 목소리만 분리해서 만들기 (다음에 첨부하는 음원부터) */
+  const [vocalsOnly, setVocalsOnly] = useState(false)
   /** 설정을 바꾼 뒤 아직 다시 만들지 않은 악보: 항목 id → 예약 */
   const pendingRef = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const [rebuilding, setRebuilding] = useState<ReadonlySet<string>>(new Set())
@@ -123,12 +125,13 @@ export default function App() {
         for (const file of audio) {
           const ctrl = new AbortController()
           abortRef.current = ctrl
-          setAnalysis({ fileName: file.name.normalize('NFC'), stage: 'decode' })
+          setAnalysis({ fileName: file.name.normalize('NFC'), stage: 'decode', vocalsOnly })
           try {
             const info = await analyzeAudioFile(
               file,
-              (stage, percent) => setAnalysis({ fileName: file.name.normalize('NFC'), stage, percent }),
+              (stage, percent) => setAnalysis({ fileName: file.name.normalize('NFC'), stage, percent, vocalsOnly }),
               ctrl.signal,
+              { vocalsOnly },
             )
             setFiles((prev) => [...prev, info])
             // 분석이 끝나면 바로 주 멜로디 악보를 만들어 하단에 보여 준다 (기획서 5장 7번)
@@ -270,7 +273,13 @@ export default function App() {
             {/* MIDI 첨부와 음원 분석 카드를 PC에서는 좌우로, 폰·태블릿에서는 위아래로 배치한다 */}
             <div className={phone ? 'flex flex-col gap-4' : 'grid gap-4 md:grid-cols-2'} data-testid="upload-cards">
               <UploadZone disabled={loading} phone={phone} onFiles={handleFiles} />
-              <AudioUpload phone={phone} disabled={loading} onFiles={handleFiles} />
+              <AudioUpload
+                phone={phone}
+                disabled={loading}
+                vocalsOnly={vocalsOnly}
+                onVocalsOnly={setVocalsOnly}
+                onFiles={handleFiles}
+              />
             </div>
             {analysis && <AnalysisProgress state={analysis} onCancel={() => abortRef.current?.abort()} />}
             {loading && <p className="text-sm text-slate-300">{t.upload.reading}</p>}
