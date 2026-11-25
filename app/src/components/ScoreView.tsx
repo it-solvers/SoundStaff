@@ -407,6 +407,9 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
       >
         <div ref={hostRef} data-testid="score-view" />
       </div>
+      <p className="mt-2 text-center text-xs text-slate-400" data-testid="score-rights">
+        {t.nonCommercial.notice}
+      </p>
     </div>
   )
 }

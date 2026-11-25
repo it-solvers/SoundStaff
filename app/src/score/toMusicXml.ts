@@ -1,3 +1,4 @@
+import { t } from '../text'
 import { startsTie, stopsTie, type Piece } from '../midi/measures'
 import { drumSound } from '../midi/percussion'
 import { abbreviations } from './abbreviation'
@@ -279,6 +280,7 @@ export function toMusicXml(model: ScoreModel, options: { groupRests?: boolean } 
     `<score-partwise version="3.1"><work><work-title>${escapeXml(model.title)}</work-title></work>` +
     '<identification>' +
     (model.composer ? `<creator type="composer">${escapeXml(model.composer)}</creator>` : '') +
+    `<rights>${escapeXml(t.nonCommercial.notice)}</rights>` +
     // 줄바꿈 표시를 담았음을 알린다 (Finale 같은 프로그램이 따르도록)
     '<encoding><supports element="print" attribute="new-system" type="yes" value="yes"/></encoding></identification>' +
     PAGE_DEFAULTS +

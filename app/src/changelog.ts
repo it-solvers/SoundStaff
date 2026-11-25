@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.53.0',
+    date: '2026-11-25',
+    changes: [
+      '[악보] 악보 미리보기 아래와 PDF 모든 쪽 아래에 상업적 사용 금지 문구를 적고, PDF에 흐린 워터마크를 찍음. MusicXML에도 권리 표시(rights)로 담음',
+    ],
+  },
+  {
     version: '1.52.0',
     date: '2026-11-25',
     changes: ['[화면] 안내 상자에 "이 앱으로 만든 악보는 상업적 용도로 사용하면 안 됩니다" 문구 추가'],

@@ -69,6 +69,31 @@ async function drawRunningTitle(pdf: jsPDF, font: OutlineFont, title: string) {
   await svg2pdf(svg, pdf, { x: 0, y: 0, width, height })
 }
 
+/** 모든 쪽의 아래에 상업적 사용 금지 문구를 쓰고, 쪽 가운데에 비스듬한 흐린 워터마크를 찍는다 (한글이 보이도록 윤곽선으로) */
+async function drawNonCommercial(pdf: jsPDF, font: OutlineFont) {
+  const width = pdf.internal.pageSize.getWidth()
+  const height = pdf.internal.pageSize.getHeight()
+  const svg = document.createElementNS(SVG_NS, 'svg')
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`)
+  const add = (text: string, y: number, size: number, attrs: Record<string, string>) => {
+    const path = document.createElementNS(SVG_NS, 'path')
+    path.setAttribute('d', textToPathData(font, text, width / 2, y, size, 'middle'))
+    for (const [name, value] of Object.entries(attrs)) path.setAttribute(name, value)
+    svg.appendChild(path)
+  }
+  // 워터마크는 대각선 길이의 70%를 채우는 크기로, 음표를 읽는 데 방해되지 않게 아주 흐리게 그린다
+  const mark = t.nonCommercial.watermark
+  const markSize = (Math.hypot(width, height) * 0.7 * 100) / textWidth(font, mark, 100)
+  const angle = (-Math.atan2(height, width) * 180) / Math.PI
+  add(mark, height / 2 + markSize / 3, markSize, {
+    fill: '#000',
+    'fill-opacity': '0.08',
+    transform: `rotate(${angle} ${width / 2} ${height / 2})`,
+  })
+  add(t.nonCommercial.notice, height - 28, 8, { fill: '#444' })
+  await svg2pdf(svg, pdf, { x: 0, y: 0, width, height })
+}
+
 /**
  * OSMD는 감춘 쉼표를 투명색(#RRGGBB00)으로 그리는데 svg2pdf는 투명도를 몰라 검게 칠한다. 칠하지 않게 바꾼다.
  */
@@ -173,6 +198,7 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
       await svg2pdf(svg, pdf, { x: (pageW - w * scale) / 2, y, width: w * scale, height: h * scale })
 
       if (i > 0) await drawRunningTitle(pdf, font, workTitle(xml))
+      await drawNonCommercial(pdf, font)
 
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(9)
