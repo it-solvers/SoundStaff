@@ -209,6 +209,10 @@ export const en: Messages = {
     title: 'Title',
     composer: 'Composer',
     tempo: 'Tempo (BPM)',
+    tidy: {
+      label: 'Simplify for reading',
+      desc: 'Writes each staff as a single voice and shortens overlapping notes to where the next note starts. No notes are removed, but long ringing notes are written shorter and played that way. Turn off to keep the original lengths.',
+    },
     timeSignature: 'Time signature',
     beatsTop: 'Time signature, top number',
     beatsBottom: 'Time signature, bottom number',

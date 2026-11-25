@@ -130,7 +130,8 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
       const clefs = part.staves
         .map(
           (st, si) =>
-            `<clef${multi ? ` number="${si + 1}"` : ''}><sign>${st.clef}</sign><line>${st.clef === 'F' ? 4 : 2}</line></clef>`,
+            `<clef${multi ? ` number="${si + 1}"` : ''}><sign>${st.clef}</sign><line>${st.clef === 'F' ? 4 : 2}</line>` +
+            `${st.clefOctave ? `<clef-octave-change>${st.clefOctave}</clef-octave-change>` : ''}</clef>`,
         )
         .join('')
       attrs =

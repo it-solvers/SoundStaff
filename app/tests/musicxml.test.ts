@@ -260,6 +260,55 @@ describe('타악기 보표', () => {
   })
 })
 
+describe('읽기 좋은 MIDI 악보', () => {
+  const build = (program: number, notes: [number, number, number][], o: { midiTidy?: boolean } = {}) => {
+    const i = info([track(0, 'A', notes, { program })])
+    const r = buildInstrumentScore(i, { ...defaultSettings(i), ...o })
+    return { ...r, root: parse(r.xml) }
+  }
+  const clefs = (root: El) => all(root, 'clef').map((c) => `${text(c, 'sign')}${text(c, 'clef-octave-change')}`)
+
+  it('기타·베이스는 아래 8 음자리표이고 음높이는 그대로, 그림이 안 나오는 위 8은 쓰지 않는다', () => {
+    const guitar = build(24, [[0, 4, 40]])
+    expect(clefs(guitar.root)).toEqual(['G-1'])
+    expect(text(all(guitar.root, 'pitch')[0], 'octave')).toBe('2')
+    expect(clefs(build(33, [[0, 4, 28]]).root)).toEqual(['F-1'])
+    expect(clefs(build(98, [[0, 4, 96]]).root)).toEqual(['G'])
+    expect(clefs(build(73, [[0, 4, 72]]).root)).toEqual(['G'])
+  })
+
+  it('음역이 넓은 건반악기는 두 보표로 나누고, 좁으면 한 보표다', () => {
+    const wide: [number, number, number][] = [
+      [0, 4, 43],
+      [0, 4, 72],
+    ]
+    expect(clefs(build(4, wide).root)).toEqual(['G', 'F'])
+    expect(clefs(build(4, [[0, 4, 72]]).root)).toEqual(['G'])
+    expect(build(73, wide).model.parts[0].staves).toHaveLength(1)
+    expect(build(50, wide).model.parts[0].staves).toHaveLength(2) // 합주 현악은 화음의 덧줄이 많으면 나눈다
+  })
+
+  // 계속 울리는 낮은 음 위에 음이 이어지는 모양
+  const ringing: [number, number, number][] = [
+    [0, 16, 48],
+    [4, 4, 60],
+    [8, 8, 64],
+  ]
+
+  it('정리를 켜면(기본) 한 성부이고 음은 빠지지 않으며 붙임줄이 늘지 않는다', () => {
+    const r = build(73, ringing)
+    expect(r.report.parts[0].maxVoices).toBe(1)
+    expect(buildTimeline(r.model).notes.map((n) => n.midi)).toEqual([48, 60, 64])
+    expect(all(r.root, 'tie')).toHaveLength(0)
+  })
+
+  it('정리를 끄면 원래 길이대로 여러 성부로 적는다', () => {
+    const r = build(73, ringing, { midiTidy: false })
+    expect(r.report.parts[0].maxVoices).toBe(2)
+    expect(buildTimeline(r.model).notes[0].duration).toBeGreaterThan(2)
+  })
+})
+
 describe('만들 수 없는 파일의 오류 안내', () => {
   it('타악기를 모두 빼면 남은 악기가 없다고 알린다', () => {
     const i = info([drums])

@@ -205,6 +205,10 @@ export const ko = {
     title: '제목',
     composer: '작곡자',
     tempo: '템포 (BPM)',
+    tidy: {
+      label: '읽기 쉽게 정리하기',
+      desc: '보표마다 한 성부로 적고, 겹쳐 울리는 음은 다음 음이 시작할 때까지로 줄입니다. 음은 빠지지 않지만 길게 울리던 음이 짧게 적히고 재생도 그렇게 들립니다. 끄면 원래 길이대로 적습니다.',
+    },
     timeSignature: '박자',
     beatsTop: '박자 윗수',
     beatsBottom: '박자 아랫수',

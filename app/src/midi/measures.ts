@@ -254,11 +254,11 @@ function layoutVoice(events: ChordEvent[], grid: MeasureSpec[], relaxed = false,
 export function layoutTrack(
   notes: QNote[],
   grid: MeasureSpec[],
-  opts: { legatoTrim?: boolean; relaxed?: boolean } = {},
+  opts: { legatoTrim?: boolean; relaxed?: boolean; tieCommon?: boolean } = {},
 ): TrackLayout {
   const warnings: string[] = []
   const voices = notes.length ? assignVoices(toChordEvents(notes), warnings, opts.legatoTrim ?? true) : []
-  const voiceMeasures = voices.map((v) => layoutVoice(v, grid, opts.relaxed, opts.relaxed))
+  const voiceMeasures = voices.map((v) => layoutVoice(v, grid, opts.relaxed, opts.tieCommon ?? opts.relaxed))
 
   const measures: VoiceMeasure[][] = grid.map((m, mi) => {
     const out: VoiceMeasure[] = []

@@ -23,6 +23,8 @@ export interface SettingsOverride {
   audioEdit?: boolean
   /** 편집용 정리의 조정값 (시험·조정용) */
   editTuning?: Partial<EditTuning>
+  /** MIDI 악보를 읽기 쉽게 정리하기 */
+  midiTidy?: boolean
   /** 주된 음 돋보이기 (작고 짧은 음을 회색으로) */
   audioEmphasis?: boolean
   /** 악기(트랙) 단 순서 (트랙 번호 목록) */
@@ -68,6 +70,7 @@ export function applySettings(info: MidiFileInfo, o: SettingsOverride = {}): Sco
     key: o.key ?? f.key,
     title: o.title?.trim() ? o.title.normalize('NFC').trim() : f.title,
     composer: o.composer?.normalize('NFC').trim() ?? '',
+    midiTidy: o.midiTidy ?? true,
     audioMode: o.audioMode ?? 'full',
     audioSimplify: o.audioSimplify ?? true,
     audioMerge: o.audioMerge ?? true,

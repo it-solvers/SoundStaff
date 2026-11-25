@@ -163,6 +163,22 @@ export default function SettingsForm({ info, override, onChange }: Props) {
         </fieldset>
       )}
 
+      {info.source !== 'audio' && (
+        <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm" data-testid="midi-tidy-label">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={override.midiTidy ?? true}
+            onChange={(e) => onChange({ midiTidy: e.target.checked ? undefined : false })}
+            data-testid="midi-tidy"
+          />
+          <span>
+            <span className="font-medium">{t.settings.tidy.label}</span>
+            <span className="ml-1 text-xs text-slate-300">{t.settings.tidy.desc}</span>
+          </span>
+        </label>
+      )}
+
       <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <label className="block">
           <span className={label}>{t.settings.title}</span>

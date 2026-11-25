@@ -21,6 +21,8 @@ export interface ScoreSettings {
   audioSimplify?: boolean
   /** 편집용 정리의 조정값 (시험·조정용. 없으면 기본값) */
   editTuning?: Partial<import('../audio/editTuning').EditTuning>
+  /** MIDI 악보를 읽기 쉽게 정리할지 (기본 켬): 보표마다 한 성부로, 겹쳐 울리는 음은 다음 음까지로 줄인다 */
+  midiTidy?: boolean
   /** 같은 높이로 이어진 음을 하나로 합칠지 (기본 켬). 끄면 AI가 나눈 그대로 적는다 */
   audioMerge?: boolean
   /** 고치기 쉽게(편집용) 정리할지 (기본 켬, 읽기 쉽게 정리하기가 켜져 있을 때만): 같은 음을 더 넓게 이어 붙이고 한 보표에 한 성부로 단순하게 만들어 Finale에서 수정하기 쉽게 한다 */
@@ -37,6 +39,8 @@ export interface ScoreSettings {
 /** 보표 하나. 피아노는 한 파트에 보표 2개(오른손 높은음자리표, 왼손 낮은음자리표) */
 export interface StaffModel {
   clef: 'G' | 'F' | 'percussion'
+  /** 음자리표의 옥타브 표시 (없으면 0). 음높이는 그대로이고 보표 위 위치만 옮겨 적는다 */
+  clefOctave?: number
   layout: VoiceMeasure[][]
   /** true면 재생할 때 이 보표의 소리를 내지 않는다 (피아노 대보표에서 오른손·왼손을 따로 끌 때) */
   muted?: boolean

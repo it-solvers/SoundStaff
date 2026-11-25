@@ -51,6 +51,22 @@ export function quantizeNotes(notes: NoteEvent[], ppq: number): QuantizeResult {
 }
 
 /**
+ * MIDI 악보 "읽기 쉽게": 한 보표를 한 성부(화음의 나열)로 만든다. 음은 하나도 빼지 않고 길이만 맞춘다.
+ * 같은 칸에서 시작한 음은 그중 가장 긴 길이로 묶고, 다음 음이 시작하면 거기서 끊는다. 1칸짜리 틈은 메운다.
+ */
+export function toSingleVoice(notes: QNote[]): QNote[] {
+  const ends = new Map<number, number>()
+  for (const n of notes) ends.set(n.start, Math.max(ends.get(n.start) ?? 0, n.end))
+  const starts = [...ends.keys()].sort((a, b) => a - b)
+  starts.forEach((start, i) => {
+    const next = starts[i + 1]
+    const end = ends.get(start)!
+    if (next !== undefined && (end > next || next - end <= 1)) ends.set(start, next)
+  })
+  return notes.map((n) => ({ ...n, end: ends.get(n.start)! }))
+}
+
+/**
  * 한 줄 선율로 만든다: 칸에 맞춘 뒤에도 겹치는 음이 없게 한다. (음원 분석 결과용, 기획서 12장)
  * 초 단위로는 겹치지 않던 음도 16분음표 칸으로 반올림하면 같은 칸에 놓이거나 1칸 겹칠 수 있다.
  * - 같은 칸에서 시작한 음은 더 긴 음(같으면 더 높은 음) 하나만 남긴다.

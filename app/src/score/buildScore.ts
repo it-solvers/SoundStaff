@@ -6,6 +6,7 @@ import {
   quantizeNotes,
   simplifyToChords,
   tidyForEditing,
+  toSingleVoice,
   type MeasureGrid,
   type QNote,
 } from '../midi/quantize'
@@ -14,6 +15,7 @@ import { t } from '../text'
 import { UserError } from '../utils/errors'
 import { baseName as baseNameOf } from '../utils/fileName'
 import { materializeAudio } from './audioInfo'
+import { SPLIT_MIDI, needsTwoStaves, pickClef, staffClef, type StaffClef } from './notation'
 import { applySettings } from './settings'
 import { orderBy } from './trackOrder'
 import { toMusicXml } from './toMusicXml'
@@ -28,12 +30,6 @@ export const baseName = baseNameOf
 function trackName(track: TrackInfo): string {
   if (track.kind === 'drum') return track.name || t.files.drum
   return track.name || track.instrumentName || t.files.trackNumber(track.index + 1)
-}
-
-function pickClef(notes: QNote[]): 'G' | 'F' {
-  if (!notes.length) return 'G'
-  const avg = notes.reduce((a, n) => a + n.midi, 0) / notes.length
-  return avg < 54 ? 'F' : 'G'
 }
 
 interface Prepared {
@@ -209,6 +205,37 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
       }
       // 음원 "들리는 대로": 한 단에 4성부가 넘는 음은 줄이지 않고 같은 음자리표의 추가 단("오른손 2" 등)으로 나눈다
       const layered = info.source === 'audio' && !!track.chords && !settings.audioSimplify
+      if (info.source !== 'audio') {
+        const name = trackName(track)
+        const program = track.instrumentNumber
+        const hands: (StaffClef & { notes: typeof notes })[] = needsTwoStaves(program, notes)
+          ? [
+              { clef: 'G', octave: 0, notes: notes.filter((n) => n.midi >= SPLIT_MIDI) },
+              { clef: 'F', octave: 0, notes: notes.filter((n) => n.midi < SPLIT_MIDI) },
+            ]
+          : [{ ...staffClef(program, notes), notes }]
+        const tidy = settings.midiTidy !== false
+        let maxVoices = 1
+        const staves: StaffModel[] = hands.map((hand) => {
+          const layout = tidy
+            ? layoutTrack(toSingleVoice(hand.notes), p.grid.measures, { relaxed: true, tieCommon: false })
+            : layoutTrack(hand.notes, p.grid.measures)
+          warnings.push(...layout.warnings.map((w) => t.warnings.track(name, w)))
+          maxVoices = Math.max(maxVoices, ...layout.measures.map((vs) => vs.length))
+          return { clef: hand.clef, clefOctave: hand.octave, layout: layout.measures }
+        })
+        parts.push({
+          id: `P${parts.length + 1}`,
+          name,
+          instrumentName: track.instrumentName || 'piano',
+          channel: track.channel,
+          program,
+          staves,
+          muted: muted.has(track.index),
+        })
+        partReports.push({ name, noteCount: track.noteCount, maxVoices })
+        return
+      }
       const layers = layered ? splitIntoLayers(notes) : [notes]
       layers.forEach((layerNotes, l) => {
         const name = l === 0 ? trackName(track) : `${trackName(track)} ${l + 1}`
