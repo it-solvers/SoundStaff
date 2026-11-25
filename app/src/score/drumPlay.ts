@@ -31,7 +31,9 @@ export function findRolls(notes: NoteEvent[], ppq: number): { rolls: Roll[]; res
       if (i < list.length && list[i].ticks - list[i - 1].ticks < ppq * ROLL_GAP) continue
       if (i - from >= ROLL_HITS) {
         const start = Math.round(list[from].ticks / step)
-        rolls.push({ midi, start, end: Math.max(start + 1, Math.round(list[i - 1].ticks / step)) })
+        // 마지막 타격이 박 머리에 닿으면 그 자리에도 롤을 적는다 (end는 그 칸의 다음)
+        const last = Math.floor(list[i - 1].ticks / step + 0.25)
+        rolls.push({ midi, start, end: Math.max(start, last) + 1 })
         for (let k = from; k < i; k++) inRoll.add(list[k])
       }
       from = i

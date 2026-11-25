@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.39.1',
+    date: '2026-11-25',
+    changes: ['[드럼] 롤의 마지막 타격이 다음 박 머리에 닿을 때 그 타격이 빠지던 문제를 고침'],
+  },
+  {
     version: '1.39.0',
     date: '2026-11-25',
     changes: [

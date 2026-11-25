@@ -25,6 +25,13 @@ describe('롤 찾기', () => {
     expect(findRolls(sixteenths, PPQ).rolls).toEqual([])
   })
 
+  it('롤의 마지막 타격이 다음 박 머리에 닿으면 그 박에도 롤을 적는다', () => {
+    const i = kit([...fast(0, 1, 49), hit(PPQ, 49)])
+    expect(findRolls(i.tracks[0].notes, PPQ).rolls).toEqual([{ midi: 49, start: 0, end: 5 }])
+    const res = buildInstrumentScore(i, defaultSettings(i))
+    expect(buildTimeline(res.model).notes.some((n) => n.step === 4)).toBe(true)
+  })
+
   it('악보에는 롤 표시가 붙은 몇 개의 음표로 적고, 재생은 연타로 들린다', () => {
     const i = kit([...fast(0, 2, 49), hit(PPQ / 2, 36)])
     const res = buildInstrumentScore(i, defaultSettings(i))
