@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.44.0',
+    date: '2026-11-25',
+    changes: [
+      '[음원 악보] [읽기 쉽게 정리하기]를 꺼도 오른손·왼손 두 줄(피아노 대보표)만 만듦. "오른손 2", "왼손 2" 같은 추가 줄을 없애고, 두 줄에 담지 못하는 약한 음은 빼고 개수를 알림',
+    ],
+  },
+  {
     version: '1.43.0',
     date: '2026-11-25',
     changes: ['[음원 악보] 빠르기가 여러 곳에서 바뀌면 알려 주고 [템포 하나로 고정] 버튼을 보여 줌'],

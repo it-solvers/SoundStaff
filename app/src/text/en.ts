@@ -95,13 +95,13 @@ export const en: Messages = {
     },
     simplify: {
       label: 'Simplify for reading',
-      desc: 'Thins out overlapping notes and more than 4 notes at once to make a simpler score. Some notes are dropped.',
+      desc: 'Thins out overlapping notes and more than 4 notes at once to make a simpler score. Some notes are dropped. Turn off to keep more notes in a denser score; weak notes that do not fit on the two hand staves are still removed.',
     },
     mode: {
       legend: 'Score style',
       full: {
         label: 'As heard',
-        desc: 'Writes every note found, split into high and low staves, with simultaneous notes grouped as chords.',
+        desc: 'Writes the notes that are heard, split into high and low staves, with simultaneous notes grouped as chords.',
       },
       melody: {
         label: 'Melody only',
@@ -251,6 +251,8 @@ export const en: Messages = {
       `Notes of the same pitch overlapping in the same slot were written once (${n} of ${total}). Nothing is missing from the written pitches.`,
     chordsTrimmed: (n: number, total: number) =>
       `Simplifying removed ${n} of ${total} notes: duplicates in the same slot, notes beyond 4 at once, and gray notes with no free voice.`,
+    voicesDropped: (n: number, total: number) =>
+      `Notes overlapping more than two hand staves can hold were removed, weakest first (${n} of ${total}).`,
     offGrid: (pct: number) =>
       `${pct}% of notes are far off the 16th-note grid. Unsupported rhythms such as quintuplets or 16th-note triplets are moved to a nearby position, so they may differ.`,
     unsupportedTimeSignature:

@@ -1,10 +1,10 @@
 import {
   fitMinorToVoices,
+  fitToVoices,
   layoutPercussion,
   layoutTrack,
   layoutTwoVoices,
   selectMainNotes,
-  splitIntoLayers,
 } from '../midi/measures'
 import { drumSound } from '../midi/percussion'
 import {
@@ -103,13 +103,20 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
     info.source !== 'audio' && tripletsAllowed(settings.timeSignatures)
       ? findTripletBeats(notes, info.ppq)
       : new Set<number>()
+  let overflow = 0 // 정리를 끈 음원 악보에서 한 손에 담기지 않아 뺀 음 수
+  const keepWhatFits = (notes: QNote[]) => {
+    const fit = fitToVoices(notes)
+    overflow += fit.dropped
+    trimmed -= fit.dropped // 같은 칸의 중복 음 알림과 따로 센다
+    return fit.notes
+  }
   const tracks = pitched.map((t) => {
     const triplets = findTriplets(t.notes)
     const q = quantizeNotes(t.notes, info.ppq, triplets)
     offGrid += q.offGrid
     noteTotal += t.notes.length
     // 음원 분석 결과는 칸에 맞춘 뒤에도 읽기 쉽게 정리한다: 멜로디는 겹치는 음이 없는 한 줄, 들리는 대로 악보는 겹치지 않는 화음의 나열
-    // 들리는 대로: 기본은 찾은 음을 하나도 빼지 않고(겹치는 음은 여러 성부로) 적는다. 선택하면 읽기 쉽게 정리한다.
+    // 들리는 대로: 기본은 읽기 쉽게 정리한다. 끄면 음 길이를 그대로 두고 한 손(보표)에 담기지 않는 약한 음만 뺀다.
     const notes =
       info.source !== 'audio'
         ? q.notes
@@ -127,7 +134,7 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
                       ...simplifyToChords(marked.filter((n) => n.minor)),
                     ])
                   })()
-            : q.notes
+            : keepWhatFits(q.notes)
           : enforceMonophonic(q.notes)
     if (t.chords) trimmed += t.notes.length - notes.length
     return { track: t, notes, triplets, silent: undefined as Set<string> | undefined }
@@ -200,6 +207,7 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
         : t.warnings.chordsDeduped(trimmed, noteTotal),
     )
   }
+  if (overflow > 0) warnings.push(t.warnings.voicesDropped(overflow, noteTotal))
   if (noteTotal > 0 && offGrid / noteTotal > 0.1) {
     warnings.push(t.warnings.offGrid(Math.round((offGrid / noteTotal) * 100)))
   }
@@ -246,22 +254,21 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
   const partReports: PartReport[] = []
 
   const muted = new Set(settings.mutedTracks ?? [])
-  // 음원 "들리는 대로" + 읽기 쉽게 정리: 오른손·왼손을 한 파트의 두 보표(피아노 대보표)로 묶는다. 순서는 오른손(높은음자리표) → 왼손(낮은음자리표)로 고정.
-  const grand =
-    info.source === 'audio' &&
-    settings.audioMode !== 'melody' &&
-    !!settings.audioSimplify &&
-    p.tracks.every((x) => x.track.chords)
+  // 음원 "들리는 대로": 오른손·왼손을 한 파트의 두 보표(피아노 대보표)로 묶는다. 순서는 오른손(높은음자리표) → 왼손(낮은음자리표)로 고정.
+  const grand = info.source === 'audio' && settings.audioMode !== 'melody' && p.tracks.every((x) => x.track.chords)
   if (grand) {
     const hands = [...p.tracks].sort((a, b) => a.track.index - b.track.index)
     const staves: StaffModel[] = []
     let noteCount = 0
     let maxVoices = 1
     for (const { track, notes } of hands) {
-      const layout = layoutTrack(notes, p.grid.measures, { relaxed: !!settings.audioEdit })
+      const layout = layoutTrack(notes, p.grid.measures, {
+        relaxed: !!settings.audioSimplify && !!settings.audioEdit,
+        legatoTrim: !!settings.audioSimplify, // 정리를 끄면 이미 성부에 맞춘 음 길이를 그대로 적는다
+      })
       warnings.push(...layout.warnings.map((w) => t.warnings.track(trackName(track), w)))
       staves.push({ clef: track.clef ?? pickClef(notes), layout: layout.measures, muted: muted.has(track.index) })
-      noteCount += track.noteCount
+      noteCount += settings.audioSimplify ? track.noteCount : notes.length
       maxVoices = Math.max(maxVoices, ...layout.measures.map((vs) => vs.length))
     }
     parts.push({
@@ -293,8 +300,6 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
         partReports.push({ name, noteCount: notes.length, maxVoices: Math.max(1, ...layout.map((vs) => vs.length)) })
         return
       }
-      // 음원 "들리는 대로": 한 단에 4성부가 넘는 음은 줄이지 않고 같은 음자리표의 추가 단("오른손 2" 등)으로 나눈다
-      const layered = info.source === 'audio' && !!track.chords && !settings.audioSimplify
       if (info.source !== 'audio') {
         const name = trackName(track)
         const program = track.instrumentNumber
@@ -340,25 +345,23 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
         partReports.push({ name, noteCount: track.noteCount, maxVoices })
         return
       }
-      const layers = layered ? splitIntoLayers(notes) : [notes]
-      layers.forEach((layerNotes, l) => {
-        const name = l === 0 ? trackName(track) : `${trackName(track)} ${l + 1}`
-        const layout = layoutTrack(layerNotes, p.grid.measures, { legatoTrim: !layered }) // 층은 이미 정리를 마쳤으므로 다시 하지 않는다
-        warnings.push(...layout.warnings.map((w) => t.warnings.track(name, w)))
-        parts.push({
-          id: `P${parts.length + 1}`,
-          name,
-          instrumentName: track.instrumentName || 'piano',
-          channel: track.channel,
-          program: track.instrumentNumber,
-          staves: [{ clef: track.clef ?? pickClef(layerNotes), layout: layout.measures }],
-          muted: muted.has(track.index),
-        })
-        partReports.push({
-          name,
-          noteCount: layers.length > 1 ? layerNotes.length : track.noteCount,
-          maxVoices: Math.max(1, ...layout.measures.map((vs) => vs.length)),
-        })
+      // 음원의 멜로디만 악보
+      const name = trackName(track)
+      const layout = layoutTrack(notes, p.grid.measures)
+      warnings.push(...layout.warnings.map((w) => t.warnings.track(name, w)))
+      parts.push({
+        id: `P${parts.length + 1}`,
+        name,
+        instrumentName: track.instrumentName || 'piano',
+        channel: track.channel,
+        program: track.instrumentNumber,
+        staves: [{ clef: track.clef ?? pickClef(notes), layout: layout.measures }],
+        muted: muted.has(track.index),
+      })
+      partReports.push({
+        name,
+        noteCount: track.noteCount,
+        maxVoices: Math.max(1, ...layout.measures.map((vs) => vs.length)),
       })
     })
 

@@ -298,7 +298,7 @@ function layoutVoice(
 
 /**
  * 한 트랙(음높이 악기)의 음표를 마디·성부별 표기 조각으로 변환한다.
- * legatoTrim: 1칸 이하로 겹친 음을 앞 음에서 끊을지 (기본 켬). 이미 그 정리를 마친 층(splitIntoLayers)은 끈다.
+ * legatoTrim: 1칸 이하로 겹친 음을 앞 음에서 끊을지 (기본 켬). 음 길이를 그대로 적을 때(fitToVoices 뒤)는 끈다.
  * relaxed: 박 경계에서 붙임줄로 나누지 않고 한 음표로 적는다 (편집용).
  * 정리는 한 번만 해야 한다. 거듭 적용하면 시작이 2칸 간격으로 이어진 음의 길이가 칸마다 줄어든다.
  */
@@ -410,32 +410,31 @@ export function layoutPercussion(
 }
 
 /**
- * 음을 하나도 빼지 않으려고, 한 단(성부 4개 이하)에 다 못 담는 음을 여러 "층"으로 나눈다.
- * 겹치는 음을 성부 수 제한 없이 나눠 본 뒤 maxVoices개씩 묶어 층 하나로 만든다. 각 층은 layoutTrack에 그대로 넘겨도
- * 성부가 maxVoices를 넘지 않으므로 음을 합치거나 길이를 줄이는 일이 생기지 않는다.
- * 음이 적으면 층은 하나다. 층은 위쪽 소리가 많이 든 순서(첫 성부들이 앞)다.
+ * 한 보표(성부 maxVoices개)에 담기지 않는 음을 약한 것부터 뺀다. 사람이 치는 손은 둘뿐이라 보표를 늘리지 않는다.
+ * 중요도(세기 × √길이)가 큰 화음부터 성부 자리를 잡고, 자리가 없는 화음의 음을 뺀다.
+ * 남은 음은 layoutTrack(legatoTrim: false)에 넘기면 음을 합치거나 길이를 줄이지 않고 적힌다.
  */
-export function splitIntoLayers(notes: QNote[], maxVoices = MAX_VOICES): QNote[][] {
-  if (!notes.length) return []
-  const events = toChordEvents(notes)
-  trimLegatoOverlap(events)
-  const voices: ChordEvent[][] = []
-  for (const ev of events) {
-    const v = voices.find((x) => x[x.length - 1].end <= ev.start)
-    if (v) v.push(ev)
-    else voices.push([ev])
+export function fitToVoices(notes: QNote[], maxVoices = MAX_VOICES): { notes: QNote[]; dropped: number } {
+  const key = (n: { start: number; end: number }) => `${n.start}:${n.end}`
+  const strength = new Map<string, number>()
+  for (const n of notes) {
+    const s = n.velocity * Math.sqrt(Math.max(1, n.end - n.start))
+    strength.set(key(n), Math.max(strength.get(key(n)) ?? 0, s))
   }
-  const layers: QNote[][] = []
-  for (let i = 0; i < voices.length; i += maxVoices) {
-    const layer: QNote[] = []
-    for (const v of voices.slice(i, i + maxVoices)) {
-      for (const e of v)
-        for (const midi of e.midis)
-          layer.push({ start: e.start, end: e.end, midi, velocity: 0.7, minor: e.minor?.has(midi) })
-    }
-    layers.push(layer)
+  const chords = [...new Map(notes.map((n) => [key(n), n])).values()].sort(
+    (a, b) => strength.get(key(b))! - strength.get(key(a))! || a.start - b.start,
+  )
+  const voices: { start: number; end: number }[][] = []
+  const kept = new Set<string>()
+  for (const c of chords) {
+    const free = voices.find((v) => v.every((x) => x.end <= c.start || c.end <= x.start))
+    if (free) free.push(c)
+    else if (voices.length < maxVoices) voices.push([c])
+    else continue
+    kept.add(key(c))
   }
-  return layers
+  const out = notes.filter((n) => kept.has(key(n)))
+  return { notes: out, dropped: notes.length - out.length }
 }
 
 /**
