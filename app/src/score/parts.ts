@@ -14,6 +14,7 @@ export function partScores(model: ScoreModel, base: string): PartScore[] {
   const digits = Math.max(2, String(model.parts.length).length)
   return model.parts.map((part, i) => ({
     base: safeFileName(`${base} - ${String(i + 1).padStart(digits, '0')} ${part.name}`),
-    xml: toMusicXml({ ...model, title: `${model.title} - ${part.name}`, parts: [part] }),
+    // 연주자가 세기 쉽게 이어지는 쉬는 마디는 숫자로 묶는다
+    xml: toMusicXml({ ...model, title: `${model.title} - ${part.name}`, parts: [part] }, { groupRests: true }),
   }))
 }

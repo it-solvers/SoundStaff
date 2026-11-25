@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.37.0',
+    date: '2026-11-25',
+    changes: [
+      '[파트보] 이어지는 쉬는 마디를 숫자가 붙은 한 칸으로 묶어 적음(템포·박자가 바뀌는 곳에서는 끊음). 총보는 그대로',
+    ],
+  },
+  {
     version: '1.36.0',
     date: '2026-11-25',
     changes: [

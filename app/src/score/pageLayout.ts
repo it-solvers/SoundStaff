@@ -1,9 +1,12 @@
 /** PDF의 마디 배치와 둘째 쪽부터의 제목 */
 
-/** 곡의 마디 수 (첫 파트 기준) */
+/** 악보에 그려지는 마디 칸 수 (첫 파트 기준). 숫자로 묶은 쉬는 마디는 한 칸이다 */
 export function measureCount(xml: string): number {
   const end = xml.indexOf('</part>')
-  return end < 0 ? 0 : (xml.slice(0, end).match(/<measure number="/g)?.length ?? 0)
+  if (end < 0) return 0
+  const first = xml.slice(0, end)
+  const hidden = [...first.matchAll(/<multiple-rest>(\d+)<\/multiple-rest>/g)].reduce((a, m) => a + Number(m[1]) - 1, 0)
+  return (first.match(/<measure number="/g)?.length ?? 0) - hidden
 }
 
 /** 한 줄에 쌓이는 보표 수 (두 보표 파트는 2로 센다) */

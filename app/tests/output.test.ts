@@ -1,3 +1,4 @@
+import { restRuns } from '../src/score/restRuns'
 import { partScores } from '../src/score/parts'
 import { ellipsize, measureCount, staffCount, workTitle } from '../src/score/pageLayout'
 import { fitZoom, PAGE_FILL_LIMIT } from '../src/score/fitPage'
@@ -365,5 +366,44 @@ describe('파트보 (partScores)', () => {
       expect(p.xml).toContain('<sound tempo=')
       expect(p.xml).toContain('light-heavy')
     })
+  })
+})
+
+describe('파트보의 쉬는 마디 묶기', () => {
+  // 1~8마디 쉼(5마디에서 템포 변화), 9마디 연주, 10마디 쉼, 11마디 연주, 12~14마디 쉼
+  const late = track(0, 'Late', [
+    [128, 4, 60],
+    [160, 4, 62],
+  ])
+  const long = track(1, 'Long', [[0, 224, 48]])
+  const src = info([late, long], {
+    tempos: [
+      { ticks: 0, bpm: 100 },
+      { ticks: 64 * G, bpm: 120 },
+    ],
+  })
+  const res = buildInstrumentScore(src, applySettings(src))
+  const solo = { ...res.model, parts: [res.model.parts[0]] }
+  const xml = partScores(res.model, 'x')[0].xml
+
+  it('이어지는 쉬는 마디만 묶고 템포가 바뀌는 곳에서 끊으며, 한 마디짜리는 그대로 둔다', () => {
+    expect([...restRuns(solo)]).toEqual([
+      [0, 4],
+      [4, 4],
+      [11, 3],
+    ])
+    expect([...restRuns(res.model)]).toEqual([]) // 다른 악기가 연주하는 총보는 묶을 곳이 없다
+  })
+
+  it('파트보에는 묶음 표시를 적고 마디는 모두 남기며, 총보에는 적지 않는다', () => {
+    expect([...xml.matchAll(/<multiple-rest>(\d+)</g)].map((m) => m[1])).toEqual(['4', '4', '3'])
+    expect(xml.match(/<measure number=/g)).toHaveLength(res.model.grid.length)
+    expect(res.xml).not.toContain('multiple-rest')
+  })
+
+  it('한 줄 4칸은 묶음을 한 칸으로 세어 줄바꿈한다', () => {
+    // 칸: [1-4] [5-8] [9] [10] | [11] [12-14]
+    expect([...xml.matchAll(/<measure number="(\d+)"><print new-system/g)].map((m) => m[1])).toEqual(['11'])
+    expect(measureCount(xml)).toBe(6)
   })
 })

@@ -2,6 +2,7 @@ import { startsTie, stopsTie, type Piece } from '../midi/measures'
 import { drumSound } from '../midi/percussion'
 import { abbreviations } from './abbreviation'
 import { MEASURES_PER_LINE } from './pdfSettings'
+import { restRuns, visibleMeasures } from './restRuns'
 import type { PartModel, ScoreModel } from './types'
 
 const SHARP_NAMES: [string, number][] = [
@@ -134,7 +135,17 @@ function noteXml(
 /** 보표가 여러 개인 파트에서 보표마다 성부 번호가 겹치지 않도록 하는 간격 (MAX_VOICES와 같은 값) */
 const VOICES_PER_STAFF = 4
 
-function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean, scale: number): string {
+function partXml(
+  part: PartModel,
+  model: ScoreModel,
+  isFirstPart: boolean,
+  scale: number,
+  runs: Map<number, number>,
+): string {
+  // 한 줄에 4칸: 묶은 쉬는 마디는 한 칸으로 센다
+  const breaks = new Set(
+    visibleMeasures(model.grid.length, runs).filter((_, i) => i > 0 && i % MEASURES_PER_LINE === 0),
+  )
   const multi = part.staves.length > 1
   const measures = model.grid.map((spec, mi) => {
     const prev = model.grid[mi - 1]
@@ -205,7 +216,12 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean, scale
     const finalBar =
       mi === model.grid.length - 1 ? '<barline location="right"><bar-style>light-heavy</bar-style></barline>' : ''
     // 한 줄에 4마디: 첫 파트에 줄바꿈 위치를 적는다 (줄바꿈은 악보 전체에 적용된다)
-    const lineBreak = isFirstPart && mi > 0 && mi % MEASURES_PER_LINE === 0 ? '<print new-system="yes"/>' : ''
+    const lineBreak = isFirstPart && breaks.has(mi) ? '<print new-system="yes"/>' : ''
+    const run = runs.get(mi)
+    if (run) {
+      const style = `<measure-style><multiple-rest>${run}</multiple-rest></measure-style>`
+      attrs = attrs ? attrs.replace('</attributes>', `${style}</attributes>`) : `<attributes>${style}</attributes>`
+    }
     return `<measure number="${mi + 1}">${lineBreak}${attrs}${tempo}${chunks.join(`<backup><duration>${spec.length * scale}</duration></backup>`)}${finalBar}</measure>`
   })
   return `<part id="${part.id}">\n${measures.join('\n')}\n</part>`
@@ -237,7 +253,8 @@ function drumScorePart(p: PartModel, abbr: string): string {
 }
 
 /** 악보 모델 → MusicXML 3.1 (score-partwise) */
-export function toMusicXml(model: ScoreModel): string {
+export function toMusicXml(model: ScoreModel, options: { groupRests?: boolean } = {}): string {
+  const runs = options.groupRests ? restRuns(model) : new Map<number, number>()
   const abbr = abbreviations(model.parts)
   // 3연음이 있으면 4분음표를 12로 나눠야 길이가 정수가 된다
   const hasTriplet = model.parts.some((p) =>
@@ -269,7 +286,7 @@ export function toMusicXml(model: ScoreModel): string {
         `<credit-words default-x="1115" default-y="1560" justify="right" valign="top" font-family="${TITLE_FONT}" font-size="12">${escapeXml(model.composer)}</credit-words></credit>`
       : '') +
     `<part-list>${partList}</part-list>\n` +
-    model.parts.map((p, i) => partXml(p, model, i === 0, scale)).join('\n') +
+    model.parts.map((p, i) => partXml(p, model, i === 0, scale, runs)).join('\n') +
     `\n</score-partwise>\n`
   )
 }
