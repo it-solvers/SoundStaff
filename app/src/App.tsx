@@ -55,6 +55,9 @@ function buildState(item: OutputItem, override: SettingsOverride): ScoreState {
   }
 }
 
+/** 체크 표시와 안내가 화면에 그려질 시간 */
+const REBUILD_DELAY_MS = 60
+
 export default function App() {
   const unsupported = useMemo(() => checkBrowserSupport(), [])
   const [files, setFiles] = useState<MidiFileInfo[]>([])
@@ -67,6 +70,16 @@ export default function App() {
   const [phone, setPhone] = useState(() => isPhoneOrTablet(readDeviceEnv()))
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  /** 설정을 바꾼 뒤 아직 다시 만들지 않은 악보: 항목 id → 예약 */
+  const pendingRef = useRef(new Map<string, ReturnType<typeof setTimeout>>())
+  const [rebuilding, setRebuilding] = useState<ReadonlySet<string>>(new Set())
+
+  /** 예약한 다시 만들기를 모두 취소한다 (파일·출력 단위가 바뀌어 낡은 결과가 되는 경우) */
+  function cancelRebuilds() {
+    for (const timer of pendingRef.current.values()) clearTimeout(timer)
+    pendingRef.current.clear()
+    setRebuilding(new Set())
+  }
   // 화면 크기가 바뀌면 폰·태블릿 판별을 다시 한다 (기획서 6.1장)
   useEffect(() => {
     const onResize = () => setPhone(isPhoneOrTablet(readDeviceEnv()))
@@ -78,6 +91,7 @@ export default function App() {
 
   // 기획서 5장 6번: 다른 파일을 첨부하면 이전 결과를 지우고 다시 읽는다.
   async function handleFiles(picked: File[]) {
+    cancelRebuilds()
     setLoading(true)
     setFiles([])
     setFailed([])
@@ -142,22 +156,33 @@ export default function App() {
   }
 
   function clearAll() {
+    cancelRebuilds()
     setFiles([])
     setFailed([])
     setResults({})
     setOverrides({})
   }
 
-  /** 이미 만든 악보가 있는 항목만 새 설정으로 다시 만든다 ("값을 바꾸면 악보가 다시 만들어진다") */
-  function rebuild(list: OutputItem[], ov: Record<string, SettingsOverride>, only: string[]) {
-    setResults((prev) => {
-      const next = { ...prev }
-      for (const item of list) if (only.includes(item.id)) next[item.id] = buildState(item, ov[item.id] ?? {})
-      return next
-    })
+  /**
+   * 설정이 바뀐 악보를 다시 만든다. 긴 곡은 몇 초 걸리고 그동안 화면이 멈추므로, 누른 체크·입력과 "만드는 중"
+   * 안내가 먼저 화면에 그려진 뒤에 시작한다. 그 사이에 또 바꾸면 마지막 값으로 한 번만 만든다.
+   */
+  function rebuild(item: OutputItem, override: SettingsOverride) {
+    clearTimeout(pendingRef.current.get(item.id))
+    setRebuilding((prev) => new Set(prev).add(item.id))
+    pendingRef.current.set(
+      item.id,
+      setTimeout(() => {
+        pendingRef.current.delete(item.id)
+        const state = buildState(item, override)
+        setResults((prev) => ({ ...prev, [item.id]: state }))
+        setRebuilding((prev) => new Set([...prev].filter((id) => id !== item.id)))
+      }, REBUILD_DELAY_MS),
+    )
   }
 
   function changeUnit(next: OutputUnit) {
+    cancelRebuilds()
     setUnit(next)
     const nextItems = deriveItems(files, next)
     const built: Record<string, ScoreState> = {} // 악보를 만드는 단위가 바뀌므로 이전 결과는 버리고 새 단위로 다시 만든다
@@ -170,7 +195,7 @@ export default function App() {
     const merged = patch === null ? {} : { ...overrides[item.id], ...patch }
     const nextOverrides = { ...overrides, [item.id]: merged }
     setOverrides(nextOverrides)
-    rebuild(items, nextOverrides, [item.id]) // 값을 바꾸면 악보가 바로 다시 만들어진다
+    rebuild(item, merged) // 값을 바꾸면 악보가 바로 다시 만들어진다
   }
 
   const panelItems: PanelItem[] = items.flatMap((item) => {
@@ -301,6 +326,7 @@ export default function App() {
                     item={item}
                     override={overrides[item.id] ?? {}}
                     state={results[item.id]}
+                    busy={rebuilding.has(item.id)}
                     onChange={(patch) => changeSettings(item, patch)}
                   />
                 ))}

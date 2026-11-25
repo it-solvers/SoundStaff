@@ -233,6 +233,7 @@ export const en: Messages = {
   },
 
   result: {
+    rebuilding: 'Rebuilding the score… long pieces take a few seconds.',
     warningsSummary: (n: number) => `${count(n, 'message')} (click to expand)`,
     done: (measures: number, parts: string) => `Score ready · ${count(measures, 'measure')} · ${parts}`,
     partsSummary: (list: string, n: number) => `${count(n, 'part')} (${list})`,

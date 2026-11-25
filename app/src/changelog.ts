@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.41.1',
+    date: '2026-11-25',
+    changes: [
+      '[악보 설정] 긴 곡에서 체크박스를 눌러도 몇 초간 반응이 없던 것을 고침: 체크가 바로 바뀌고 "악보를 다시 만드는 중" 안내가 나옴',
+    ],
+  },
+  {
     version: '1.41.0',
     date: '2026-11-25',
     changes: [

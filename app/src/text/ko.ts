@@ -232,6 +232,7 @@ export const ko = {
   },
 
   result: {
+    rebuilding: '악보를 다시 만드는 중입니다… 긴 곡은 몇 초 걸립니다.',
     warningsSummary: (n: number) => `알림 ${n}건 (눌러서 펼치기)`,
     done: (measures: number, parts: string) => `악보 생성 완료 · ${measures}마디 · ${parts}`,
     partsSummary: (list: string, n: number) => `파트 ${n}개 (${list})`,
