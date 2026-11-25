@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.51.0',
+    date: '2026-11-25',
+    changes: [
+      '[화면] 음원 안내를 네 단계로 바꿈: 한 줄 선율은 "쓸 만함", 겹치는 연주는 "어려움", 여러 소리가 섞인 곡은 "매우 어려움", 악기별·성부별 파트 악보는 "불가능"',
+    ],
+  },
+  {
     version: '1.50.0',
     date: '2026-11-25',
     changes: ['[화면] 음원 안내의 난이도를 올림: 양손 피아노는 "어려움", 합창·관현악·밴드는 "매우 어려움"'],

@@ -13,12 +13,13 @@ export const en: Messages = {
     items: [
       {
         label: 'Usable',
-        text: 'The melody of a song (turn on [Songs: use the separated voice only]) or a simple performance on one instrument',
+        text: 'A single melody line on one instrument or voice (for a song with accompaniment, turn on [Songs: use the separated voice only])',
       },
       { label: 'Difficult', text: 'Performances with several notes at once, such as two-hand piano' },
-      { label: 'Very difficult', text: 'Choir, orchestra, band and other mixed sound' },
+      { label: 'Very difficult', text: 'Choir, band, orchestra and other mixed sound' },
+      { label: 'Not possible', text: 'Part scores split by instrument or voice part' },
     ],
-    note: 'A score from audio is a draft with wrong or missing notes to correct, and instruments are not told apart. For an accurate score, use a MIDI file.',
+    note: 'A score from audio is a draft with wrong or missing notes to correct. For an accurate score or part scores, use a MIDI file.',
   },
   taglineMidiOnly: 'Turn MIDI files into sheet music. Your files never leave your device.',
 
