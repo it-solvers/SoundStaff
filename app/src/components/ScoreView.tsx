@@ -196,6 +196,7 @@ export default function ScoreView({ xml, model }: { xml: string; model: ScoreMod
     setStatus('loading')
     const ink = INK[resolved]
     const osmd = new OpenSheetMusicDisplay(host, {
+      percussionOneLineCutoff: 0, // 타악기도 항상 5줄 보표
       autoResize: false, // 창 크기가 바뀔 때의 다시 그리기는 아래에서 직접 한다 (긴 제목 줄바꿈을 다시 적용해야 하므로)
       drawTitle: true,
       autoBeam: true,

@@ -85,6 +85,7 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
   container.style.cssText = `position:fixed;left:-20000px;top:0;width:${landscape ? 1200 : 900}px;background:#fff`
   document.body.appendChild(container)
   const osmd = new OpenSheetMusicDisplay(container, {
+    percussionOneLineCutoff: 0, // 타악기도 항상 5줄 보표
     autoResize: false,
     drawTitle: true,
     autoBeam: true,

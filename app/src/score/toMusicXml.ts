@@ -138,7 +138,9 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
         // 타악기 보표에는 조표를 적지 않는다
         (part.percussion ? '' : `<key><fifths>${model.key.fifths}</fifths><mode>${model.key.mode}</mode></key>`) +
         `<time><beats>${spec.numerator}</beats><beat-type>${spec.denominator}</beat-type></time>` +
-        `${multi ? `<staves>${part.staves.length}</staves><part-symbol>brace</part-symbol>` : ''}${clefs}</attributes>`
+        `${multi ? `<staves>${part.staves.length}</staves><part-symbol>brace</part-symbol>` : ''}${clefs}` +
+        // 타악기가 한두 가지뿐이어도 5줄 보표로 그린다 (한 줄 보표로 줄이면 음표가 줄에서 떨어져 보인다)
+        `${part.percussion ? '<staff-details><staff-lines>5</staff-lines></staff-details>' : ''}</attributes>`
     } else if (timeChanged) {
       attrs = `<attributes><time><beats>${spec.numerator}</beats><beat-type>${spec.denominator}</beat-type></time></attributes>`
     }
@@ -157,7 +159,8 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
       const staffNo = multi ? si + 1 : null
       for (const vm of voices) {
         const voiceNo = vm.voice + (multi ? si * VOICES_PER_STAFF : 0)
-        const hidden = vm.voice > 1
+        // 발(2성부)만 치는 타악기 마디에서는 1성부의 빈 온쉼표를 감춘다
+        const hidden = vm.voice > 1 || (!!part.percussion && vm.wholeRest && voices.length > 1)
         if (vm.wholeRest) {
           chunks.push(
             `<note${hidden ? ' print-object="no"' : ''}><rest measure="yes"/><duration>${spec.length}</duration><voice>${voiceNo}</voice>${staffNo ? `<staff>${staffNo}</staff>` : ''}</note>`,

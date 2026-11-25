@@ -232,6 +232,15 @@ describe('타악기 보표', () => {
     expect(all(doc, 'unpitched')).toHaveLength(1)
   })
 
+  it('타악기 보표는 5줄이고, 발만 치는 마디의 빈 온쉼표는 감춘다', () => {
+    expect(all(root, 'staff-lines').map((e) => e.textContent)).toEqual(['5'])
+    const k = info([track(0, 'Kick', [[0, 1, 36]], { kind: 'drum', channel: 10 })])
+    const doc = parse(buildInstrumentScore(k, defaultSettings(k)).xml)
+    const first = all(doc, 'note')[0]
+    expect(kids(first, 'rest')).toHaveLength(1)
+    expect(first.getAttribute('print-object')).toBe('no')
+  })
+
   it('타악기는 아직 재생 시간표에 넣지 않는다', () => {
     expect(buildTimeline(res.model).notes).toEqual([])
   })

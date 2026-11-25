@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.24.1',
+    date: '2026-11-25',
+    changes: [
+      '[타악기] 타악기가 한두 가지뿐인 트랙이 한 줄 보표로 그려져 큰북 등이 줄에서 떨어져 보이던 문제를 고쳐 항상 5줄 보표로 그림. 발만 치는 마디의 불필요한 쉼표를 감춤',
+    ],
+  },
+  {
     version: '1.24.0',
     date: '2026-11-25',
     changes: [
