@@ -224,7 +224,7 @@ export default function ScorePanel({ items, selectedId, onSelect, showZip }: Pro
           {error}
         </p>
       )}
-      <p className="mt-3 text-xs text-slate-500">{t.panel.finaleHelp}</p>
+      <p className="mt-3 text-xs text-slate-500">{t.panel.editorHelp}</p>
     </section>
   )
 }

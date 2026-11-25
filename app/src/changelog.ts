@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.39.0',
+    date: '2026-11-25',
+    changes: [
+      '[화면 안내] Finale 기준이던 문구를 "악보 프로그램(MuseScore·Finale 등)" 기준으로 바꿈. 4단계 이름은 [편집]',
+    ],
+  },
+  {
     version: '1.38.0',
     date: '2026-11-25',
     changes: [

@@ -43,14 +43,14 @@ export const en: Messages = {
       },
       { title: 'Check and save', desc: 'Play the score, zoom in or out, and save it as PDF, MusicXML or piano MIDI.' },
       {
-        title: 'Open in Finale',
-        desc: 'Open the MusicXML in Finale on a computer and use Save As to get a .musx file.',
+        title: 'Edit in a notation program (optional)',
+        desc: 'Open the MusicXML on a computer in a notation program such as MuseScore (free) or Finale and edit it.',
       },
     ],
-    short: ['Add', 'Refine', 'Save', 'Finale'],
+    short: ['Add', 'Refine', 'Save', 'Edit'],
     barLabel: (current: number, total: number, title: string, desc: string) => `${current}/${total} ${title}: ${desc}`,
     footer:
-      'Phones and tablets can only convert MIDI; please analyze audio on a computer. Finale runs only on computers, so move files saved on a phone to a computer.',
+      'Phones and tablets can only convert MIDI; please analyze audio on a computer. To edit a score, move files saved on a phone to a computer and open them in a notation program.',
   },
 
   upload: {
@@ -82,12 +82,12 @@ export const en: Messages = {
     warningMore: 'Automatic analysis can contain errors. Use MIDI when you can.',
     vocalHint: 'An isolated vocal file (vocal stem) gives much better results.',
     edit: {
-      label: 'Easy to edit (for Finale)',
-      desc: 'Joins repeated notes into one and keeps each staff to a single voice (chords). Very short and overlapping notes may be dropped, but the score is much easier to fix in Finale. Turn off to keep as many notes as possible.',
+      label: 'Easy to edit (for notation programs)',
+      desc: 'Joins repeated notes into one and keeps each staff to a single voice (chords). Very short and overlapping notes may be dropped, but the score is much easier to fix in a notation program. Turn off to keep as many notes as possible.',
     },
     emphasis: {
       label: 'Highlight main notes',
-      desc: 'Loud, long notes are drawn in black and quiet, short ones in gray. No notes are removed. (Visible in the preview and PDF; Finale may not show the color.)',
+      desc: 'Loud, long notes are drawn in black and quiet, short ones in gray. No notes are removed. (Visible in the preview and PDF; other notation programs may not show the color.)',
     },
     merge: {
       label: 'Join repeated notes',
@@ -323,8 +323,8 @@ export const en: Messages = {
     layout: 'Measures',
     layouts: { four: '4 per line', auto: 'Automatic (as many as fit)' },
     sizes: { small: 'Small', normal: 'Normal', large: 'Large' },
-    finaleHelp:
-      'Open MusicXML (a standard score exchange format) in Finale (a notation program) with File → Open (or Import). Finale runs only on computers, so move files saved on a phone to a computer first. Results are converted automatically, so check and correct them in Finale.',
+    editorHelp:
+      'Open MusicXML (a standard score exchange format) in a notation program such as MuseScore (free) or Finale with File → Open (or Import). Move files saved on a phone to a computer first. Results are converted automatically, so check and correct them. Each program may display the score a little differently.',
   },
 
   changelog: { title: 'Change log' },
