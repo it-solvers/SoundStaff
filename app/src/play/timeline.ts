@@ -8,6 +8,8 @@ export interface PlayNote {
   midi: number
   /** 악보 위치(16분음표 칸) */
   step: number
+  /** 악기 번호(GM 0~127). [악기별 소리]로 들을 때 쓴다 */
+  program?: number
   /** true면 타악기: midi는 음높이가 아니라 GM 타악기 번호 */
   drum?: boolean
 }
@@ -110,7 +112,7 @@ export function buildTimeline(model: ScoreModel): Timeline {
           duration: Math.max(0.03, secondsAtStep(n.startStep + n.steps) - s),
           midi: n.midi,
           step: n.startStep,
-          ...(part.percussion ? { drum: true } : {}),
+          ...(part.percussion ? { drum: true } : { program: part.program }),
         })
       }
     })

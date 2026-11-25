@@ -5,8 +5,8 @@ export const midiToHz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
 /** 합성음 6종 */
 export type SynthTimbreId = 'piano' | 'organ' | 'strings' | 'flute' | 'bell' | 'harpsichord'
-/** 재생 소리: 실제 피아노(녹음 샘플) + 합성음 6종 */
-export type TimbreId = 'grandPiano' | SynthTimbreId
+/** 재생 소리: 악기별 소리(MIDI 악기 번호에 따름) + 실제 피아노(녹음 샘플) + 합성음 6종 */
+export type TimbreId = 'auto' | 'grandPiano' | SynthTimbreId
 
 /** 합성음 하나의 설계. 외부 음원 파일 없이 배음 구성과 소리 크기 변화로 악기 느낌을 낸다. */
 export interface Timbre {
@@ -89,10 +89,8 @@ export const TIMBRES: Record<SynthTimbreId, Timbre> = {
 }
 
 export const SYNTH_TIMBRE_IDS = Object.keys(TIMBRES) as SynthTimbreId[]
-export const TIMBRE_IDS: TimbreId[] = ['grandPiano', ...SYNTH_TIMBRE_IDS]
-export const DEFAULT_TIMBRE: TimbreId = 'grandPiano'
-/** 녹음한 샘플을 쓰는 소리인가 (불러오는 시간이 필요하다) */
-export const isSampled = (id: TimbreId): id is 'grandPiano' => id === 'grandPiano'
+export const TIMBRE_IDS: TimbreId[] = ['auto', 'grandPiano', ...SYNTH_TIMBRE_IDS]
+export const DEFAULT_TIMBRE: TimbreId = 'auto'
 
 /** 한 음을 예약한다. 외부 음원 파일 없이 브라우저가 만든 소리만 쓴다 (BaseContext라서 오프라인 렌더로 시험할 수 있다). */
 export function scheduleNote(

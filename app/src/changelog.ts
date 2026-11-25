@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.26.0',
+    date: '2026-11-25',
+    changes: [
+      '[악기별 소리] 재생 소리에 추가(기본): MIDI의 악기 번호에 따라 기타·베이스·현악·합창·금관·목관·신스 등 계열별 소리를 냄. 어쿠스틱 피아노는 녹음 소리, 나머지는 컴퓨터가 만든 소리. 이미 다른 소리를 골라 둔 브라우저는 [소리]에서 직접 바꿔야 함',
+    ],
+  },
+  {
     version: '1.25.0',
     date: '2026-11-25',
     changes: [

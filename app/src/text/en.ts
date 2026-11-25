@@ -285,6 +285,7 @@ export const en: Messages = {
     speed: 'Speed',
     timbre: 'Sound',
     timbres: {
+      auto: 'By instrument',
       grandPiano: 'Real piano',
       piano: 'Synth piano',
       organ: 'Organ',
@@ -294,7 +295,7 @@ export const en: Messages = {
       harpsichord: 'Harpsichord',
     },
     playHint:
-      'Plays the notes in the score with the chosen sound, at the written tempo. [Real piano] uses recorded piano; the others are computer-generated and differ from real instruments. Percussion always uses computer-generated drum sounds, whatever sound you choose.',
+      'Plays the notes in the score with the chosen sound, at the written tempo. [By instrument] chooses a sound for each instrument family from the MIDI instrument number. Apart from the recorded piano, sounds are computer-generated and differ from real instruments. Percussion always uses computer-generated drum sounds, whatever sound you choose.',
     loading: 'Loading piano sounds…',
     fallback: 'Could not load the real piano sound, so the synth piano is used.',
     zoomIn: 'Zoom in',
