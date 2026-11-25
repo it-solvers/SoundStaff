@@ -76,6 +76,8 @@ describe('마디별 옥타브 점선', () => {
         .filter((d) => d.getElementsByTagName('octave-shift').length)
         .map((d) => {
           const o = d.getElementsByTagName('octave-shift')[0]
+          // 두 보표의 점선이 동시에 열려도 짝이 섞이지 않게 번호가 보표와 같아야 한다
+          expect(o.getAttribute('number')).toBe(d.getElementsByTagName('staff')[0].textContent)
           return `${d.getElementsByTagName('staff')[0].textContent}${o.getAttribute('type')}`
         }),
     )

@@ -196,7 +196,7 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean, scale
       const here = staff.ottava?.[mi] ?? 0
       if (here && chunks.length > first) {
         const shift = (type: string) =>
-          `<direction placement="${here > 0 ? 'above' : 'below'}"><direction-type><octave-shift type="${type}" size="${Math.abs(here) === 2 ? 15 : 8}"/></direction-type>${multi ? `<staff>${si + 1}</staff>` : ''}</direction>`
+          `<direction placement="${here > 0 ? 'above' : 'below'}"><direction-type><octave-shift type="${type}" size="${Math.abs(here) === 2 ? 15 : 8}"${multi ? ` number="${si + 1}"` : ''}/></direction-type>${multi ? `<staff>${si + 1}</staff>` : ''}</direction>`
         if (staff.ottava![mi - 1] !== here) chunks[first] = shift(here > 0 ? 'down' : 'up') + chunks[first]
         if (staff.ottava![mi + 1] !== here) chunks[chunks.length - 1] += shift('stop')
       }
