@@ -41,6 +41,8 @@ export interface StaffModel {
   clef: 'G' | 'F' | 'percussion'
   /** 음자리표의 옥타브 표시 (없으면 0). 음높이는 그대로이고 보표 위 위치만 옮겨 적는다 */
   clefOctave?: number
+  /** 몇 옥타브 낮춰 적고 점선 표시를 붙일지 (1: 8va, 2: 15ma). 음높이는 그대로다 */
+  ottava?: 1 | 2
   layout: VoiceMeasure[][]
   /** true면 재생할 때 이 보표의 소리를 내지 않는다 (피아노 대보표에서 오른손·왼손을 따로 끌 때) */
   muted?: boolean

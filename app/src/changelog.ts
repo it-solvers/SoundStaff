@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.27.1',
+    date: '2026-11-25',
+    changes: [
+      '[MIDI 악보] 아주 높은 악기는 음을 낮춰 보표 가까이에 적고 8va·15ma 점선 표시를 붙여 덧줄을 줄임(소리 높이는 그대로)',
+    ],
+  },
+  {
     version: '1.27.0',
     date: '2026-11-25',
     changes: [

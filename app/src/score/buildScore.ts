@@ -15,7 +15,7 @@ import { t } from '../text'
 import { UserError } from '../utils/errors'
 import { baseName as baseNameOf } from '../utils/fileName'
 import { materializeAudio } from './audioInfo'
-import { SPLIT_MIDI, needsTwoStaves, pickClef, staffClef, type StaffClef } from './notation'
+import { SPLIT_MIDI, needsTwoStaves, ottavaFor, pickClef, staffClef, type StaffClef } from './notation'
 import { applySettings } from './settings'
 import { orderBy } from './trackOrder'
 import { toMusicXml } from './toMusicXml'
@@ -222,7 +222,13 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
             : layoutTrack(hand.notes, p.grid.measures)
           warnings.push(...layout.warnings.map((w) => t.warnings.track(name, w)))
           maxVoices = Math.max(maxVoices, ...layout.measures.map((vs) => vs.length))
-          return { clef: hand.clef, clefOctave: hand.octave, layout: layout.measures }
+          const ottava = hands.length === 1 ? ottavaFor(hand.notes, hand) : 0
+          return {
+            clef: hand.clef,
+            clefOctave: hand.octave,
+            ...(ottava ? { ottava } : {}),
+            layout: layout.measures,
+          }
         })
         parts.push({
           id: `P${parts.length + 1}`,

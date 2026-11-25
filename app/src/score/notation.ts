@@ -65,6 +65,18 @@ export function staffClef(program: number, notes: QNote[]): StaffClef {
   return bestClef(notes)
 }
 
+/**
+ * 아주 높은 악기를 몇 옥타브 낮춰 적고 점선 표시(1: 8va, 2: 15ma)를 붙일지. 0이면 그대로.
+ * 보통 높이(가온음이 C6 미만)의 악기에는 쓰지 않는다.
+ */
+export function ottavaFor(notes: QNote[], c: StaffClef): 0 | 1 | 2 {
+  if (c.clef !== 'G' || c.octave !== 0 || !notes.length) return 0
+  const sorted = notes.map((n) => n.midi).sort((a, b) => a - b)
+  if (sorted[Math.floor(sorted.length / 2)] < 84) return 0
+  const cost = (k: number) => notes.reduce((a, n) => a + ledgerLines(n.midi - 12 * k, c) ** 2 + k * 0.5, 0)
+  return ([0, 1, 2] as const).reduce<0 | 1 | 2>((best, k) => (cost(k) < cost(best) ? k : best), 0)
+}
+
 /** 덧줄이 3개 이상 필요한 음의 비율 */
 const hardShare = (notes: QNote[], c: StaffClef) =>
   notes.length ? notes.filter((n) => ledgerLines(n.midi, c) >= 3).length / notes.length : 0

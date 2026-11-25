@@ -152,6 +152,14 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
         `<per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`
       : ''
 
+    // 옥타브 점선(8va·15ma): 음이 있는 마디가 이어지는 구간마다 시작과 끝을 적는다. MusicXML의 음높이는 소리 나는 높이 그대로다
+    const { ottava } = part.staves[0]
+    const sounding = (i: number) => !!part.staves[0].layout[i]?.some((v) => v.pieces.some((p) => p.midis.length))
+    const shift = (type: 'down' | 'stop') =>
+      `<direction placement="above"><direction-type><octave-shift type="${type}" size="${ottava === 2 ? 15 : 8}"/></direction-type></direction>`
+    const shiftStart = ottava && sounding(mi) && !sounding(mi - 1) ? shift('down') : ''
+    const shiftStop = ottava && sounding(mi) && !sounding(mi + 1) ? shift('stop') : ''
+
     // 보표 → 성부 순서로 이어 쓰고, 각 성부 사이는 <backup>으로 마디 처음으로 되돌린다
     const chunks: string[] = []
     part.staves.forEach((staff, si) => {
@@ -175,7 +183,7 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
         }
       }
     })
-    return `<measure number="${mi + 1}">${attrs}${tempo}${chunks.join(`<backup><duration>${spec.length}</duration></backup>`)}</measure>`
+    return `<measure number="${mi + 1}">${attrs}${tempo}${shiftStart}${chunks.join(`<backup><duration>${spec.length}</duration></backup>`)}${shiftStop}</measure>`
   })
   return `<part id="${part.id}">\n${measures.join('\n')}\n</part>`
 }

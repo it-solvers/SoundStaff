@@ -277,6 +277,22 @@ describe('읽기 좋은 MIDI 악보', () => {
     expect(clefs(build(73, [[0, 4, 72]]).root)).toEqual(['G'])
   })
 
+  it('아주 높은 악기는 15ma 점선으로 낮춰 적고, 음이 있는 구간마다 시작·끝이 있으며 음높이는 그대로다', () => {
+    const r = build(98, [
+      [0, 4, 97],
+      [16, 4, 93],
+      [48, 4, 95],
+    ])
+    expect(all(r.root, 'octave-shift').map((e) => `${e.getAttribute('type')}${e.getAttribute('size')}`)).toEqual([
+      'down15',
+      'stop15',
+      'down15',
+      'stop15',
+    ])
+    expect(text(all(r.root, 'pitch')[0], 'octave')).toBe('7')
+    expect(all(build(73, [[0, 4, 76]]).root, 'octave-shift')).toHaveLength(0)
+  })
+
   it('음역이 넓은 건반악기는 두 보표로 나누고, 좁으면 한 보표다', () => {
     const wide: [number, number, number][] = [
       [0, 4, 43],
