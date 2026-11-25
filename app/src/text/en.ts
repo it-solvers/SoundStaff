@@ -23,10 +23,9 @@ export const en: Messages = {
   },
   taglineMidiOnly: 'Turn MIDI files into sheet music. Your files never leave your device.',
 
-  /** 만든 악보의 화면 아래·PDF 아래에 적는 문구와 PDF 워터마크 */
+  /** 만든 악보의 화면 아래·PDF 아래에 적는 문구 */
   nonCommercial: {
     notice: 'Do not use scores made with this app for commercial purposes, such as selling or paid distribution.',
-    watermark: 'Non-commercial use only · SoundStaff',
   },
 
   notices: [

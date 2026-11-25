@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.54.0',
+    date: '2026-11-25',
+    changes: ['[악보] PDF의 워터마크를 없앰. 아래의 상업적 사용 금지 문구는 그대로 둠'],
+  },
+  {
     version: '1.53.0',
     date: '2026-11-25',
     changes: [
