@@ -54,6 +54,7 @@ describe('마디별 옥타브 점선', () => {
     expect(measureOttava([96, 98, 100], 'G')).toBeGreaterThan(0)
     expect(measureOttava([53, 55], 'G')).toBe(0) // 낮은 음은 올려 적지 않는다
     expect(measureOttava([24, 28], 'F')).toBeLessThan(0)
+    expect(measureOttava([24, 36], 'F')).toBe(-1) // 15mb보다 8vb
     expect(measureOttava([43, 48, 55], 'F')).toBe(0)
   })
 

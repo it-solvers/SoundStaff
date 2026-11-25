@@ -90,7 +90,8 @@ export function measureOttava(pitches: number[], clef: 'G' | 'F'): Ottava {
   const outside = (m: number) => ledgerLines(m, c) >= 3 && (clef === 'G' ? m > 72 : m < 48)
   if (!pitches.some(outside)) return 0
   const sign = clef === 'G' ? 1 : -1
-  const cost = (k: number) => pitches.reduce((a, m) => a + ledgerLines(m - 12 * sign * k, c) ** 2 + k * 0.5, 0)
+  // 두 옥타브 표시(15ma·15mb)는 낯설어서, 덧줄이 크게 줄 때만 고른다
+  const cost = (k: number) => pitches.reduce((a, m) => a + ledgerLines(m - 12 * sign * k, c) ** 2 + k * k, 0)
   const best = [0, 1, 2].reduce((a, k) => (cost(k) < cost(a) ? k : a), 0)
   return (best * sign) as Ottava
 }
