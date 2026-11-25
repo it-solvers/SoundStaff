@@ -126,7 +126,7 @@ Node.js 20 이상. 커밋 전에는 `npm run check`가 통과해야 한다 (기�
 
 - **밝은/다크 모드**: `src/theme/`. 자동은 인천 동구 일대 좌표(`sun.ts`, 소수 둘째 자리)로 일출·일몰을 이 기기 안에서 계산해(NOAA 일출 방정식) 낮이면 밝게, 밤이면 어둡게 한다. 30초마다 다시 확인한다. 선택은 `localStorage`(`soundstaff-theme`)에 저장하며, 저장소를 못 쓰면 자동이다. 밝은 모드 색은 `index.css`에서 Tailwind 팔레트의 진한 쪽과 연한 쪽을 맞바꿔 만든다(`:root[data-theme='light']`, 흰 글씨를 쓰는 500~700 단계는 그대로). 새 색 계열을 쓰면 이 목록에 추가해야 한다. 악보 미리보기 글씨 색은 `ScoreView.tsx`의 `INK`.
 
-- **위쪽 고정 영역**: 제목·언어·화면 색과 단계 막대(`StepBar.tsx`)를 `App.tsx`의 `top-bar` 한 덩어리로 `sticky`에 둔다. 스크롤에 따라 높이나 가로 배치가 바뀌지 않아야 한다(요소가 밀리거나 툭 나타나 보인다).
+- **위쪽 고정 영역**: 제목·언어·화면 색과 단계 막대(`StepBar.tsx`)를 `App.tsx`의 `<header data-testid="top-bar">` 하나(화면 전체 폭 sticky header)에 둔다. 스크롤에 따라 높이나 가로 배치가 바뀌지 않아야 한다(요소가 밀리거나 툭 나타나 보인다).
 
 - **악보는 자동으로 만든다**: [악보 만들기] 버튼은 없다. 첨부하면 `handleFiles`가 MIDI를 읽자마자(음원은 분석이 끝나면) `deriveItems` → `buildState`로 악보까지 만들고, 출력 단위(`changeUnit`)·설정·악기 설정(`changeSettings`)을 바꾸면 항상 다시 만든다. 사용 방법은 4단계(첨부 → 다듬기(선택) → 확인하고 저장 → 편집)이고 `App.tsx`의 `step`은 파일 없음 1 / 읽기만 됨 2 / 악보 있음 3이다. 악보 아래 알림 목록(`ScoreResult`)은 `<details>`로 기본 접혀 있다.
 

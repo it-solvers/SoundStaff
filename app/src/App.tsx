@@ -200,149 +200,153 @@ export default function App() {
   const step = panelItems.length > 0 ? 3 : files.length > 0 ? 2 : 1
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
-      {/* 제목과 단계 막대를 한 덩어리로 위에 붙인다: 스크롤해도 제목 아래에 단계가 그대로 따라와, 나타나거나 밀리는 움직임이 없다 */}
-      <div
-        className="sticky top-0 z-30 -mx-4 -mt-6 border-b border-slate-800 bg-slate-950 px-4 pt-3 pb-2 sm:-mx-6 sm:px-6"
-        data-testid="top-bar"
-      >
-        <header className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-          <h1 className="text-xl font-semibold tracking-tight whitespace-nowrap sm:text-3xl">
-            {t.appName}{' '}
-            <span className="text-sm font-normal text-slate-400 sm:text-[22px]" data-testid="app-version">
-              ({APP_VERSION})
-            </span>
-          </h1>
-          <div className="flex items-center gap-1 sm:gap-3">
-            <LanguageLink />
-            <ThemeToggle />
+    <>
+      {/* Sticky header: 제목과 단계 막대를 한 덩어리로 화면 위에 붙인다 (화면 전체 폭, 내용은 본문과 같은 폭) */}
+      <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950" data-testid="top-bar">
+        <div className="mx-auto max-w-5xl px-4 pt-3 pb-2 sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+            <h1 className="text-xl font-semibold tracking-tight whitespace-nowrap sm:text-3xl">
+              {t.appName}{' '}
+              <span className="text-sm font-normal text-slate-400 sm:text-[22px]" data-testid="app-version">
+                ({APP_VERSION})
+              </span>
+            </h1>
+            <div className="flex items-center gap-1 sm:gap-3">
+              <LanguageLink />
+              <ThemeToggle />
+            </div>
           </div>
-        </header>
-        {!unsupported && <StepBar current={step} />}
-      </div>
-
-      <div>
-        <p className="text-sm text-slate-300" data-testid="tagline">
-          {phone ? t.taglineMidiOnly : t.tagline}
-        </p>
-        {!phone && (
-          <p className="mt-1 text-xs text-slate-400" data-testid="tagline-note">
-            {t.taglineNote}
+          {!unsupported && <StepBar current={step} />}
+        </div>
+      </header>
+      <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
+        <div>
+          <p className="text-sm text-slate-300" data-testid="tagline">
+            {phone ? t.taglineMidiOnly : t.tagline}
           </p>
-        )}
-        {!phone && (
-          <section
-            className="mt-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
-            data-testid="fit-guide"
-          >
-            <h2 className="text-xs font-semibold text-slate-300">{t.fitGuide.heading}</h2>
-            <ul className="mt-1 space-y-1 text-xs text-slate-400">
-              {t.fitGuide.items.map((it) => (
-                <li key={it.label}>
-                  <span className="mr-1.5 inline-block min-w-[3.5rem] font-medium text-slate-200">{it.label}</span>
-                  {it.text}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-1 text-xs text-slate-500">{t.fitGuide.note}</p>
-          </section>
-        )}
-      </div>
-
-      <Notices />
-
-      {unsupported ? (
-        <p
-          className="rounded-xl border border-rose-900 bg-rose-950/60 p-4 text-rose-200"
-          role="alert"
-          data-testid="unsupported"
-        >
-          {unsupported}
-        </p>
-      ) : (
-        <>
-          <UsageGuide current={step} />
-          <AudioNotes phone={phone} />
-          {/* MIDI 첨부와 음원 분석 카드를 PC에서는 좌우로, 폰·태블릿에서는 위아래로 배치한다 */}
-          <div className={phone ? 'flex flex-col gap-4' : 'grid gap-4 md:grid-cols-2'} data-testid="upload-cards">
-            <UploadZone disabled={loading} phone={phone} onFiles={handleFiles} />
-            <AudioUpload phone={phone} disabled={loading} onFiles={handleFiles} />
-          </div>
-          {analysis && <AnalysisProgress state={analysis} onCancel={() => abortRef.current?.abort()} />}
-          {loading && <p className="text-sm text-slate-300">{t.upload.reading}</p>}
-
-          {failed.length > 0 && (
-            <section className="rounded-xl border border-rose-900 bg-rose-950/60 p-4" role="alert" data-testid="errors">
-              <h2 className="text-sm font-semibold text-rose-200">{t.files.failedHeading}</h2>
-              <ul className="mt-2 space-y-1 text-sm text-rose-200">
-                {failed.map((f, i) => (
-                  <li key={i}>
-                    {f.fileName && <span className="font-medium break-all">{f.fileName} — </span>}
-                    {f.error}
+          {!phone && (
+            <p className="mt-1 text-xs text-slate-400" data-testid="tagline-note">
+              {t.taglineNote}
+            </p>
+          )}
+          {!phone && (
+            <section
+              className="mt-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
+              data-testid="fit-guide"
+            >
+              <h2 className="text-xs font-semibold text-slate-300">{t.fitGuide.heading}</h2>
+              <ul className="mt-1 space-y-1 text-xs text-slate-400">
+                {t.fitGuide.items.map((it) => (
+                  <li key={it.label}>
+                    <span className="mr-1.5 inline-block min-w-[3.5rem] font-medium text-slate-200">{it.label}</span>
+                    {it.text}
                   </li>
                 ))}
               </ul>
+              <p className="mt-1 text-xs text-slate-500">{t.fitGuide.note}</p>
             </section>
           )}
+        </div>
 
-          {files.length > 0 && (
-            <>
-              <section className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold">{t.files.heading(files.length)}</h2>
-                  <button
-                    type="button"
-                    onClick={clearAll}
-                    className="inline-flex min-h-9 items-center px-1 text-sm text-slate-400 underline hover:text-slate-100"
-                  >
-                    {t.files.clearAll}
-                  </button>
-                </div>
-                {files.map((f) => (
-                  <TrackList key={f.id} info={f} />
-                ))}
+        <Notices />
+
+        {unsupported ? (
+          <p
+            className="rounded-xl border border-rose-900 bg-rose-950/60 p-4 text-rose-200"
+            role="alert"
+            data-testid="unsupported"
+          >
+            {unsupported}
+          </p>
+        ) : (
+          <>
+            <UsageGuide current={step} />
+            <AudioNotes phone={phone} />
+            {/* MIDI 첨부와 음원 분석 카드를 PC에서는 좌우로, 폰·태블릿에서는 위아래로 배치한다 */}
+            <div className={phone ? 'flex flex-col gap-4' : 'grid gap-4 md:grid-cols-2'} data-testid="upload-cards">
+              <UploadZone disabled={loading} phone={phone} onFiles={handleFiles} />
+              <AudioUpload phone={phone} disabled={loading} onFiles={handleFiles} />
+            </div>
+            {analysis && <AnalysisProgress state={analysis} onCancel={() => abortRef.current?.abort()} />}
+            {loading && <p className="text-sm text-slate-300">{t.upload.reading}</p>}
+
+            {failed.length > 0 && (
+              <section
+                className="rounded-xl border border-rose-900 bg-rose-950/60 p-4"
+                role="alert"
+                data-testid="errors"
+              >
+                <h2 className="text-sm font-semibold text-rose-200">{t.files.failedHeading}</h2>
+                <ul className="mt-2 space-y-1 text-sm text-rose-200">
+                  {failed.map((f, i) => (
+                    <li key={i}>
+                      {f.fileName && <span className="font-medium break-all">{f.fileName} — </span>}
+                      {f.error}
+                    </li>
+                  ))}
+                </ul>
               </section>
+            )}
 
-              {/* 출력 단위·변환 방식은 MIDI에만 적용한다. 음원 분석 결과는 항상 주 멜로디 한 단이다. */}
-              {files.some((f) => f.source !== 'audio') ? (
-                <OptionsPanel unit={unit} hasAudio={files.some((f) => f.source === 'audio')} onUnit={changeUnit} />
-              ) : (
-                <p className="text-xs text-slate-400" data-testid="audio-separate-note">
-                  {t.audio.separateNote}
-                </p>
-              )}
+            {files.length > 0 && (
+              <>
+                <section className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-base font-semibold">{t.files.heading(files.length)}</h2>
+                    <button
+                      type="button"
+                      onClick={clearAll}
+                      className="inline-flex min-h-9 items-center px-1 text-sm text-slate-400 underline hover:text-slate-100"
+                    >
+                      {t.files.clearAll}
+                    </button>
+                  </div>
+                  {files.map((f) => (
+                    <TrackList key={f.id} info={f} />
+                  ))}
+                </section>
 
-              {items.map((item) => (
-                <OutputCard
-                  key={item.id}
-                  item={item}
-                  override={overrides[item.id] ?? {}}
-                  state={results[item.id]}
-                  onChange={(patch) => changeSettings(item, patch)}
-                />
-              ))}
-            </>
-          )}
+                {/* 출력 단위·변환 방식은 MIDI에만 적용한다. 음원 분석 결과는 항상 주 멜로디 한 단이다. */}
+                {files.some((f) => f.source !== 'audio') ? (
+                  <OptionsPanel unit={unit} hasAudio={files.some((f) => f.source === 'audio')} onUnit={changeUnit} />
+                ) : (
+                  <p className="text-xs text-slate-400" data-testid="audio-separate-note">
+                    {t.audio.separateNote}
+                  </p>
+                )}
 
-          {panelItems.length > 0 && (
-            <ScorePanel
-              items={panelItems}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              showZip={unit === 'separate'}
-            />
-          )}
-        </>
-      )}
+                {items.map((item) => (
+                  <OutputCard
+                    key={item.id}
+                    item={item}
+                    override={overrides[item.id] ?? {}}
+                    state={results[item.id]}
+                    onChange={(patch) => changeSettings(item, patch)}
+                  />
+                ))}
+              </>
+            )}
 
-      <ChangeLog />
+            {panelItems.length > 0 && (
+              <ScorePanel
+                items={panelItems}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                showZip={unit === 'separate'}
+              />
+            )}
+          </>
+        )}
 
-      <footer
-        className="mt-auto border-t border-slate-800 pt-4 pb-2 text-center text-xs text-slate-500"
-        data-testid="footer"
-      >
-        {t.footer.copyright} · {t.footer.license} · {t.footer.credit}
-      </footer>
-    </div>
+        <ChangeLog />
+
+        <footer
+          className="mt-auto border-t border-slate-800 pt-4 pb-2 text-center text-xs text-slate-500"
+          data-testid="footer"
+        >
+          {t.footer.copyright} · {t.footer.license} · {t.footer.credit}
+        </footer>
+      </div>
+    </>
   )
 }
