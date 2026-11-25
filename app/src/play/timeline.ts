@@ -106,6 +106,7 @@ export function buildTimeline(model: ScoreModel): Timeline {
       })
       done.push(...open.values())
       for (const n of done) {
+        if (part.silentHits?.has(`${n.startStep}:${n.midi}`)) continue
         const s = secondsAtStep(n.startStep)
         notes.push({
           start: s,

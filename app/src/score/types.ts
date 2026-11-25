@@ -59,6 +59,8 @@ export interface PartModel {
   staves: StaffModel[]
   /** true면 타악기 파트: 음높이 번호는 GM 타악기 번호이고 타악기 음자리표로 적는다 */
   percussion?: boolean
+  /** 타악기 보표에서 재생하지 않을 타격 ("칸:번호"). 소리를 끈 원본 트랙의 타격이다 */
+  silentHits?: Set<string>
   /** true면 재생할 때 소리를 내지 않는다 (악보에는 그대로 있다) */
   muted?: boolean
 }

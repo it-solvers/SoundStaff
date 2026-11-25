@@ -1,7 +1,7 @@
 import type { Messages } from './ko'
 
 /** "1 note", "2 notes" */
-const count = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+const count = (n: number, word: string) => `${n} ${n === 1 ? word : word === 'staff' ? 'staves' : `${word}s`}`
 
 /** 화면에 보이는 모든 문구 (영어). 모양은 ko.ts와 같아야 한다 (다르면 타입 검사에서 걸린다). */
 export const en: Messages = {
@@ -152,6 +152,8 @@ export const en: Messages = {
     unnamed: '(unnamed)',
     drumInstrument: 'Drums/percussion',
     drum: 'Drums',
+    drumSet: 'Drum Set',
+    percussion: 'Percussion',
     trackNumber: (n: number) => `Track ${n}`,
     andMore: (first: string, n: number) => `${first} and ${n} more`,
     kind: { drum: 'Percussion', empty: 'No notes', pitched: 'Pitched' },
@@ -211,7 +213,7 @@ export const en: Messages = {
     tempo: 'Tempo (BPM)',
     tidy: {
       label: 'Simplify for reading',
-      desc: 'Writes each staff as a single voice and shortens overlapping notes to where the next note starts. No notes are removed, but long ringing notes are written shorter and played that way. Turn off to keep the original lengths.',
+      desc: 'Writes each staff as a single voice and shortens overlapping notes to where the next note starts. Separate percussion tracks are combined into drum set and hand percussion staves. No notes are removed, but long ringing notes are written shorter and played that way. Turn off to keep the original lengths.',
     },
     timeSignature: 'Time signature',
     beatsTop: 'Time signature, top number',
@@ -251,6 +253,8 @@ export const en: Messages = {
       'An unsupported time signature (bottom number other than 1, 2, 4, 8 or 16) was treated as 4/4. You can change it in [Score settings].',
     snappedTempo: (n: number) =>
       `Tempo changes inside a measure were moved to the nearest measure start (${count(n, 'change')}).`,
+    drumsCombined: (tracks: number, staves: number) =>
+      `${count(tracks, 'percussion track')} combined into ${count(staves, 'staff')} (drum set and hand percussion). Turn off [Simplify for reading] to keep one staff per track.`,
     unknownDrums: (n: number) =>
       `Notes with unknown percussion numbers were left out of the score (${count(n, 'note')}).`,
     voicesMerged: (max: number, n: number) =>

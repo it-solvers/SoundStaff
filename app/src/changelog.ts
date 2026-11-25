@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.28.0',
+    date: '2026-11-25',
+    changes: [
+      '[타악기] 큰북·스네어·심벌 등이 따로 있는 MIDI는 드럼 세트 한 보표(Drum Set)와 손 타악기 보표로 모음. 악기 설정의 소리 끄기·빼기는 원본 트랙 단위로 계속 동작함. [읽기 쉽게 정리하기]를 끄면 이전처럼 트랙마다 따로 적음',
+    ],
+  },
+  {
     version: '1.27.1',
     date: '2026-11-25',
     changes: [

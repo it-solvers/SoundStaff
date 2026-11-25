@@ -260,6 +260,39 @@ describe('타악기 보표', () => {
   })
 })
 
+describe('타악기 트랙 모으기', () => {
+  const drum = (index: number, name: string, notes: [number, number, number][]) =>
+    track(index, name, notes, { kind: 'drum', channel: 10 })
+  const i = info([
+    drum(0, 'B.D', [
+      [0, 1, 36],
+      [8, 1, 36],
+    ]),
+    drum(1, 'S.D', [[4, 1, 38]]),
+    drum(2, 'Cym', [[0, 1, 49]]),
+    drum(3, 'Tambourine', [[4, 1, 54]]),
+  ])
+  const build = (o = {}) => buildInstrumentScore(i, { ...defaultSettings(i), ...o })
+
+  it('드럼 세트는 한 보표, 손 타악기는 따로이며 타격은 빠지지 않는다', () => {
+    const r = build()
+    expect(r.model.parts.map((p) => p.name)).toEqual(['Drum Set', 'Tambourine'])
+    expect(buildTimeline(r.model).notes.map((n) => n.midi)).toEqual([36, 49, 38, 54, 36])
+    expect(r.report.warnings.some((w) => w.includes('4개를 보표 2개'))).toBe(true)
+  })
+
+  it('원본 트랙의 소리를 끄면 그 타격만 재생하지 않고 악보에는 남는다', () => {
+    const r = build({ mutedTracks: [0] })
+    expect(buildTimeline(r.model).notes.map((n) => n.midi)).toEqual([49, 38, 54])
+    expect(all(parse(r.xml), 'unpitched')).toHaveLength(5)
+  })
+
+  it('트랙을 빼면 보표에서도 빠지고, 정리를 끄면 트랙마다 따로다', () => {
+    expect(buildTimeline(build({ excludedTracks: [2] }).model).notes.map((n) => n.midi)).toEqual([36, 38, 54, 36])
+    expect(build({ midiTidy: false }).model.parts).toHaveLength(4)
+  })
+})
+
 describe('읽기 좋은 MIDI 악보', () => {
   const build = (program: number, notes: [number, number, number][], o: { midiTidy?: boolean } = {}) => {
     const i = info([track(0, 'A', notes, { program })])

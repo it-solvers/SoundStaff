@@ -10,11 +10,12 @@ import {
   type MeasureGrid,
   type QNote,
 } from '../midi/quantize'
-import type { MidiFileInfo, TrackInfo } from '../midi/types'
+import type { MidiFileInfo, NoteEvent, TrackInfo } from '../midi/types'
 import { t } from '../text'
 import { UserError } from '../utils/errors'
 import { baseName as baseNameOf } from '../utils/fileName'
 import { materializeAudio } from './audioInfo'
+import { groupDrums } from './drumStaves'
 import { SPLIT_MIDI, needsTwoStaves, ottavaFor, pickClef, staffClef, type StaffClef } from './notation'
 import { applySettings } from './settings'
 import { orderBy } from './trackOrder'
@@ -34,7 +35,8 @@ function trackName(track: TrackInfo): string {
 
 interface Prepared {
   warnings: string[]
-  tracks: { track: TrackInfo; notes: QNote[] }[]
+  /** silent: 타악기 보표에서 재생하지 않을 타격("칸:번호") */
+  tracks: { track: TrackInfo; notes: QNote[]; silent?: Set<string> }[]
   grid: MeasureGrid
   tempoByMeasure: Map<number, number>
 }
@@ -90,15 +92,34 @@ function prepare(info: MidiFileInfo, settings: ScoreSettings, extraSteps = 0): P
             : q.notes
           : enforceMonophonic(q.notes)
     if (t.chords) trimmed += t.notes.length - notes.length
-    return { track: t, notes }
+    return { track: t, notes, silent: undefined as Set<string> | undefined }
   })
-  for (const { track, known } of drums) {
-    const q = quantizeNotes(known, info.ppq)
-    offGrid += q.offGrid
+  // 타악기는 친 위치만 의미가 있다 (길이는 마디 배치에서 정한다)
+  const hits = (known: NoteEvent[]) => quantizeNotes(known, info.ppq)
+  for (const { known } of drums) {
+    offGrid += hits(known).offGrid
     noteTotal += known.length
-    // 타악기는 친 위치만 의미가 있다 (길이는 마디 배치에서 정한다)
-    tracks.push({ track, notes: q.notes.map((n) => ({ ...n, end: n.start + 1 })) })
   }
+  const muted = new Set(settings.mutedTracks ?? [])
+  // 읽기 쉽게 정리: 흩어진 타악기 트랙을 드럼 세트 보표와 손 타악기 보표로 모은다
+  const staves =
+    settings.midiTidy !== false ? groupDrums(drums) : drums.map((d) => ({ group: undefined, sources: [d] }))
+  for (const { group, sources } of staves) {
+    // 보표의 자리는 사용자가 정한 순서에서 가장 앞선 원본 트랙의 자리다
+    const [first] = orderBy(sources, (s) => s.track.index, settings.trackOrder)
+    const original = drums.find((d) => d.track === first.track)!
+    // 원본 트랙 하나가 통째로 한 보표가 되면 원래 이름을 쓴다
+    const whole = sources.length === 1 && sources[0].known.length === original.known.length
+    const name = whole || !group ? trackName(original.track) : group === 'kit' ? t.files.drumSet : t.files.percussion
+    // 소리 끄기는 원본 트랙 단위다: 끈 트랙만 친 타격은 재생하지 않는다
+    const keysOf = (list: typeof sources) => list.flatMap((s) => hits(s.known).notes.map((n) => `${n.start}:${n.midi}`))
+    const audible = new Set(keysOf(sources.filter((s) => !muted.has(s.track.index))))
+    const silent = new Set(keysOf(sources).filter((k) => !audible.has(k)))
+    const notes = hits(sources.flatMap((s) => s.known)).notes.map((n) => ({ ...n, end: n.start + 1 }))
+    tracks.push({ track: { ...original.track, name }, notes, silent })
+  }
+  const combined = drums.length - staves.length
+  if (combined > 0) warnings.push(t.warnings.drumsCombined(drums.length, staves.length))
   // 파일의 트랙 순서대로 단을 쌓는다
   tracks.sort((a, b) => a.track.index - b.track.index)
   const mergedCount = info.audio?.mergedCount ?? 0
@@ -186,7 +207,7 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
   }
   // 사용자가 정한 순서가 있으면 그 순서로 단을 쌓는다
   if (!grand)
-    orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes }) => {
+    orderBy(p.tracks, (x) => x.track.index, settings.trackOrder).forEach(({ track, notes, silent }) => {
       if (track.kind === 'drum') {
         const name = trackName(track)
         const layout = layoutPercussion(notes, p.grid.measures, (midi) => !!drumSound(midi)?.foot)
@@ -198,7 +219,7 @@ export function buildInstrumentScore(info: MidiFileInfo, settings: ScoreSettings
           program: 0,
           staves: [{ clef: 'percussion', layout }],
           percussion: true,
-          muted: muted.has(track.index),
+          ...(silent?.size ? { silentHits: silent } : {}),
         })
         partReports.push({ name, noteCount: notes.length, maxVoices: Math.max(1, ...layout.map((vs) => vs.length)) })
         return

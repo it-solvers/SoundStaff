@@ -148,6 +148,8 @@ export const ko = {
     unnamed: '(이름 없음)',
     drumInstrument: '드럼/타악기',
     drum: '드럼',
+    drumSet: 'Drum Set',
+    percussion: 'Percussion',
     trackNumber: (n: number) => `트랙 ${n}`,
     andMore: (first: string, n: number) => `${first} 외 ${n}개`,
     kind: { drum: '타악기', empty: '음표 없음', pitched: '음높이 악기' },
@@ -207,7 +209,7 @@ export const ko = {
     tempo: '템포 (BPM)',
     tidy: {
       label: '읽기 쉽게 정리하기',
-      desc: '보표마다 한 성부로 적고, 겹쳐 울리는 음은 다음 음이 시작할 때까지로 줄입니다. 음은 빠지지 않지만 길게 울리던 음이 짧게 적히고 재생도 그렇게 들립니다. 끄면 원래 길이대로 적습니다.',
+      desc: '보표마다 한 성부로 적고, 겹쳐 울리는 음은 다음 음이 시작할 때까지로 줄입니다. 흩어진 타악기 트랙은 드럼 세트와 손 타악기 보표로 모읍니다. 음은 빠지지 않지만 길게 울리던 음이 짧게 적히고 재생도 그렇게 들립니다. 끄면 원래 길이대로 적습니다.',
     },
     timeSignature: '박자',
     beatsTop: '박자 윗수',
@@ -247,6 +249,8 @@ export const ko = {
     unsupportedTimeSignature:
       '지원하지 않는 박자표(분모가 1·2·4·8·16이 아님)가 있어 해당 구간을 4/4로 처리했습니다. 박자는 [악보 설정]에서 고칠 수 있습니다.',
     snappedTempo: (n: number) => `마디 중간에 있는 템포 변화 ${n}개를 가장 가까운 마디 시작으로 옮겼습니다.`,
+    drumsCombined: (tracks: number, staves: number) =>
+      `타악기 트랙 ${tracks}개를 보표 ${staves}개(드럼 세트·손 타악기)로 모았습니다. [읽기 쉽게 정리하기]를 끄면 트랙마다 따로 적습니다.`,
     unknownDrums: (n: number) => `어떤 타악기인지 알 수 없는 번호의 음 ${n}개는 악보에 넣지 않았습니다.`,
     voicesMerged: (max: number, n: number) =>
       `동시에 울리는 성부가 ${max}개를 넘어 일부 음 ${n}개를 화음으로 합쳤습니다.`,
