@@ -12,6 +12,13 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.29.1',
+    date: '2026-11-25',
+    changes: [
+      '[악보] 첫 줄에만 있던 악기 이름을 모든 줄에 표시함(둘째 줄부터 줄임말: Gtr., Ob., E.Pno. 등). 화면·PDF·MusicXML에 적용',
+    ],
+  },
+  {
     version: '1.29.0',
     date: '2026-11-25',
     changes: [

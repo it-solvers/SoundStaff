@@ -86,6 +86,7 @@ export async function exportScorePdf(xml: string, settings: PdfSettings = DEFAUL
   document.body.appendChild(container)
   const osmd = new OpenSheetMusicDisplay(container, {
     percussionOneLineCutoff: 0, // 타악기도 항상 5줄 보표
+    drawPartAbbreviations: true, // 둘째 줄부터도 악기 줄임말을 붙인다
     autoResize: false,
     drawTitle: true,
     autoBeam: true,

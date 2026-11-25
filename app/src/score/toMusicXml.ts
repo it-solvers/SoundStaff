@@ -1,5 +1,6 @@
 import { startsTie, stopsTie, type Piece } from '../midi/measures'
 import { drumSound } from '../midi/percussion'
+import { abbreviations } from './abbreviation'
 import type { PartModel, ScoreModel } from './types'
 
 const SHARP_NAMES: [string, number][] = [
@@ -189,13 +190,13 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
 }
 
 /** 타악기 파트의 목록 항목: 쓰인 타악기마다 악기 하나. Finale가 각 음을 알맞은 타악기 소리로 열게 한다 */
-function drumScorePart(p: PartModel): string {
+function drumScorePart(p: PartModel, abbr: string): string {
   const used = new Set(
     p.staves.flatMap((s) => s.layout.flatMap((vs) => vs.flatMap((v) => v.pieces))).flatMap((x) => x.midis),
   )
   const midis = [...used].sort((a, b) => a - b)
   return (
-    `<score-part id="${p.id}"><part-name>${escapeXml(p.name)}</part-name>` +
+    `<score-part id="${p.id}"><part-name>${escapeXml(p.name)}</part-name><part-abbreviation>${escapeXml(abbr)}</part-abbreviation>` +
     midis
       .map(
         (m) =>
@@ -215,11 +216,12 @@ function drumScorePart(p: PartModel): string {
 
 /** 악보 모델 → MusicXML 3.1 (score-partwise) */
 export function toMusicXml(model: ScoreModel): string {
+  const abbr = abbreviations(model.parts)
   const partList = model.parts
-    .map((p) =>
+    .map((p, i) =>
       p.percussion
-        ? drumScorePart(p)
-        : `<score-part id="${p.id}"><part-name>${escapeXml(p.name)}</part-name>` +
+        ? drumScorePart(p, abbr[i])
+        : `<score-part id="${p.id}"><part-name>${escapeXml(p.name)}</part-name><part-abbreviation>${escapeXml(abbr[i])}</part-abbreviation>` +
           `<score-instrument id="${p.id}-I1"><instrument-name>${escapeXml(p.instrumentName)}</instrument-name></score-instrument>` +
           `<midi-instrument id="${p.id}-I1"><midi-channel>${p.channel}</midi-channel><midi-program>${p.program + 1}</midi-program></midi-instrument></score-part>`,
     )

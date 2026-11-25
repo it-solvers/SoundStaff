@@ -1,3 +1,4 @@
+import { abbreviations } from '../src/score/abbreviation'
 import { drumRecipe } from '../src/play/drums'
 import { drumSound } from '../src/midi/percussion'
 import { buildTimeline } from '../src/play/timeline'
@@ -257,6 +258,31 @@ describe('타악기 보표', () => {
       expect(drumRecipe(midi).length, `${midi}`).toBeGreaterThan(0)
       for (const l of drumRecipe(midi)) expect(l.decay + (l.delay ?? 0)).toBeLessThan(2)
     }
+  })
+})
+
+describe('악기 줄임말', () => {
+  const part = (name: string, program: number, instrumentName = name) =>
+    ({ id: 'P', name, instrumentName, channel: 1, program, staves: [] }) as ScoreModel['parts'][number]
+
+  it('악기 이름은 관용 줄임말, 사용자 이름은 줄여 쓰고, 겹치면 번호를 붙인다', () => {
+    expect(
+      abbreviations([
+        part('acoustic guitar (nylon)', 24),
+        part('string ensemble 2', 49),
+        part('synthstrings 1', 50),
+        part('Soprano', 52, 'choir aahs'),
+        part('합창 소프라노 첫째 줄', 52, 'choir aahs'),
+        part('electric bass (finger)', 33),
+        part('electric bass (pick)', 34),
+      ]),
+    ).toEqual(['Gtr.', 'Str.', 'Syn.Str.', 'Soprano', '합창 소프라.', 'Bass 1', 'Bass 2'])
+  })
+
+  it('MusicXML에 파트마다 줄임말을 적는다', () => {
+    const i = info([melody, bass, drums])
+    const root = parse(buildInstrumentScore(i, defaultSettings(i)).xml)
+    expect(all(root, 'part-abbreviation')).toHaveLength(3)
   })
 })
 
