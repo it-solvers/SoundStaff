@@ -1,6 +1,7 @@
 import { startsTie, stopsTie, type Piece } from '../midi/measures'
 import { drumSound } from '../midi/percussion'
 import { abbreviations } from './abbreviation'
+import { MEASURES_PER_LINE } from './pdfSettings'
 import type { PartModel, ScoreModel } from './types'
 
 const SHARP_NAMES: [string, number][] = [
@@ -187,7 +188,9 @@ function partXml(part: PartModel, model: ScoreModel, isFirstPart: boolean): stri
     // 곡 끝에는 마침 세로줄(가는 줄 + 굵은 줄)
     const finalBar =
       mi === model.grid.length - 1 ? '<barline location="right"><bar-style>light-heavy</bar-style></barline>' : ''
-    return `<measure number="${mi + 1}">${attrs}${tempo}${shiftStart}${chunks.join(`<backup><duration>${spec.length}</duration></backup>`)}${shiftStop}${finalBar}</measure>`
+    // 한 줄에 4마디: 첫 파트에 줄바꿈 위치를 적는다 (줄바꿈은 악보 전체에 적용된다)
+    const lineBreak = isFirstPart && mi > 0 && mi % MEASURES_PER_LINE === 0 ? '<print new-system="yes"/>' : ''
+    return `<measure number="${mi + 1}">${lineBreak}${attrs}${tempo}${shiftStart}${chunks.join(`<backup><duration>${spec.length}</duration></backup>`)}${shiftStop}${finalBar}</measure>`
   })
   return `<part id="${part.id}">\n${measures.join('\n')}\n</part>`
 }
@@ -233,9 +236,10 @@ export function toMusicXml(model: ScoreModel): string {
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n` +
     `<score-partwise version="3.1"><work><work-title>${escapeXml(model.title)}</work-title></work>` +
-    (model.composer
-      ? `<identification><creator type="composer">${escapeXml(model.composer)}</creator></identification>`
-      : '') +
+    '<identification>' +
+    (model.composer ? `<creator type="composer">${escapeXml(model.composer)}</creator>` : '') +
+    // 줄바꿈 표시를 담았음을 알린다 (Finale 같은 프로그램이 따르도록)
+    '<encoding><supports element="print" attribute="new-system" type="yes" value="yes"/></encoding></identification>' +
     PAGE_DEFAULTS +
     `<credit page="1"><credit-type>title</credit-type>` +
     `<credit-words default-x="600" default-y="1612" justify="center" valign="top" font-family="${TITLE_FONT}" font-size="24">${escapeXml(model.title)}</credit-words></credit>` +

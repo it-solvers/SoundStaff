@@ -261,6 +261,23 @@ describe('타악기 보표', () => {
   })
 })
 
+describe('MusicXML 줄바꿈', () => {
+  it('첫 파트의 4마디마다(5, 9 …) 줄바꿈을 마디 맨 앞에 적고, 지원한다고 알린다', () => {
+    const long = track(0, 'A', [[0, 16 * 10, 60]])
+    const i = info([long, bass])
+    const root = parse(buildInstrumentScore(i, defaultSettings(i)).xml)
+    const [first, second] = all(root, 'part')
+    const broken = kids(first, 'measure').filter((m) => kids(m, 'print').length)
+    expect(broken.map((m) => m.getAttribute('number'))).toEqual(['5', '9'])
+    for (const m of broken) {
+      expect(kids(m, 'print')[0].getAttribute('new-system')).toBe('yes')
+      expect((m.firstChild as unknown as El).nodeName).toBe('print')
+    }
+    expect(all(second, 'print')).toHaveLength(0)
+    expect(all(root, 'supports')[0].getAttribute('element')).toBe('print')
+  })
+})
+
 describe('마침 세로줄', () => {
   it('파트마다 마지막 마디의 끝에만 가는 줄 + 굵은 줄을 적는다', () => {
     const i = info([melody, bass, drums])

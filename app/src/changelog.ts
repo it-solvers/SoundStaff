@@ -12,6 +12,11 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.33.0',
+    date: '2026-11-25',
+    changes: ['[MusicXML] 4마디마다 줄바꿈 표시를 넣어, 악보 프로그램에서 열 때도 한 줄에 4마디로 보이게 함'],
+  },
+  {
     version: '1.32.0',
     date: '2026-11-25',
     changes: [
